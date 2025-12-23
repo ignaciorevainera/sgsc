@@ -13,4 +13,5 @@ export default defineConfig({
   },
 
   integrations: [sitemap(), icon()],
+  output: "server",
 });
