@@ -1,16 +1,176 @@
 ---
+import Main from "@/layouts/Main.astro";
 
+import { supabase } from "@lib/supabase";
+
+import MatchCard from "@/components/MatchCard.astro";
+import FeatureCard from "@/components/FeatureCard.astro";
+import { Icon } from "astro-icon/components";
+
+import HeroImage from "@assets/hero.webp";
+
+const features = [
+  {
+    title: "Perfiles de Jugadores",
+    description:
+      "Explora las estadísticas y trayectorias de tus jugadores favoritos.",
+    icon: "material-symbols:person",
+    href: "/players",
+  },
+  {
+    title: "Estadísticas sobre Equipos",
+    description: "Toda la información sobre los equipos oscuro y claro.",
+    icon: "material-symbols:groups",
+    href: "/teams",
+  },
+  {
+    title: "Ubicaciones de las Canchas",
+    description:
+      "Conoce dónde quedan donde se juegan los partidos y otros datos.",
+    icon: "material-symbols:stadium-rounded",
+    href: "/fields",
+  },
+];
+
+// 1. Obtener contadores para las Estadísticas Rápidas
+// Usamos 'head: true' y 'count: exact' para que sea súper rápido (no baja los datos, solo cuenta)
+const { count: matchesCount } = await supabase
+  .from("matches")
+  .select("*", { count: "exact", head: true });
+const { count: playersCount } = await supabase
+  .from("players")
+  .select("*", { count: "exact", head: true })
+  .eq("is_guest", false); // Solo socios reales
+const { count: fieldsCount } = await supabase
+  .from("fields")
+  .select("*", { count: "exact", head: true });
+
+// 2. Obtener SOLAMENTE el último partido jugado
+const { data: lastMatch } = await supabase
+  .from("matches")
+  .select(
+    `
+    *,
+    fields (name, city),
+    match_players (
+      team,
+      players (nickname)
+    )
+  `
+  )
+  .order("date", { ascending: false })
+  .limit(1)
+  .single();
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Main title="SGSC">
+  <section class="space-y-8">
+    <div
+      class="hero rounded-box mb-8 min-h-96"
+      style={`background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url(${HeroImage.src}); background-size: cover; background-position: center;`}
+    >
+      <div class="hero-content text-center">
+        <div class="max-w-md">
+          <h1
+            class="text-primary mb-4 text-center text-6xl font-black tracking-tighter"
+          >
+            SGSC
+          </h1>
+          <p class="text-neutral-content">
+            Bienvenido a la plataforma oficial del grupo Solo Gente Súper
+            Comprometida de fútbol.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <h2 class="text-2xl font-bold">Último Partido</h2>
+
+      {
+        lastMatch ? (
+          <MatchCard match={lastMatch} />
+        ) : (
+          <div class="alert">Aún no hay partidos registrados.</div>
+        )
+      }
+
+      <a href="/matches" class="btn btn-accent">Ver historial completo</a>
+    </div>
+
+    <div
+      class="stats stats-vertical lg:stats-horizontal bg-base-200 w-full text-center"
+    >
+      <div class="stat">
+        <div class="stat-title">Partidos Jugados</div>
+        <div class="stat-value text-primary">{matchesCount}</div>
+        <div class="stat-desc">Historial Total</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-title">Plantel Estable</div>
+        <div class="stat-value text-secondary">{playersCount}</div>
+        <div class="stat-desc">Jugadores Activos</div>
+      </div>
+
+      <div class="stat">
+        <div class="stat-title">Sedes</div>
+        <div class="stat-value text-accent">{fieldsCount}</div>
+        <div class="stat-desc">Canchas Visitadas</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {
+        features.map((feature, index) => (
+          <div
+            class="animate-fade-up"
+            style={`animation-delay: ${(index + 1) * 200}ms`}
+          >
+            <FeatureCard
+              title={feature.title}
+              description={feature.description}
+              icon={feature.icon}
+              href={feature.href}
+            />
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="alert alert-info">
+      <Icon name="material-symbols:info-outline" size={24} />
+      <div>
+        <h3 class="font-bold">¿Cuándo se juega?</h3>
+        <div class="text-xs">Organiza el próximo partido desde el grupo.</div>
+      </div>
+    </div>
+  </section>
+</Main>
+
+<style>
+  .hero {
+    background-image:
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)),
+      url("/images/hero.webp");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s ease-out forwards;
+    opacity: 0;
+  }
+</style>
