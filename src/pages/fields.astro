@@ -1,0 +1,99 @@
+---
+import Main from "@/layouts/Main.astro";
+import FieldCard from "@/components/FieldCard.astro";
+import Title from "@/components/shared/Title.astro";
+import { Icon } from "astro-icon/components";
+import { supabase } from "../lib/supabase";
+
+// 1. Traemos canchas + partidos
+const { data: rawFields } = await supabase.from("fields").select(`
+    id,
+    name,
+    city,
+    matches (
+      id,
+      result,
+      date
+    )
+  `);
+
+// 2. Procesamos las estadísticas por cancha
+const fields =
+  rawFields
+    ?.map((field) => {
+      const matches = field.matches || [];
+      const totalMatches = matches.length;
+
+      // Contadores de resultados
+      const lightWins = matches.filter((m) => m.result === "light").length;
+      const darkWins = matches.filter((m) => m.result === "dark").length;
+      const draws = matches.filter((m) => m.result === "draw").length;
+
+      // Encontrar la fecha más reciente
+      // Ordenamos los partidos por fecha descendente (el primero es el último jugado)
+      const sortedMatches = matches.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      const lastMatchDate =
+        sortedMatches.length > 0 ? sortedMatches[0].date : null;
+
+      return {
+        ...field,
+        stats: {
+          totalMatches,
+          lightWins,
+          darkWins,
+          draws,
+          lastMatchDate,
+        },
+      };
+    })
+    .sort((a, b) => b.stats.totalMatches - a.stats.totalMatches) || []; // Las más jugadas primero
+
+// Totales Globales
+const totalUniqueFields = fields.length;
+const totalMatchesGlobal = fields.reduce(
+  (acc, curr) => acc + curr.stats.totalMatches,
+  0
+);
+
+// Helper para formato de fecha
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return "Sin partidos";
+  return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+---
+
+<Main title="Sedes">
+  <Title
+    title="Sedes"
+    subtitle="Explora las sedes donde se juegan los partidos y sus estadísticas."
+  />
+
+  <div class="stats bg-base-100 border-base-200 mb-10 w-full border shadow-md">
+    <div class="stat place-items-center md:place-items-start">
+      <div class="stat-figure text-primary hidden md:block">
+        <Icon name="material-symbols:stadium-outline" size={42} />
+      </div>
+      <div class="stat-title">Sedes Visitadas</div>
+      <div class="stat-value text-primary">{totalUniqueFields}</div>
+      <div class="stat-desc">Canchas distintas</div>
+    </div>
+    <div class="stat place-items-center md:place-items-start">
+      <div class="stat-figure text-secondary hidden md:block">
+        <Icon name="material-symbols:sports-soccer" size={42} />
+      </div>
+      <div class="stat-title">Partidos Totales</div>
+      <div class="stat-value text-secondary">{totalMatchesGlobal}</div>
+      <div class="stat-desc">En todas las sedes</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    {fields.map((field) => <FieldCard field={field} />)}
+  </div>
+</Main>
