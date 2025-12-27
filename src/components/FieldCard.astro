@@ -1,0 +1,79 @@
+---
+import { Icon } from "astro-icon/components";
+import ResultStats from "./ResultStats.astro";
+
+interface Props {
+  field: {
+    id: string;
+    name: string;
+    city: string;
+    stats: {
+      totalMatches: number;
+      lightWins: number;
+      darkWins: number;
+      draws: number;
+      lastMatchDate: string | null;
+    };
+  };
+}
+
+const { field } = Astro.props;
+
+// Helper para formato de fecha
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return "Sin partidos";
+  return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
+    month: "short",
+    year: "numeric",
+  });
+};
+---
+
+<div
+  class="card bg-base-100 border-base-200 hover:border-primary/30 border shadow-xl transition-all hover:shadow-2xl"
+>
+  <div class="card-body">
+    {/* Título y Ciudad */}
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <Icon
+          name="material-symbols:location-on"
+          class="text-error shrink-0"
+          size={24}
+        />
+        <div>
+          <h2
+            class="card-title text-base-content flex gap-2 text-xl font-bold md:text-2xl"
+          >
+            {field.name}
+          </h2>
+          <p class="text-base-content/60 text-sm">{field.city}</p>
+        </div>
+      </div>
+      <div class="badge badge-sm badge-neutral shrink-0 font-bold">
+        {field.stats.totalMatches} PJ
+      </div>
+    </div>
+
+    <div class="divider my-2"></div>
+
+    {/* Estadísticas de Resultados */}
+    <ResultStats
+      lightWins={field.stats.lightWins}
+      darkWins={field.stats.darkWins}
+      draws={field.stats.draws}
+    />
+
+    {/* Último Partido (Footer de la carta) */}
+    <div
+      class="border-base-200 mt-4 flex items-center justify-between border-t pt-4 text-sm"
+    >
+      <span class="text-base-content/70 flex items-center gap-2">
+        <Icon name="material-symbols:history" size={24} /> Último juego:
+      </span>
+      <span class="bg-base-200 rounded-full px-3 py-1 font-medium">
+        {formatDate(field.stats.lastMatchDate)}
+      </span>
+    </div>
+  </div>
+</div>

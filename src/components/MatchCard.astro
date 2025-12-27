@@ -1,0 +1,141 @@
+---
+import { Icon } from "astro-icon/components";
+
+const { match } = Astro.props;
+
+// Función para formatear la fecha (YYYY-MM-DD -> DD/MM/YYYY)
+const formatDate = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString + "T00:00:00");
+  return date.toLocaleDateString("es-AR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+};
+
+// Traducciones y lógica de ganadores
+const resultLabels: Record<string, string> = {
+  light: "Ganó Equipo Claro",
+  dark: "Ganó Equipo Oscuro",
+  draw: "Empate",
+};
+const isLightWinner = match.result === "light";
+const isDarkWinner = match.result === "dark";
+const isDraw = match.result === "draw";
+
+// Filtramos los jugadores por equipo
+const lightTeam =
+  match.match_players?.filter((mp: any) => mp.team === "light") || [];
+const darkTeam =
+  match.match_players?.filter((mp: any) => mp.team === "dark") || [];
+
+// Ordenamos alfabéticamente por apodo, sin mutar el arreglo original
+const sortedLightTeam = [...lightTeam].sort((a: any, b: any) => {
+  const nameA = (a.players?.nickname || "").toLowerCase();
+  const nameB = (b.players?.nickname || "").toLowerCase();
+  return nameA.localeCompare(nameB);
+});
+
+const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
+  const nameA = (a.players?.nickname || "").toLowerCase();
+  const nameB = (b.players?.nickname || "").toLowerCase();
+  return nameA.localeCompare(nameB);
+});
+---
+
+<div class="card bg-base-300 shadow-lg">
+  <div class="card-body gap-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon
+          name="material-symbols:calendar-today"
+          size={18}
+          class="text-primary"
+        />
+        <span class="font-semibold">{formatDate(match.date)}</span>
+      </div>
+      <div class="flex flex-row-reverse items-center gap-2">
+        <Icon
+          name="material-symbols:location-on"
+          size={18}
+          class="text-secondary"
+        />
+        <span class="truncate font-semibold">
+          {match.fields?.name || "Cancha Desconocida"}
+        </span>
+      </div>
+    </div>
+    <div class="flex justify-center">
+      <span
+        class={`badge badge-lg rounded font-semibold ${
+          isDraw
+            ? "badge-warning"
+            : isLightWinner
+              ? "bg-white text-black"
+              : "bg-black text-white"
+        }`}
+      >
+        {resultLabels[match.result] || match.result}
+      </span>
+    </div>
+
+    <div class="space-y-2">
+      {/* Equipo Claro */}
+      <div
+        class={`rounded-lg border-2 p-4 bg-white dark:bg-gray-300 text-gray-900 ${
+          isLightWinner
+            ? "outline-success outline-4"
+            : isDraw
+              ? "border-warning"
+              : "border-gray-300 dark:border-gray-400"
+        }`}
+      >
+        <div class="mb-3 flex items-center gap-2">
+          <h3 class="text-lg font-black text-gray-900">Equipo Claro</h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {
+            sortedLightTeam.length > 0 ? (
+              sortedLightTeam.map((mp: any) => (
+                <span class="rounded border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-900 dark:border-gray-400 dark:bg-gray-200">
+                  {mp.players?.nickname || "Jugador"}
+                </span>
+              ))
+            ) : (
+              <span class="text-xs text-gray-500 italic">Sin jugadores</span>
+            )
+          }
+        </div>
+      </div>
+
+      {/* Equipo Oscuro */}
+      <div
+        class={`rounded-lg border-2 bg-slate-800 dark:bg-slate-950 text-slate-100 p-4  ${
+          isDarkWinner
+            ? "outline-success outline-4"
+            : isDraw
+              ? "border-warning"
+              : "border-slate-700 dark:border-slate-800"
+        }`}
+      >
+        <div class="mb-3 flex items-center gap-2">
+          <h3 class="text-lg font-black text-slate-100">Equipo Oscuro</h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          {
+            sortedDarkTeam.length > 0 ? (
+              sortedDarkTeam.map((mp: any) => (
+                <span class="rounded border border-slate-700 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100 dark:border-slate-800 dark:bg-slate-900">
+                  {mp.players?.nickname || "Jugador"}
+                </span>
+              ))
+            ) : (
+              <span class="text-xs text-slate-400 italic">Sin jugadores</span>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
