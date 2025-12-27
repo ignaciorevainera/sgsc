@@ -1,0 +1,175 @@
+---
+import Main from "@/layouts/Main.astro";
+import StandingsTable from "@components/ranking/StandingsTable.astro";
+import StandingsLegend from "@components/ranking/StandingsLegend.astro";
+import Title from "@/components/shared/Title.astro";
+import { Icon } from "astro-icon/components";
+import { supabase } from "@lib/supabase";
+
+// 1. URL Params
+const sort = Astro.url.searchParams.get("sort") || "points";
+const season = Astro.url.searchParams.get("season") || "2025";
+const mode = Astro.url.searchParams.get("mode") || "simple";
+
+const seasons = ["2025", "2024", "2023", "Histórico"];
+
+const sortOptions = [
+  { value: "points", label: "Puntos" },
+  { value: "name", label: "Nombre" },
+  { value: "matches", label: "Partidos Jugados" },
+  { value: "wins", label: "Victorias" },
+  { value: "draws", label: "Empates" },
+  { value: "losses", label: "Derrotas" },
+  { value: "attendance", label: "% Asistencia" },
+  { value: "winRate", label: "% Victorias" },
+  { value: "drawRate", label: "% Empates" },
+  { value: "lossRate", label: "% Derrotas" },
+];
+
+// 2. Consulta SQL
+let query;
+if (season === "Histórico") {
+  query = supabase.from("view_player_stats_all_time").select("*");
+} else {
+  query = supabase
+    .from("view_player_stats_yearly")
+    .select("*")
+    .eq("year", season);
+}
+
+const { data: rawPlayers, error } = await query.eq("is_guest", false);
+
+if (error) console.error(error);
+
+// 3. Mapeo de datos
+const players =
+  rawPlayers?.map((p) => ({
+    ...p,
+    matches: p.matches_played,
+    attendance_percentage: p.attendance_pct,
+    win_pct: p.win_pct,
+    draw_pct: p.draw_pct,
+    loss_pct: p.loss_pct,
+  })) || [];
+
+// 4. Ordenamiento
+const sortedPlayers = [...players].sort((a, b) => {
+  switch (sort) {
+    case "name":
+      return a.nickname.localeCompare(b.nickname);
+    case "matches":
+      return b.matches - a.matches;
+    case "wins":
+      return b.wins - a.wins;
+    case "draws":
+      return b.draws - a.draws;
+    case "losses":
+      return b.losses - a.losses;
+    case "attendance":
+      return b.attendance_percentage - a.attendance_percentage;
+    case "winRate":
+      return b.win_pct - a.win_pct;
+    case "drawRate":
+      return b.draw_pct - a.draw_pct;
+    case "lossRate":
+      return b.loss_pct - a.loss_pct;
+    default:
+      if (b.points === a.points) return b.win_pct - a.win_pct;
+      return b.points - a.points;
+  }
+});
+
+const hasPlayersStats = sortedPlayers.length > 0;
+---
+
+<Main title="Ranking">
+  <Title
+    title="Clasificación"
+    subtitle={season === "Histórico"
+      ? "Histórico de todas las temporadas"
+      : `Temporada ${season}`}
+  />
+
+  <div
+    class="bg-base-200 mb-6 flex flex-col gap-2 rounded-xl p-3 shadow-sm sm:flex-row"
+  >
+    <div>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Temporada</legend>
+        <select id="season" class="select select-sm">
+          {
+            seasons.map((s) => (
+              <option value={s} selected={season === s}>
+                {s}
+              </option>
+            ))
+          }
+        </select>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Ordenar por</legend>
+        <select id="sort" class="select select-sm">
+          {
+            sortOptions.map((o) => (
+              <option value={o.value} selected={sort === o.value}>
+                {o.label}
+              </option>
+            ))
+          }
+        </select>
+      </fieldset>
+    </div>
+
+    <div class="divider m-0"></div>
+
+    <div class="form-control w-full sm:w-auto">
+      <label class="label cursor-pointer justify-start gap-3 p-0 sm:py-1">
+        <span class="text-xs uppercase">Vista Detallada</span>
+        <input
+          id="mode-toggle"
+          type="checkbox"
+          class="toggle toggle-accent"
+          checked={mode === "detailed"}
+        />
+      </label>
+    </div>
+  </div>
+
+  {
+    !hasPlayersStats ? (
+      <div class="alert">
+        <Icon name="material-symbols:info" />
+        <span>No hay datos para esta temporada.</span>
+      </div>
+    ) : (
+      <div class="space-y-6">
+        <StandingsTable
+          players={sortedPlayers}
+          showDetails={mode === "detailed"}
+        />
+
+        <StandingsLegend />
+      </div>
+    )
+  }
+</Main>
+
+<script>
+  const s = document.getElementById("season") as HTMLSelectElement;
+  const o = document.getElementById("sort") as HTMLSelectElement;
+  const m = document.getElementById("mode-toggle") as HTMLInputElement; // El checkbox
+
+  const update = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("season", s.value);
+    url.searchParams.set("sort", o.value);
+    // Si el checkbox está marcado, mode='detailed', si no 'simple'
+    url.searchParams.set("mode", m.checked ? "detailed" : "simple");
+    window.location.href = url.toString();
+  };
+
+  s?.addEventListener("change", update);
+  o?.addEventListener("change", update);
+  m?.addEventListener("change", update); // Escuchamos cambios en el toggle
+</script>
