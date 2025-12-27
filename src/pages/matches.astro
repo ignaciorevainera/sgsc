@@ -1,0 +1,76 @@
+---
+import Main from "@/layouts/Main.astro";
+import MatchCard from "@components/MatchCard.astro";
+import Title from "@/components/shared/Title.astro";
+import { supabase } from "@lib/supabase";
+
+// 1. Traemos TODOS los partidos ordenados por fecha (más reciente primero)
+const { data: matches, error } = await supabase
+  .from("matches")
+  .select(
+    `
+    *,
+    fields (name),
+    match_players (
+      team,
+      players (nickname)
+    )
+  `
+  )
+  .order("date", { ascending: false });
+
+if (error) {
+  console.error("Error cargando partidos:", error);
+}
+
+// 2. Lógica para agrupar por AÑO (Temporadas)
+// Transformamos la lista plana en un objeto: { "2025": [...], "2024": [...] }
+const matchesByYear = (matches || []).reduce((acc, match) => {
+  const year = new Date(match.date).getFullYear(); // Extraer año '2025-01-03' -> 2025
+  if (!acc[year]) acc[year] = [];
+  acc[year].push(match);
+  return acc;
+}, {});
+
+// Obtenemos los años ordenados descendentemente (2025, 2024, 2023...)
+const years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
+---
+
+<Main title="Historial de Partidos">
+  <Title
+    title="Historial de Partidos"
+    subtitle="Revisa todos los partidos jugados en la historia del club, organizados por temporada."
+  />
+
+  {/* Si no hay datos */}
+  {
+    !matches?.length && (
+      <div class="alert alert-info">
+        <span>No se encontraron partidos registrados.</span>
+      </div>
+    )
+  }
+
+  {/* Renderizamos por AÑO */}
+  {
+    years.map((year) => (
+      <section class="mb-10">
+        {/* Separador de Año */}
+        <div class="mb-6 flex items-center gap-2">
+          <h2 class="text-3xl font-bold">{year}</h2>
+          <div class="badge badge-soft">
+            {matchesByYear[year].length} Partidos
+          </div>
+          <div class="bg-base-300 h-px grow" />
+        </div>
+
+        {/* Grilla de Partidos del Año */}
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {matchesByYear[year].map((match: any) => (
+            <MatchCard match={match} />
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</Main>
