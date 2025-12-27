@@ -1,0 +1,42 @@
+---
+import { Icon } from "astro-icon/components";
+---
+
+<div class="navbar bg-base-100 shadow-sm">
+  <div class="navbar-start">
+    <div class="dropdown">
+      <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+        <Icon name="material-symbols:menu-rounded" size={24} />
+      </div>
+      <ul
+        tabindex="-1"
+        class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
+      >
+        <li><a href="/ranking">Clasificación</a></li>
+        <li><a href="/matches">Partidos</a></li>
+        <li><a href="/players">Jugadores</a></li>
+        <li><a href="/fields">Canchas</a></li>
+        <li><a href="/hall-of-fame">Salón de la Fama</a></li>
+      </ul>
+    </div>
+    <a href="/" class="btn btn-ghost text-xl font-bold">SGSC</a>
+  </div>
+  <div class="navbar-center hidden lg:flex">
+    <ul class="menu menu-horizontal px-1">
+      <li><a href="/ranking">Clasificación</a></li>
+      <li><a href="/matches">Partidos</a></li>
+      <li><a href="/players">Jugadores</a></li>
+      <li><a href="/fields">Canchas</a></li>
+      <li><a href="/hall-of-fame">Salón de la Fama</a></li>
+    </ul>
+  </div>
+  <div class="navbar-end">
+    <button
+      class="btn btn-ghost btn-circle"
+      data-toggle-theme="light,dark"
+      data-act-class="ACTIVECLASS"
+    >
+      <Icon name="material-symbols:contrast" size={24} />
+    </button>
+  </div>
+</div>
