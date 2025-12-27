@@ -1,0 +1,261 @@
+---
+import Main from "@/layouts/Main.astro";
+import Avatar from "@/components/Avatar.astro";
+import { Icon } from "astro-icon/components";
+import { supabase } from "../lib/supabase";
+
+// 1. Datos
+const { data: players, error } = await supabase
+  .from("view_player_stats_all_time")
+  .select("*")
+  .eq("is_guest", false);
+
+if (error) console.error(error);
+const safePlayers = players || [];
+
+// 2. Helper Top 5
+const getTop5 = (filterFn: any, sortFn: any) => {
+  return [...safePlayers].filter(filterFn).sort(sortFn).slice(0, 5);
+};
+
+// 3. Generar Categorías
+
+// A. Puntos (Leyendas)
+const topPoints = getTop5(
+  () => true,
+  (a: any, b: any) => b.points - a.points || b.win_pct - a.win_pct
+);
+
+// B. Efectividad (Min 5 PJ)
+const topWinRate = getTop5(
+  (p: any) => p.matches_played >= 5,
+  (a: any, b: any) => b.win_pct - a.win_pct || b.points - a.points
+);
+
+// C. Victorias
+const topWins = getTop5(
+  () => true,
+  (a: any, b: any) => b.wins - a.wins || b.win_pct - a.win_pct
+);
+
+// D. Presencia (% Asistencia sobre total de partidos) - NUEVA SOLICITADA
+// Nota: 'attendance_pct' viene de la vista SQL
+const topAttendancePct = getTop5(
+  () => true,
+  (a: any, b: any) =>
+    b.attendance_pct - a.attendance_pct || b.matches_played - a.matches_played
+);
+
+// E. Cantidad de Partidos (El Histórico)
+const topMatches = getTop5(
+  () => true,
+  (a: any, b: any) => b.matches_played - a.matches_played
+);
+
+// F. Empates (El Diplomático)
+const topDraws = getTop5(
+  () => true,
+  (a: any, b: any) => b.draws - a.draws || b.matches_played - a.matches_played
+);
+
+// G. Derrotas (El Resiliente - Quien más perdió pero sigue jugando)
+const topLosses = getTop5(
+  () => true,
+  (a: any, b: any) => b.losses - a.losses || b.matches_played - a.matches_played
+);
+
+// H. Muro Defensivo (Menos derrotas con Min 10 PJ)
+const topUndefeated = getTop5(
+  (p: any) => p.matches_played >= 10,
+  (a: any, b: any) => a.losses - b.losses || b.matches_played - a.matches_played
+);
+
+// Configuración de Categorías
+const categories = [
+  {
+    title: "Leyenda Absoluta",
+    subtitle: "Máximo Goleador de Puntos",
+    icon: "material-symbols:trophy",
+    color: "text-amber-500",
+    bg: "bg-amber-500",
+    gradient: "from-amber-500/20 to-transparent",
+    data: topPoints,
+    valueKey: "points",
+    suffix: "PTS",
+  },
+  {
+    title: "El Talismán",
+    subtitle: "Mayor % Efectividad (Min 5 PJ)",
+    icon: "material-symbols:trending-up",
+    color: "text-emerald-500",
+    bg: "bg-emerald-500",
+    gradient: "from-emerald-500/20 to-transparent",
+    data: topWinRate,
+    valueKey: "win_pct",
+    suffix: "%",
+  },
+  {
+    title: "Asistencia Perfecta",
+    subtitle: "Mayor % de Presencia en Torneos",
+    icon: "material-symbols:event-available",
+    color: "text-indigo-500",
+    bg: "bg-indigo-500",
+    gradient: "from-indigo-500/20 to-transparent",
+    data: topAttendancePct,
+    valueKey: "attendance_pct",
+    suffix: "%",
+  },
+  {
+    title: "El Ganador",
+    subtitle: "Más partidos ganados (Cantidad)",
+    icon: "material-symbols:verified",
+    color: "text-blue-500",
+    bg: "bg-blue-500",
+    gradient: "from-blue-500/20 to-transparent",
+    data: topWins,
+    valueKey: "wins",
+    suffix: "Triunfos",
+  },
+  {
+    title: "El Histórico",
+    subtitle: "Más partidos jugados (Cantidad)",
+    icon: "material-symbols:calendar-month",
+    color: "text-purple-500",
+    bg: "bg-purple-500",
+    gradient: "from-purple-500/20 to-transparent",
+    data: topMatches,
+    valueKey: "matches_played",
+    suffix: "Partidos",
+  },
+  {
+    title: "El Diplomático",
+    subtitle: "Rey del Empate",
+    icon: "material-symbols:handshake",
+    color: "text-slate-500",
+    bg: "bg-slate-500",
+    gradient: "from-slate-500/20 to-transparent",
+    data: topDraws,
+    valueKey: "draws",
+    suffix: "Empates",
+  },
+  {
+    title: "Muro Defensivo",
+    subtitle: "Menos Derrotas (Min 10 PJ)",
+    icon: "material-symbols:shield",
+    color: "text-teal-500",
+    bg: "bg-teal-500",
+    gradient: "from-teal-500/20 to-transparent",
+    data: topUndefeated,
+    valueKey: "losses",
+    suffix: "Derrotas",
+  },
+  {
+    title: "El Resiliente",
+    subtitle: "Más derrotas sufridas",
+    icon: "material-symbols:sentiment-very-dissatisfied",
+    color: "text-red-500",
+    bg: "bg-red-500",
+    gradient: "from-red-500/20 to-transparent",
+    data: topLosses,
+    valueKey: "losses",
+    suffix: "Caídas",
+  },
+];
+---
+
+<Main title="Salón de la Fama">
+  <div class="mb-12 text-center">
+    <div
+      class="bg-base-200 mb-4 inline-flex items-center justify-center rounded-full p-4 shadow-inner"
+    >
+      <Icon
+        name="material-symbols:workspace-premium"
+        class="text-warning h-10 w-10"
+      />
+    </div>
+    <h1
+      class="text-primary text-4xl font-black tracking-tighter uppercase italic drop-shadow-sm md:text-6xl"
+    >
+      Salón de la Fama
+    </h1>
+    <p class="text-base-content/70 mx-auto mt-4 max-w-2xl text-lg">
+      Honor y gloria a los líderes históricos del torneo.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+    {
+      categories.map((cat) => {
+        const leader = cat.data[0];
+        const followers = cat.data.slice(1);
+
+        if (!leader) return null; // Si no hay datos, no renderizar
+
+        return (
+          <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+            <div
+              class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
+            >
+              <div class="absolute top-3 right-3 opacity-20">
+                <Icon name={cat.icon} class={`h-12 w-12 ${cat.color}`} />
+              </div>
+
+              <div class="mb-2 animate-bounce text-3xl">👑</div>
+
+              <Avatar initial={leader.nickname.charAt(0).toUpperCase()} />
+
+              <h2 class="text-base-content mt-4 text-2xl font-black tracking-tight">
+                {leader.nickname}
+              </h2>
+
+              <div
+                class={`badge badge-lg mt-1 border-none font-bold text-white ${cat.bg}`}
+              >
+                {leader[cat.valueKey]} {cat.suffix}
+              </div>
+
+              <p
+                class={`mt-4 text-xs font-bold tracking-widest uppercase opacity-60 ${cat.color}`}
+              >
+                {cat.subtitle}
+              </p>
+            </div>
+
+            <div class="bg-base-100 grow">
+              {followers.map((player, index) => (
+                <a
+                  href={`/players/${player.player_id}`}
+                  class="border-base-200 hover:bg-base-200/50 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="text-base-content/40 w-6 text-center text-sm font-bold">
+                      #{index + 2}
+                    </span>
+
+                    <Avatar
+                      initial={player.nickname.charAt(0).toUpperCase()}
+                      size="sm"
+                    />
+
+                    <span class="group-hover:text-primary text-sm font-semibold transition-colors">
+                      {player.nickname}
+                    </span>
+                  </div>
+
+                  <div class="text-sm font-bold opacity-80">
+                    {player[cat.valueKey]}{" "}
+                    <span class="text-[10px] font-normal opacity-60">
+                      {cat.suffix
+                        .replace("Triunfos", "G")
+                        .replace("Partidos", "PJ")}
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</Main>
