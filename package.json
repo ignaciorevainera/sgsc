@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
+    "@iconify-json/material-symbols": "^1.2.50",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "^5.16.6",
     "astro-icon": "^1.1.5",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "theme-change": "^2.5.0"
   },
   "devDependencies": {
     "daisyui": "^5.5.14",
