@@ -1,0 +1,358 @@
+---
+import Main from "@/layouts/Main.astro";
+import { Icon } from "astro-icon/components";
+import { supabase } from "../../lib/supabase";
+
+// Generar rutas estáticas (necesario si tu proyecto es SSG)
+export async function getStaticPaths() {
+  const { data: players } = await supabase.from("players").select("id");
+  return players?.map((p) => ({ params: { id: p.id } })) || [];
+}
+
+const { id } = Astro.params;
+
+// Redirigir si no hay ID
+if (!id) return Astro.redirect("/players");
+
+// 1. Perfil y Estadísticas Históricas (Total de carrera)
+const { data: player, error } = await supabase
+  .from("view_player_stats_all_time")
+  .select("*")
+  .eq("player_id", id)
+  .single();
+
+if (error || !player) {
+  console.error("Error cargando perfil:", error);
+  return Astro.redirect("/players");
+}
+
+// 2. Evolución por Temporada (Para la tabla anual)
+const { data: yearlyStats } = await supabase
+  .from("view_player_stats_yearly")
+  .select("*")
+  .eq("player_id", id)
+  .order("year", { ascending: false });
+
+// 3. Últimos 5 Partidos (CORREGIDO: Consultando tablas base)
+const { data: rawMatches } = await supabase
+  .from("match_players")
+  .select(
+    `
+    team,
+    matches (
+      date,
+      result,
+      fields (name)
+    )
+  `
+  )
+  .eq("player_id", id)
+  // Nota: Traemos más para asegurar tener los últimos reales tras ordenar
+  .limit(20);
+
+// Procesamos los datos en JS para calcular el resultado (W/D/L) y ordenar correctamente
+const recentMatches = rawMatches
+  ?.map((mp: any) => {
+    const m = mp.matches;
+    let outcome = "-";
+
+    // Lógica para determinar si ganó, empató o perdió
+    if (m.result === "draw") outcome = "D";
+    else if (m.result === mp.team) outcome = "W";
+    else outcome = "L";
+
+    return {
+      date: m.date,
+      fieldName: m.fields?.name || "Cancha desc.",
+      outcome: outcome,
+    };
+  })
+  // Ordenamos por fecha descendente (más reciente primero)
+  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // Nos quedamos solo con los últimos 5
+  .slice(0, 5);
+
+// --- HELPERS VISUALES ---
+
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getOutcomeConfig = (outcome: string) => {
+  switch (outcome) {
+    case "W":
+      return {
+        color: "text-success",
+        bg: "bg-success/10",
+        icon: "material-symbols:check-circle",
+        label: "Victoria",
+      };
+    case "D":
+      return {
+        color: "text-warning",
+        bg: "bg-warning/10",
+        icon: "material-symbols:remove",
+        label: "Empate",
+      };
+    case "L":
+      return {
+        color: "text-error",
+        bg: "bg-error/10",
+        icon: "material-symbols:cancel",
+        label: "Derrota",
+      };
+    default:
+      return {
+        color: "text-base-content",
+        bg: "bg-base-200",
+        icon: "material-symbols:help",
+        label: "-",
+      };
+  }
+};
+---
+
+<Main title={`${player.nickname} | Perfil`}>
+  <div>
+    <a
+      href="/players"
+      class="text-base-content/60 hover:text-primary btn btn-soft btn-sm mb-4 gap-2"
+    >
+      <Icon name="material-symbols:arrow-back" /> Volver al plantel
+    </a>
+  </div>
+
+  <div
+    class="card bg-base-100 border-base-200 group relative mb-8 overflow-hidden border shadow-xl"
+  >
+    <div
+      class="from-primary/20 via-base-100 to-secondary/10 relative h-32 bg-gradient-to-r"
+    >
+      <div
+        class="from-base-content absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] to-transparent opacity-10"
+      >
+      </div>
+    </div>
+
+    <div class="card-body relative pt-0">
+      <div class="flex flex-col items-start gap-6 md:flex-row">
+        <div class="mx-auto -mt-12 md:mx-0">
+          <div class="avatar avatar-placeholder">
+            <div class="bg-neutral text-neutral-content w-24 rounded-full">
+              <span class="text-4xl">
+                {player.nickname.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-2 flex-grow space-y-1 md:mt-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <h1 class="text-primary text-3xl font-black md:text-4xl">
+              {player.nickname}
+            </h1>
+            {
+              player.is_guest && (
+                <div class="badge badge-warning font-bold">INVITADO</div>
+              )
+            }
+          </div>
+          <p
+            class="text-base-content/60 font-mono text-xs tracking-widest uppercase"
+          >
+            ID: {player.player_id.split("-")[0]} • Debut: {
+              yearlyStats?.[yearlyStats.length - 1]?.year || "-"
+            }
+          </p>
+        </div>
+
+        <div class="mt-4 w-full md:mt-0 md:w-auto">
+          <div
+            class="stats bg-base-200/50 border-base-300 w-full border shadow-lg md:w-auto"
+          >
+            <div class="stat place-items-center px-8 py-3">
+              <div
+                class="stat-title text-xs font-bold tracking-wider uppercase"
+              >
+                Puntos Históricos
+              </div>
+              <div class="stat-value text-secondary text-3xl">
+                {player.points}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div
+          class="card bg-base-100 border-base-200 hover:border-primary/30 border p-4 text-center shadow-sm transition-colors"
+        >
+          <div class="text-2xl font-black">{player.matches_played}</div>
+          <div class="text-base-content/50 text-[10px] font-bold uppercase">
+            Partidos
+          </div>
+        </div>
+        <div
+          class="card bg-base-100 border-base-200 hover:border-success/30 border p-4 text-center shadow-sm transition-colors"
+        >
+          <div class="text-success text-2xl font-black">{player.wins}</div>
+          <div class="text-success/70 text-[10px] font-bold uppercase">
+            Victorias
+          </div>
+        </div>
+        <div
+          class="card bg-base-100 border-base-200 hover:border-warning/30 border p-4 text-center shadow-sm transition-colors"
+        >
+          <div class="text-warning text-2xl font-black">{player.draws}</div>
+          <div class="text-warning/70 text-[10px] font-bold uppercase">
+            Empates
+          </div>
+        </div>
+        <div
+          class="card bg-base-100 border-base-200 hover:border-error/30 border p-4 text-center shadow-sm transition-colors"
+        >
+          <div class="text-error text-2xl font-black">{player.losses}</div>
+          <div class="text-error/70 text-[10px] font-bold uppercase">
+            Derrotas
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden border shadow-md"
+      >
+        <div
+          class="bg-base-200/40 border-base-200 flex items-center gap-2 border-b p-4"
+        >
+          <Icon name="material-symbols:monitoring" class="text-primary" />
+          <h3 class="font-bold">Rendimiento por Temporada</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table-sm table w-full text-center">
+            <thead
+              class="bg-base-200/50 text-base-content/70 text-xs font-bold uppercase"
+            >
+              <tr>
+                <th class="pl-6 text-left">Año</th>
+                <th>PJ</th>
+                <th class="text-success">G</th>
+                <th class="text-warning">E</th>
+                <th class="text-error">P</th>
+                <th class="hidden sm:table-cell" title="% Efectividad"
+                  >% Efic.</th
+                >
+                <th class="hidden sm:table-cell" title="% Asistencia"
+                  >% Asist.</th
+                >
+                <th class="pr-6 text-right">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                yearlyStats?.map((stat) => (
+                  <tr class="hover">
+                    <td class="pl-6 text-left font-bold">{stat.year}</td>
+                    <td>{stat.matches_played}</td>
+                    <td class="text-success/80 font-medium">{stat.wins}</td>
+                    <td class="text-warning/80 font-medium">{stat.draws}</td>
+                    <td class="text-error/80 font-medium">{stat.losses}</td>
+                    <td class="hidden text-xs sm:table-cell">
+                      {stat.win_pct}%
+                    </td>
+                    <td class="hidden text-xs sm:table-cell">
+                      {stat.attendance_pct}%
+                    </td>
+                    <td class="text-primary pr-6 text-right font-black">
+                      {stat.points}
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="card bg-base-100 border-base-200 border shadow-md">
+        <div class="card-body items-center p-6 text-center">
+          <h3 class="text-base-content/50 mb-2 text-xs font-bold uppercase">
+            Efectividad Global
+          </h3>
+          <div
+            class="radial-progress text-primary text-3xl font-black"
+            style={`--value:${player.win_pct}; --size:9rem; --thickness: 0.8rem;`}
+          >
+            {Math.round(player.win_pct)}%
+          </div>
+          <p class="text-base-content/60 mt-4 px-4 text-xs text-balance">
+            Porcentaje de puntos obtenidos sobre el total disputado en su
+            carrera.
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden border shadow-md"
+      >
+        <div
+          class="bg-base-200/40 border-base-200 flex items-center gap-2 border-b p-4"
+        >
+          <Icon name="material-symbols:history" class="text-primary" />
+          <h3 class="font-bold">Últimos Partidos</h3>
+        </div>
+
+        <div class="divide-base-200 flex flex-col divide-y">
+          {
+            recentMatches?.map((match: any) => {
+              const cfg = getOutcomeConfig(match.outcome);
+
+              return (
+                <div class="hover:bg-base-200/30 flex items-center justify-between p-3 transition-colors">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class={`flex h-8 w-8 items-center justify-center rounded-full border ${cfg.bg} ${cfg.color} border-current opacity-80`}
+                    >
+                      <Icon name={cfg.icon} class="h-4 w-4" />
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-xs font-bold">
+                        {formatDate(match.date)}
+                      </span>
+                      <span class="text-base-content/60 max-w-[150px] truncate text-[10px]">
+                        {match.fieldName}
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    class={`rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${cfg.bg} ${cfg.color} border-current opacity-80`}
+                  >
+                    {cfg.label}
+                  </span>
+                </div>
+              );
+            })
+          }
+
+          {
+            (!recentMatches || recentMatches.length === 0) && (
+              <div class="text-base-content/50 p-6 text-center text-sm italic">
+                Sin partidos recientes registrados.
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</Main>
