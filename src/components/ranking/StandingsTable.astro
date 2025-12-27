@@ -1,0 +1,141 @@
+---
+const { players, showDetails } = Astro.props;
+
+// Helper para colores de racha
+const getFormColor = (result: any) => {
+  switch (result) {
+    case "W":
+      return "bg-success text-success-content";
+    case "D":
+      return "bg-warning text-warning-content";
+    case "L":
+      return "bg-error text-error-content";
+    default:
+      return "bg-base-300";
+  }
+};
+
+// Clase condicional:
+// Si showDetails es true, NO ponemos 'hidden'.
+// Si es false, ponemos 'hidden md:table-cell' (oculto en movil, visible en desktop)
+const responsiveClass = showDetails ? "" : "hidden md:table-cell";
+---
+
+<div class="border-base-300 w-full overflow-x-auto rounded-lg border shadow-sm">
+  <table class="table-zebra table-xs md:table-sm table min-w-max">
+    <thead
+      class="bg-base-300 text-base-content sticky top-0 z-10 text-center text-[8px] font-bold uppercase md:text-xs"
+    >
+      <tr>
+        <th>#</th>
+        <th class="text-left">Jugador</th>
+
+        <th
+          class="bg-primary/10 text-primary border-base-300 border-l text-xs font-black md:text-sm"
+          title="Puntos Totales">PTS</th
+        >
+
+        <th class="bg-base-200/50" title="Partidos Jugados">PJ</th>
+        <th class={`text-secondary ${responsiveClass}`} title="% Asistencia"
+          >%Asist</th
+        >
+
+        <th class="text-success" title="Ganados">G</th>
+        <th class={`text-success/70 ${responsiveClass}`} title="% Victorias"
+          >%Vic</th
+        >
+
+        <th class="text-warning" title="Empatados">E</th>
+        <th class={`text-warning/70 ${responsiveClass}`} title="% Empates"
+          >%Emp</th
+        >
+
+        <th class="text-error" title="Perdidos">P</th>
+        <th class={`text-error/70 ${responsiveClass}`} title="% Derrotas"
+          >%Der</th
+        >
+
+        <th class={`${responsiveClass}`}>Forma</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {
+        players.map(
+          (
+            player: {
+              nickname: unknown;
+              matches: unknown;
+              attendance_percentage: unknown;
+              wins: unknown;
+              win_pct: unknown;
+              draws: unknown;
+              draw_pct: unknown;
+              losses: unknown;
+              loss_pct: unknown;
+              form_array: any[];
+              points: unknown;
+            },
+            index: number
+          ) => (
+            <tr class="hover group text-center text-[10px] transition-colors md:text-xs">
+              <td class="font-bold">
+                {index === 0 && <span class="text-sm md:text-base">🥇</span>}
+                {index === 1 && <span class="text-sm md:text-base">🥈</span>}
+                {index === 2 && <span class="text-sm md:text-base">🥉</span>}
+                {index > 2 && <span class="opacity-50">{index + 1}</span>}
+              </td>
+
+              <td class="text-left">
+                <span>{player.nickname}</span>
+              </td>
+
+              <td class="bg-primary/5 text-primary border-base-300 border-l text-sm font-black md:text-base">
+                {player.points}
+              </td>
+
+              <td class="bg-base-200/30 font-semibold">{player.matches}</td>
+              <td
+                class={`text-secondary text-[8px] font-medium md:text-[10px] ${responsiveClass}`}
+              >
+                {player.attendance_percentage}%
+              </td>
+
+              <td class="font-medium">{player.wins}</td>
+              <td
+                class={`text-success/80 text-[8px] md:text-[10px] ${responsiveClass}`}
+              >
+                {player.win_pct}%
+              </td>
+
+              <td class="text-base-content/70 font-medium">{player.draws}</td>
+              <td
+                class={`text-warning/80 text-[8px] md:text-[10px] ${responsiveClass}`}
+              >
+                {player.draw_pct}%
+              </td>
+
+              <td class="text-base-content/70 font-medium">{player.losses}</td>
+              <td
+                class={`text-error/80 text-[8px] md:text-[10px] ${responsiveClass}`}
+              >
+                {player.loss_pct}%
+              </td>
+
+              <td class={`${responsiveClass}`}>
+                <div class="flex justify-center gap-0.5">
+                  {player.form_array &&
+                    player.form_array.map((res: any) => (
+                      <div
+                        class={`h-1.5 w-1.5 rounded-full md:h-2 md:w-2 ${getFormColor(res)}`}
+                      />
+                    ))}
+                </div>
+              </td>
+            </tr>
+          )
+        )
+      }
+    </tbody>
+  </table>
+</div>
