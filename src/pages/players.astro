@@ -1,0 +1,55 @@
+---
+import Main from "@/layouts/Main.astro";
+import PlayerCard from "@/components/players/PlayerCard.astro";
+import Title from "@/components/shared/Title.astro";
+import { supabase } from "@/lib/supabase";
+
+// 1. Consultar la vista histórica
+const { data: players, error } = await supabase
+  .from("view_player_stats_all_time")
+  .select("*")
+  .eq("is_guest", false) // Solo jugadores oficiales
+  .order("nickname", { ascending: true });
+
+if (error) console.error("Error al cargar jugadores:", error);
+
+const hasPlayers = players && players.length > 0;
+---
+
+<Main title="Jugadores">
+  <Title
+    title="Plantel"
+    subtitle="¡Haz click en cualquier jugador para conocer todas sus estadísticas!"
+  />
+
+  {
+    !hasPlayers && (
+      <div class="alert alert-warning shadow-sm">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="h-6 w-6 shrink-0 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <span>No hay jugadores registrados en el sistema.</span>
+      </div>
+    )
+  }
+
+  {
+    hasPlayers && (
+      <div class="animate-fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {players.map((player) => (
+          <PlayerCard player={player} />
+        ))}
+      </div>
+    )
+  }
+</Main>
