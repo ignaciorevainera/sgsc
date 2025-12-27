@@ -1,0 +1,42 @@
+---
+import Main from "@/layouts/Main.astro";
+import { Icon } from "astro-icon/components";
+---
+
+<Main title="¡Orsai! | Página no encontrada">
+  <div class="flex grow flex-col items-center justify-center gap-4 text-center">
+    <div class="flex justify-center" style="rotate: -30deg;">
+      <div class="relative inline-block">
+        <Icon name="material-symbols:flag" class="text-error" size={72} />
+        <div
+          class="absolute -bottom-2 left-4 h-4 w-24 rounded-[100%] bg-black/10 blur-sm"
+        >
+        </div>
+      </div>
+    </div>
+
+    <h1 class="text-error text-3xl font-black tracking-widest uppercase">
+      Error 404
+    </h1>
+
+    <p
+      class="text-base-content/70 mx-auto mt-6 max-w-md leading-7 text-balance"
+    >
+      La página que estás buscando no se ha encontrado. Es posible que haya sido
+      movida o eliminada.
+    </p>
+
+    <div class="mt-10 flex items-center justify-center gap-x-6">
+      <a
+        href="/"
+        class="btn btn-primary btn-sm gap-2 shadow-lg transition-transform hover:scale-105"
+      >
+        Volver al inicio
+      </a>
+      <a href="/matches" class="btn btn-sm btn-ghost gap-2">
+        Ver historial
+        <Icon name="material-symbols:arrow-forward" />
+      </a>
+    </div>
+  </div>
+</Main>
