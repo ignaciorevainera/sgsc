@@ -1,6 +1,7 @@
 ---
 import Main from "@/layouts/Main.astro";
 import Avatar from "@/components/Avatar.astro";
+import Title from "@/components/shared/Title.astro";
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
 
@@ -164,23 +165,20 @@ const categories = [
 ---
 
 <Main title="Salón de la Fama">
-  <div class="mb-12 text-center">
+  <div class="text-center">
     <div
-      class="bg-base-200 mb-4 inline-flex items-center justify-center rounded-full p-4 shadow-inner"
+      class="bg-base-200 mb-2 inline-flex items-center justify-center rounded-full p-4 shadow-inner"
     >
       <Icon
         name="material-symbols:workspace-premium"
         class="text-warning h-10 w-10"
       />
     </div>
-    <h1
-      class="text-primary text-4xl font-black tracking-tighter uppercase italic drop-shadow-sm md:text-6xl"
-    >
-      Salón de la Fama
-    </h1>
-    <p class="text-base-content/70 mx-auto mt-4 max-w-2xl text-lg">
-      Honor y gloria a los líderes históricos del torneo.
-    </p>
+
+    <Title
+      title="Salón de la Fama"
+      subtitle="Honor y gloria a los líderes históricos del torneo."
+    />
   </div>
 
   <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
