@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import ResultStats from "./ResultStats.astro";
+import ResultStats from "./ResultStats.astro"; // ✅ Usamos tu componente
 
 interface Props {
   field: {
@@ -18,10 +18,11 @@ interface Props {
 }
 
 const { field } = Astro.props;
+const { stats } = field;
 
-// Helper para formato de fecha
+// Helper de fecha
 const formatDate = (dateString: string | null) => {
-  if (!dateString) return "Sin partidos";
+  if (!dateString) return "Sin actividad";
   return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
     month: "short",
     year: "numeric",
@@ -30,49 +31,58 @@ const formatDate = (dateString: string | null) => {
 ---
 
 <div
-  class="card bg-base-100 border-base-200 hover:border-primary/30 border shadow-xl transition-all hover:shadow-2xl"
+  class="card bg-base-100 border-base-200 group relative h-full overflow-hidden border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
 >
-  <div class="card-body">
-    {/* Título y Ciudad */}
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <Icon
-          name="material-symbols:location-on"
-          class="text-error shrink-0"
-          size={24}
-        />
+  <Icon
+    name="material-symbols:stadium-rounded"
+    class="text-base-content/5 pointer-events-none absolute -right-6 -bottom-6 h-32 w-32 -rotate-12 transition-transform group-hover:scale-110"
+  />
+
+  <div class="card-body p-5">
+    {/* ENCABEZADO: Título y Ciudad */}
+    <div class="mb-4 flex items-start justify-between">
+      <div class="flex gap-3">
+        <div class="mt-1">
+          <Icon
+            name="material-symbols:location-on"
+            class="text-error"
+            size={24}
+          />
+        </div>
         <div>
-          <h2
-            class="card-title text-base-content flex gap-2 text-xl font-bold md:text-2xl"
-          >
+          <h2 class="card-title text-xl leading-tight font-bold">
             {field.name}
           </h2>
-          <p class="text-base-content/60 text-sm">{field.city}</p>
+          <p class="text-base-content/60 text-sm font-medium">{field.city}</p>
         </div>
       </div>
-      <div class="badge badge-sm badge-neutral shrink-0 font-bold">
-        {field.stats.totalMatches} PJ
+
+      {/* Badge de PJ */}
+      <div class="badge badge-neutral shrink-0 font-bold">
+        {stats.totalMatches} PJ
       </div>
     </div>
 
-    <div class="divider my-2"></div>
+    <div class="divider my-1 opacity-50"></div>
 
-    {/* Estadísticas de Resultados */}
-    <ResultStats
-      lightWins={field.stats.lightWins}
-      darkWins={field.stats.darkWins}
-      draws={field.stats.draws}
-    />
+    {/* ESTADÍSTICAS (Tu componente modular) */}
+    <div class="relative z-10 mt-2">
+      <ResultStats
+        lightWins={stats.lightWins}
+        darkWins={stats.darkWins}
+        draws={stats.draws}
+      />
+    </div>
 
-    {/* Último Partido (Footer de la carta) */}
+    {/* FOOTER: Última Actividad */}
     <div
-      class="border-base-200 mt-4 flex items-center justify-between border-t pt-4 text-sm"
+      class="border-base-100 text-base-content/50 relative z-10 mt-auto flex items-center justify-between border-t pt-4 text-xs"
     >
-      <span class="text-base-content/70 flex items-center gap-2">
-        <Icon name="material-symbols:history" size={24} /> Último juego:
+      <span class="flex items-center gap-1">
+        <Icon name="material-symbols:calendar-today" class="h-3 w-3" /> Último juego:
       </span>
-      <span class="bg-base-200 rounded-full px-3 py-1 font-medium">
-        {formatDate(field.stats.lastMatchDate)}
+      <span class="text-base-content/80 font-bold">
+        {formatDate(stats.lastMatchDate)}
       </span>
     </div>
   </div>
