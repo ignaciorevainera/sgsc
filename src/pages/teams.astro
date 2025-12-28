@@ -1,0 +1,297 @@
+---
+import Main from "@/layouts/Main.astro";
+import { Icon } from "astro-icon/components";
+import { supabase } from "@/lib/supabase";
+
+// 1. Obtener todos los partidos
+const { data: allMatches } = await supabase
+  .from("matches")
+  .select("result, date")
+  .order("date", { ascending: false });
+
+const matches = allMatches || [];
+const totalMatches = matches.length;
+
+// Contadores
+const stats = {
+  light: matches.filter((m) => m.result === "light").length,
+  dark: matches.filter((m) => m.result === "dark").length,
+  draw: matches.filter((m) => m.result === "draw").length,
+};
+
+// Porcentajes
+const lightPct = totalMatches > 0 ? (stats.light / totalMatches) * 100 : 0;
+const darkPct = totalMatches > 0 ? (stats.dark / totalMatches) * 100 : 0;
+const drawPct = totalMatches > 0 ? (stats.draw / totalMatches) * 100 : 0;
+
+// 2. Obtener estadísticas de "Lealtad"
+const { data: rawAppearances } = await supabase
+  .from("match_players")
+  .select("team, players (nickname, is_guest)")
+  .eq("players.is_guest", false);
+
+const appearances = { light: {}, dark: {} };
+
+// @ts-ignore
+rawAppearances?.forEach((record) => {
+  const team = record.team;
+  // @ts-ignore
+  const name = record.players?.nickname;
+  if (!name) return;
+
+  // @ts-ignore
+  if (!appearances[team][name]) appearances[team][name] = 0;
+  // @ts-ignore
+  appearances[team][name]++;
+});
+
+// @ts-ignore
+const getTopLoyal = (team) => {
+  // @ts-ignore
+  return (
+    Object.entries(appearances[team])
+      // @ts-ignore
+      .map(([name, count]) => ({ name, count: Number(count) }))
+      // @ts-ignore
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  );
+};
+
+const topLight = getTopLoyal("light");
+const topDark = getTopLoyal("dark");
+
+// 3. Últimos 5 Enfrentamientos
+const recentForm = matches.slice(0, 5).map((m) => m.result);
+---
+
+<Main title="Equipos | SGSC">
+  <div class="bg-base-300 relative mb-6 overflow-hidden rounded-2xl">
+    <div
+      class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] bg-size-[16px_16px] opacity-[0.05]"
+    >
+    </div>
+
+    <div class="relative z-10 container mx-auto px-4 py-12 text-center">
+      <h1
+        class="text-base-content mb-2 text-4xl font-black tracking-tighter uppercase italic md:text-5xl"
+      >
+        El Historial
+      </h1>
+      <p
+        class="text-base-content/60 mb-10 text-xs font-bold tracking-widest uppercase"
+      >
+        Clásico de todos los tiempos
+      </p>
+
+      <div
+        class="flex flex-col items-center justify-center gap-8 md:flex-row md:gap-20"
+      >
+        <div class="group flex flex-col items-center">
+          <div
+            class="mb-4 flex h-20 w-20 transform items-center justify-center rounded-full border-4 border-slate-300 bg-slate-100 shadow-2xl transition-transform duration-300 group-hover:scale-110 md:h-28 md:w-28"
+          >
+            <Icon
+              name="material-symbols:wb-sunny"
+              class="h-10 w-10 text-slate-800 md:h-14 md:w-14"
+            />
+          </div>
+          <div
+            class="text-6xl leading-none font-black text-slate-700 drop-shadow-sm md:text-8xl dark:text-slate-300"
+          >
+            {stats.light}
+          </div>
+          <div
+            class="mt-2 text-xs font-bold tracking-widest text-slate-500 uppercase"
+          >
+            Equipo Claro
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center">
+          <div
+            class="text-base-content/20 text-5xl font-black italic select-none md:text-6xl"
+          >
+            VS
+          </div>
+        </div>
+
+        <div class="group flex flex-col items-center">
+          <div
+            class="mb-4 flex h-20 w-20 transform items-center justify-center rounded-full border-4 border-slate-600 bg-slate-800 shadow-2xl transition-transform duration-300 group-hover:scale-110 md:h-28 md:w-28"
+          >
+            <Icon
+              name="material-symbols:dark-mode"
+              class="h-10 w-10 text-slate-100 md:h-14 md:w-14"
+            />
+          </div>
+          <div
+            class="text-6xl leading-none font-black text-slate-700 drop-shadow-sm md:text-8xl dark:text-slate-300"
+          >
+            {stats.dark}
+          </div>
+          <div
+            class="mt-2 text-xs font-bold tracking-widest text-slate-600 uppercase"
+          >
+            Equipo Oscuro
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-center">
+        <div
+          class="bg-base-100/50 border-base-content/10 inline-flex items-center gap-2 rounded-full border px-6 py-2 shadow-sm backdrop-blur-sm"
+        >
+          <div class="h-2 w-2 rounded-full bg-yellow-400"></div>
+          <span class="text-base-content/70 font-mono font-bold"
+            >{stats.draw} Empates</span
+          >
+        </div>
+      </div>
+
+      <div class="mx-auto mt-12 max-w-3xl">
+        <div
+          class="mb-2 flex justify-between text-xs font-bold uppercase opacity-70"
+        >
+          <span>Dominio Claro ({Math.round(lightPct)}%)</span>
+          <span>Dominio Oscuro ({Math.round(darkPct)}%)</span>
+        </div>
+        <div
+          class="bg-base-100 flex h-3 w-full overflow-hidden rounded-full shadow-inner"
+        >
+          <div class="bg-slate-300" style={`width: ${lightPct}%`}></div>
+          <div class="bg-yellow-400" style={`width: ${drawPct}%`}></div>
+          <div class="bg-slate-800" style={`width: ${darkPct}%`}></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container mx-auto">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div
+        class="card group overflow-hidden border border-slate-200 bg-slate-50 shadow-xl"
+      >
+        <div
+          class="flex items-center justify-between border-b border-slate-200 bg-slate-200/50 p-4"
+        >
+          <h2
+            class="flex items-center gap-2 text-xl font-black text-slate-700 uppercase italic"
+          >
+            <Icon name="material-symbols:wb-sunny" class="text-slate-500" />
+            Claros
+          </h2>
+        </div>
+        <div class="card-body">
+          <div class="mb-3 text-sm font-bold text-slate-500 uppercase">
+            Más Presencias
+          </div>
+          <div class="space-y-3">
+            {
+              topLight.map((player: any, i) => (
+                <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-2 shadow-sm transition-colors hover:border-slate-300">
+                  <div class="flex items-center gap-3">
+                    <div class="w-6 text-center font-mono font-bold text-slate-400">
+                      #{i + 1}
+                    </div>
+                    <div class="font-bold text-slate-700">{player.name}</div>
+                  </div>
+                  <div class="badge border-none bg-slate-100 font-bold text-slate-600">
+                    {player.count} PJ
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+        <Icon
+          name="material-symbols:wb-sunny"
+          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 rotate-12 text-slate-200/50"
+        />
+      </div>
+
+      <div
+        class="card group overflow-hidden border border-slate-800 bg-slate-900 text-slate-100 shadow-xl"
+      >
+        <div
+          class="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 p-4"
+        >
+          <h2
+            class="flex items-center gap-2 text-xl font-black text-white uppercase italic"
+          >
+            <Icon name="material-symbols:dark-mode" class="text-slate-300" /> Oscuros
+          </h2>
+        </div>
+        <div class="card-body">
+          <div class="mb-3 text-sm font-bold text-slate-400 uppercase">
+            Más Presencias
+          </div>
+          <div class="space-y-3">
+            {
+              topDark.map((player: any, i) => (
+                <div class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-2 shadow-sm transition-colors hover:border-slate-500">
+                  <div class="flex items-center gap-3">
+                    <div class="w-6 text-center font-mono font-bold text-slate-500">
+                      #{i + 1}
+                    </div>
+                    <div class="font-bold text-slate-200">{player.name}</div>
+                  </div>
+                  <div class="badge border-none bg-slate-700 font-bold text-slate-300">
+                    {player.count} PJ
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+        <Icon
+          name="material-symbols:dark-mode"
+          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 -rotate-12 text-slate-800/50"
+        />
+      </div>
+    </div>
+
+    <div class="mt-10 text-center">
+      <h3
+        class="text-base-content/50 mb-4 text-xs font-bold tracking-widest uppercase"
+      >
+        Racha Reciente (Últimos 5)
+      </h3>
+      <div class="flex justify-center gap-3">
+        {
+          recentForm.map((res) => {
+            // VICTORIA CLARO
+            if (res === "light")
+              return (
+                <div
+                  class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-slate-300 bg-slate-200 text-slate-700 shadow-sm transition-transform hover:scale-110 md:h-12 md:w-12"
+                  title="Victoria Claro"
+                >
+                  <Icon name="material-symbols:wb-sunny" class="h-6 w-6" />
+                </div>
+              );
+            // VICTORIA OSCURO
+            if (res === "dark")
+              return (
+                <div
+                  class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-800 text-white shadow-sm transition-transform hover:scale-110 md:h-12 md:w-12"
+                  title="Victoria Oscuro"
+                >
+                  <Icon name="material-symbols:dark-mode" class="h-6 w-6" />
+                </div>
+              );
+            // EMPATE (Amarillo destacado)
+            return (
+              <div
+                class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-yellow-400 bg-yellow-100 font-black text-yellow-700 shadow-sm transition-transform hover:scale-110 md:h-12 md:w-12"
+                title="Empate"
+              >
+                E
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</Main>
