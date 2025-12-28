@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
+    "@fontsource-variable/sora": "^5.2.8",
+    "@fontsource/poppins": "^5.2.7",
     "@iconify-json/material-symbols": "^1.2.50",
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/vite": "^4.1.18",
