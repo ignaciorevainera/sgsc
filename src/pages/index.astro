@@ -118,7 +118,7 @@ const features = [
       <div class="animate-fade-up">
         <div class="mb-4 flex items-center gap-2">
           <Icon name="material-symbols:trophy" class="text-warning" size={24} />
-          <h2 class="text-primary text-2xl font-black uppercase italic">
+          <h2 class="text-primary text-xl font-black uppercase italic">
             Líderes 2025
           </h2>
         </div>
@@ -141,7 +141,7 @@ const features = [
                         </div>
 
                         <div>
-                          <div class="group-hover:text-primary text-lg font-bold transition-colors">
+                          <div class="group-hover:text-primary font-bold transition-colors">
                             {player.nickname}
                           </div>
                           <div class="text-base-content/60 text-xs">
@@ -181,8 +181,12 @@ const features = [
 
       <div class="animate-fade-up" style="animation-delay: 100ms">
         <div class="mb-4 flex items-center gap-2">
-          <Icon name="material-symbols:history" class="text-primary h-6 w-6" />
-          <h2 class="text-primary text-2xl font-black uppercase italic">
+          <Icon
+            name="material-symbols:history"
+            class="text-primary"
+            size={24}
+          />
+          <h2 class="text-primary text-xl font-black uppercase italic">
             Último Resultado
           </h2>
         </div>
@@ -215,7 +219,7 @@ const features = [
                 <div
                   class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
                 >
-                  <Icon name={feature.icon} class="h-7 w-7" />
+                  <Icon name={feature.icon} size={30} />
                 </div>
                 <h3 class="card-title group-hover:text-primary transition-colors">
                   {feature.title}
@@ -233,7 +237,11 @@ const features = [
     <div
       class="alert bg-primary/5 border-primary/10 text-base-content border shadow-sm"
     >
-      <Icon name="material-symbols:info-outline" class="text-primary h-6 w-6" />
+      <Icon
+        name="material-symbols:info-outline"
+        class="text-primary"
+        size={24}
+      />
       <div>
         <h3 class="text-primary font-bold">¿Cuándo se juega?</h3>
         <div class="text-xs opacity-80">
