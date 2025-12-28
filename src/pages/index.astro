@@ -1,57 +1,32 @@
 ---
 import Main from "@/layouts/Main.astro";
-
-import { supabase } from "@lib/supabase";
-
+import { supabase } from "@/lib/supabase";
 import MatchCard from "@/components/MatchCard.astro";
-import FeatureCard from "@/components/FeatureCard.astro";
 import { Icon } from "astro-icon/components";
 
-import HeroImage from "@assets/hero.webp";
+// --- CONSULTAS A SUPABASE ---
 
-const features = [
-  {
-    title: "Perfiles de Jugadores",
-    description:
-      "Explora las estadísticas y trayectorias de tus jugadores favoritos.",
-    icon: "material-symbols:person",
-    href: "/players",
-  },
-  {
-    title: "Estadísticas sobre Equipos",
-    description: "Toda la información sobre los equipos oscuro y claro.",
-    icon: "material-symbols:groups",
-    href: "/teams",
-  },
-  {
-    title: "Ubicaciones de las Canchas",
-    description:
-      "Conoce dónde quedan donde se juegan los partidos y otros datos.",
-    icon: "material-symbols:stadium-rounded",
-    href: "/fields",
-  },
-];
-
-// 1. Obtener contadores para las Estadísticas Rápidas
-// Usamos 'head: true' y 'count: exact' para que sea súper rápido (no baja los datos, solo cuenta)
+// 1. Contadores Rápidos (Optimizados)
 const { count: matchesCount } = await supabase
   .from("matches")
   .select("*", { count: "exact", head: true });
+
 const { count: playersCount } = await supabase
   .from("players")
   .select("*", { count: "exact", head: true })
-  .eq("is_guest", false); // Solo socios reales
+  .eq("is_guest", false);
+
 const { count: fieldsCount } = await supabase
   .from("fields")
   .select("*", { count: "exact", head: true });
 
-// 2. Obtener SOLAMENTE el último partido jugado
-const { data: lastMatch } = await supabase
+// 2. Último Partido Jugado (Con nombre de cancha Y JUGADORES)
+const { data: lastMatchData } = await supabase
   .from("matches")
   .select(
     `
     *,
-    fields (name, city),
+    fields (name),
     match_players (
       team,
       players (nickname)
@@ -59,90 +34,211 @@ const { data: lastMatch } = await supabase
   `
   )
   .order("date", { ascending: false })
-  .limit(1)
-  .single();
+  .limit(1);
+
+const lastMatch = lastMatchData?.[0];
+
+// 3. TOP 3 Ranking Actual (Para el Podio)
+// Usamos la vista anual del 2025 (o cambia a 'view_player_stats_all_time' si prefieres histórico)
+const { data: topPlayers } = await supabase
+  .from("view_player_stats_yearly")
+  .select("*")
+  .eq("year", 2025) // Ojo: Asegúrate que coincida con tu temporada actual
+  .order("points", { ascending: false })
+  .limit(3);
+
+// --- CONFIGURACIÓN UI ---
+
+const features = [
+  {
+    title: "Tabla de Posiciones",
+    description: "Mira quién lidera el torneo y la lucha por el campeonato.",
+    icon: "material-symbols:trophy",
+    href: "/ranking",
+    color: "bg-amber-500/10 text-amber-600",
+  },
+  {
+    title: "Salón de la Fama",
+    description: "Los récords históricos y leyendas del club.",
+    icon: "material-symbols:workspace-premium",
+    href: "/hall-of-fame",
+    color: "bg-purple-500/10 text-purple-600",
+  },
+  {
+    title: "Plantel de Jugadores",
+    description: "Perfiles detallados y estadísticas individuales.",
+    icon: "material-symbols:groups",
+    href: "/players",
+    color: "bg-blue-500/10 text-blue-600",
+  },
+];
 ---
 
-<Main title="SGSC">
-  <section class="space-y-8">
+<Main title="Inicio | SGSC">
+  <section
+    class="hero relative mb-10 flex min-h-[50vh] items-center text-white"
+  >
+    <div class="absolute inset-0 z-0 bg-black/60"></div>
     <div
-      class="hero rounded-box mb-8 min-h-96"
-      style={`background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url(${HeroImage.src}); background-size: cover; background-position: center;`}
+      class="relative z-10 container mx-auto flex flex-col items-center justify-between gap-8 px-4 py-10 md:flex-row"
     >
-      <div class="hero-content text-center">
-        <div class="max-w-md">
-          <h1
-            class="text-primary mb-4 text-center text-6xl font-black tracking-tighter"
+      <div class="flex max-w-xl flex-col gap-4 text-center">
+        <h1
+          class="text-5xl font-black tracking-tighter italic drop-shadow-lg md:text-7xl"
+        >
+          SGSC
+        </h1>
+        <p
+          class="mx-auto max-w-md text-lg font-medium opacity-90 md:mx-0 md:text-xl"
+        >
+          Plataforma oficial del Solo Gente Súper Comprometida Fútbol Club.
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-4 md:justify-start">
+          <a
+            href="/ranking"
+            class="btn btn-primary border-none shadow-lg transition-transform hover:scale-105"
           >
-            SGSC
-          </h1>
-          <p class="text-neutral-content">
-            Bienvenido a la plataforma oficial del grupo Solo Gente Súper
-            Comprometida de fútbol.
-          </p>
+            <Icon name="material-symbols:leaderboard" class="h-5 w-5" />
+            Ver Tabla
+          </a>
+          <a
+            href="/matches"
+            class="btn btn-outline text-white hover:border-white hover:bg-white/20"
+          >
+            Historial
+          </a>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="flex flex-col gap-4">
-      <h2 class="text-2xl font-bold">Último Partido</h2>
+  <section class="container mx-auto space-y-12 px-4 pb-12">
+    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+      <div class="animate-fade-up">
+        <div class="mb-4 flex items-center gap-2">
+          <Icon name="material-symbols:trophy" class="text-warning" size={24} />
+          <h2 class="text-primary text-2xl font-black uppercase italic">
+            Líderes 2025
+          </h2>
+        </div>
 
-      {
-        lastMatch ? (
-          <MatchCard match={lastMatch} />
-        ) : (
-          <div class="alert">Aún no hay partidos registrados.</div>
-        )
-      }
+        <div class="card bg-base-100 border-base-200 border shadow-lg">
+          <div class="card-body p-0">
+            {
+              topPlayers && topPlayers.length > 0 ? (
+                <div class="divide-base-200 divide-y">
+                  {topPlayers.map((player, index) => (
+                    <a
+                      href={`/players/${player.player_id}`}
+                      class="hover:bg-base-200/50 group flex items-center justify-between p-4 transition-colors"
+                    >
+                      <div class="flex items-center gap-4">
+                        <div
+                          class={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${index === 0 ? "bg-amber-100 text-amber-700 ring-2 ring-amber-400" : ""} ${index === 1 ? "bg-slate-100 text-slate-600 ring-2 ring-slate-300" : ""} ${index === 2 ? "bg-orange-100 text-orange-700 ring-2 ring-orange-300" : ""} `}
+                        >
+                          {index + 1}
+                        </div>
 
-      <a href="/matches" class="btn btn-accent">Ver historial completo</a>
+                        <div>
+                          <div class="group-hover:text-primary text-lg font-bold transition-colors">
+                            {player.nickname}
+                          </div>
+                          <div class="text-base-content/60 text-xs">
+                            {player.matches_played} PJ • {player.wins} Victorias
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="text-right">
+                        <div class="text-primary text-xl font-black">
+                          {player.points}
+                        </div>
+                        <div class="text-base-content/40 text-[10px] font-bold uppercase">
+                          PTS
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div class="text-base-content/50 p-6 text-center italic">
+                  Aún no hay datos suficientes para el ranking.
+                </div>
+              )
+            }
+            <div class="border-base-200 border-t p-2 text-center">
+              <a
+                href="/ranking"
+                class="btn btn-ghost btn-xs text-base-content/50 hover:text-primary w-full"
+              >
+                Ver tabla completa
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="animate-fade-up" style="animation-delay: 100ms">
+        <div class="mb-4 flex items-center gap-2">
+          <Icon name="material-symbols:history" class="text-primary h-6 w-6" />
+          <h2 class="text-primary text-2xl font-black uppercase italic">
+            Último Resultado
+          </h2>
+        </div>
+
+        {
+          lastMatch ? (
+            <MatchCard match={lastMatch} />
+          ) : (
+            <div class="alert bg-base-100 border-base-200 shadow-sm">
+              <Icon name="material-symbols:info" class="text-info" />
+              <span>No hay partidos registrados recientemente.</span>
+            </div>
+          )
+        }
+      </div>
     </div>
 
-    <div
-      class="stats stats-vertical lg:stats-horizontal bg-base-200 w-full text-center"
-    >
-      <div class="stat">
-        <div class="stat-title">Partidos Jugados</div>
-        <div class="stat-value text-primary">{matchesCount}</div>
-        <div class="stat-desc">Historial Total</div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-title">Plantel Estable</div>
-        <div class="stat-value text-secondary">{playersCount}</div>
-        <div class="stat-desc">Jugadores Activos</div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-title">Sedes</div>
-        <div class="stat-value text-accent">{fieldsCount}</div>
-        <div class="stat-desc">Canchas Visitadas</div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
       {
         features.map((feature, index) => (
           <div
             class="animate-fade-up"
-            style={`animation-delay: ${(index + 1) * 200}ms`}
+            style={`animation-delay: ${(index + 2) * 100}ms`}
           >
-            <FeatureCard
-              title={feature.title}
-              description={feature.description}
-              icon={feature.icon}
+            <a
               href={feature.href}
-            />
+              class="card bg-base-100 border-base-200 group h-full border shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div class="card-body">
+                <div
+                  class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
+                >
+                  <Icon name={feature.icon} class="h-7 w-7" />
+                </div>
+                <h3 class="card-title group-hover:text-primary transition-colors">
+                  {feature.title}
+                </h3>
+                <p class="text-base-content/70 text-sm">
+                  {feature.description}
+                </p>
+              </div>
+            </a>
           </div>
         ))
       }
     </div>
 
-    <div class="alert alert-info">
-      <Icon name="material-symbols:info-outline" size={24} />
+    <div
+      class="alert bg-primary/5 border-primary/10 text-base-content border shadow-sm"
+    >
+      <Icon name="material-symbols:info-outline" class="text-primary h-6 w-6" />
       <div>
-        <h3 class="font-bold">¿Cuándo se juega?</h3>
-        <div class="text-xs">Organiza el próximo partido desde el grupo.</div>
+        <h3 class="text-primary font-bold">¿Cuándo se juega?</h3>
+        <div class="text-xs opacity-80">
+          Organiza el próximo partido desde el grupo de WhatsApp oficial.
+        </div>
       </div>
     </div>
   </section>
@@ -150,27 +246,9 @@ const { data: lastMatch } = await supabase
 
 <style>
   .hero {
-    background-image:
-      linear-gradient(to bottom, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)),
-      url("/images/hero.webp");
+    background-image: url("/hero.webp"); /* Asegúrate que la imagen esté en /public */
     background-size: cover;
-    background-position: center;
+    background-position: center 30%; /* Ajuste para centrar mejor la acción */
     background-attachment: fixed;
-  }
-
-  @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-fade-up {
-    animation: fade-up 0.6s ease-out forwards;
-    opacity: 0;
   }
 </style>
