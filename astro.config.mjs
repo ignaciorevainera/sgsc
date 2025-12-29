@@ -6,6 +6,8 @@ import sitemap from "@astrojs/sitemap";
 
 import icon from "astro-icon";
 
+import vercel from "@astrojs/vercel";
+
 // https://astro.build/config
 export default defineConfig({
   vite: {
@@ -14,4 +16,5 @@ export default defineConfig({
 
   integrations: [sitemap(), icon()],
   output: "server",
+  adapter: vercel(),
 });

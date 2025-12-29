@@ -1,28 +1,59 @@
 ---
 import "@styles/global.css";
-
+import { ClientRouter } from "astro:transitions";
 import Header from "@/components/shared/Header.astro";
 import Footer from "@/components/shared/Footer.astro";
 
 interface Props {
   title: string;
+  description?: string; // Hacemos opcional la descripción
+  image?: string; // Hacemos opcional la imagen para compartir
+  type?: "website" | "article" | "profile"; // Tipo de contenido
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description = "Resultados, estadísticas y ranking del grupo Solo Gente Súper Comprometida.", // Valor por defecto
+  image = "/images/og-default.jpg", // ¡Debes crear esta imagen! (ver abajo)
+  type = "website",
+} = Astro.props;
+
+// Generamos URLs absolutas (necesarias para WhatsApp/FB)
+const canonicalURL = new URL(
+  Astro.url.pathname,
+  Astro.site || Astro.url.origin
+);
+const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen relativa a absoluta
 ---
 
 <html lang="es" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="Sistema de gestión de fixture deportivo"
-    />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
+
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+
+    <ClientRouter />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:image" content={socialImageURL} />
+    <meta property="og:image:alt" content={`Imagen previa de ${title}`} />
+    <meta property="og:site_name" content="SGSC" />
+    <meta property="og:locale" content="es_AR" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL} />
   </head>
+
   <body class="flex min-h-dvh flex-col">
     <Header />
     <main class="mx-auto flex w-full max-w-[80ch] flex-1 flex-col p-4">
@@ -33,19 +64,17 @@ const { title } = Astro.props;
 </html>
 
 <script is:inline>
-  // ☝️ This script prevent the FART effect.
+  // Script original de manejo de tema
   if (localStorage.getItem("theme") === null) {
     document.documentElement.setAttribute("data-theme", "fantasy");
-  } else
+  } else {
     document.documentElement.setAttribute(
       "data-theme",
       localStorage.getItem("theme")
     );
-  // "theme" LocalStorage value is set by the package to remember user preference.
-  // The value is checked and applyed before rendering anything.
+  }
 </script>
 <script>
   import { themeChange } from "theme-change";
   themeChange();
-  // 👆 you could import the CDN directly instead of these two lines
 </script>

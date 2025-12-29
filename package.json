@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.6.0",
+    "@astrojs/vercel": "^9.0.2",
     "@fontsource-variable/sora": "^5.2.8",
     "@fontsource/poppins": "^5.2.7",
     "@iconify-json/material-symbols": "^1.2.50",
