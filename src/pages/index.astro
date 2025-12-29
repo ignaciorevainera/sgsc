@@ -95,10 +95,7 @@ const features = [
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 md:justify-start">
-          <a
-            href="/ranking"
-            class="btn btn-primary border-none shadow-lg transition-transform hover:scale-105"
-          >
+          <a href="/ranking" class="btn btn-primary border-none shadow-md">
             <Icon name="material-symbols:leaderboard" class="h-5 w-5" />
             Ver Tabla
           </a>
@@ -123,7 +120,9 @@ const features = [
           </h2>
         </div>
 
-        <div class="card bg-base-100 border-base-200 border shadow-lg">
+        <div
+          class="card bg-base-100 border-base-200 rounded-xl border shadow-md"
+        >
           <div class="card-body p-0">
             {
               topPlayers && topPlayers.length > 0 ? (
@@ -131,7 +130,7 @@ const features = [
                   {topPlayers.map((player, index) => (
                     <a
                       href={`/players/${player.player_id}`}
-                      class="hover:bg-base-200/50 group flex items-center justify-between p-4 transition-colors"
+                      class="hover:bg-base-200 group flex items-center justify-between p-4 transition-colors"
                     >
                       <div class="flex items-center gap-4">
                         <div
@@ -154,7 +153,7 @@ const features = [
                         <div class="text-primary text-xl font-black">
                           {player.points}
                         </div>
-                        <div class="text-base-content/40 text-[10px] font-bold uppercase">
+                        <div class="text-base-content/60 text-xs font-bold uppercase">
                           PTS
                         </div>
                       </div>
@@ -162,7 +161,7 @@ const features = [
                   ))}
                 </div>
               ) : (
-                <div class="text-base-content/50 p-6 text-center italic">
+                <div class="text-base-content/60 p-6 text-center italic">
                   Aún no hay datos suficientes para el ranking.
                 </div>
               )
@@ -170,7 +169,7 @@ const features = [
             <div class="border-base-200 border-t p-2 text-center">
               <a
                 href="/ranking"
-                class="btn btn-ghost btn-xs text-base-content/50 hover:text-primary w-full"
+                class="btn btn-ghost btn-xs text-base-content/60 hover:text-primary w-full"
               >
                 Ver tabla completa
               </a>
@@ -195,7 +194,7 @@ const features = [
           lastMatch ? (
             <MatchCard match={lastMatch} />
           ) : (
-            <div class="alert bg-base-100 border-base-200 shadow-sm">
+            <div class="alert bg-base-100 border-base-200 rounded-xl border shadow-md">
               <Icon name="material-symbols:info" class="text-info" />
               <span>No hay partidos registrados recientemente.</span>
             </div>
@@ -213,7 +212,7 @@ const features = [
           >
             <a
               href={feature.href}
-              class="card bg-base-100 border-base-200 group h-full border shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+              class="card bg-base-100 border-base-200 group h-full rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
             >
               <div class="card-body">
                 <div
@@ -224,7 +223,7 @@ const features = [
                 <h3 class="card-title group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
-                <p class="text-base-content/70 text-sm">
+                <p class="text-base-content/60 text-sm">
                   {feature.description}
                 </p>
               </div>
@@ -235,7 +234,7 @@ const features = [
     </div>
 
     <div
-      class="alert bg-primary/5 border-primary/10 text-base-content border shadow-sm"
+      class="alert bg-primary/5 border-base-200 text-base-content border shadow-md"
     >
       <Icon
         name="material-symbols:info-outline"

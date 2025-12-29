@@ -127,7 +127,7 @@ const getOutcomeConfig = (outcome: string) => {
   </div>
 
   <div
-    class="card bg-base-100 border-base-200 group relative mb-8 overflow-hidden border shadow-xl"
+    class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md"
   >
     <div
       class="from-primary/20 via-base-100 to-secondary/10 relative h-32 bg-gradient-to-r"
@@ -172,7 +172,7 @@ const getOutcomeConfig = (outcome: string) => {
 
         <div class="mt-4 w-full md:mt-0 md:w-auto">
           <div
-            class="stats bg-base-200/50 border-base-300 w-full border shadow-lg md:w-auto"
+            class="stats bg-base-200 border-base-200 w-full border shadow-md md:w-auto"
           >
             <div class="stat place-items-center px-8 py-3">
               <div
@@ -194,44 +194,38 @@ const getOutcomeConfig = (outcome: string) => {
     <div class="space-y-6 lg:col-span-2">
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div
-          class="card bg-base-100 border-base-200 hover:border-primary/30 border p-4 text-center shadow-sm transition-colors"
+          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-2xl font-black">{player.matches_played}</div>
-          <div class="text-base-content/50 text-[10px] font-bold uppercase">
+          <div class="text-xl font-black">{player.matches_played}</div>
+          <div class="text-base-content/60 text-xs font-bold uppercase">
             Partidos
           </div>
         </div>
         <div
-          class="card bg-base-100 border-base-200 hover:border-success/30 border p-4 text-center shadow-sm transition-colors"
+          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-success text-2xl font-black">{player.wins}</div>
-          <div class="text-success/70 text-[10px] font-bold uppercase">
-            Victorias
-          </div>
+          <div class="text-success text-xl font-black">{player.wins}</div>
+          <div class="text-success text-xs font-bold uppercase">Victorias</div>
         </div>
         <div
-          class="card bg-base-100 border-base-200 hover:border-warning/30 border p-4 text-center shadow-sm transition-colors"
+          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-warning text-2xl font-black">{player.draws}</div>
-          <div class="text-warning/70 text-[10px] font-bold uppercase">
-            Empates
-          </div>
+          <div class="text-warning text-xl font-black">{player.draws}</div>
+          <div class="text-warning text-xs font-bold uppercase">Empates</div>
         </div>
         <div
-          class="card bg-base-100 border-base-200 hover:border-error/30 border p-4 text-center shadow-sm transition-colors"
+          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-error text-2xl font-black">{player.losses}</div>
-          <div class="text-error/70 text-[10px] font-bold uppercase">
-            Derrotas
-          </div>
+          <div class="text-error text-xl font-black">{player.losses}</div>
+          <div class="text-error text-xs font-bold uppercase">Derrotas</div>
         </div>
       </div>
 
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden border shadow-md"
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
         <div
-          class="bg-base-200/40 border-base-200 flex items-center gap-2 border-b p-4"
+          class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
         >
           <Icon name="material-symbols:monitoring" class="text-primary" />
           <h3 class="font-bold">Rendimiento por Temporada</h3>
@@ -239,7 +233,7 @@ const getOutcomeConfig = (outcome: string) => {
         <div class="overflow-x-auto">
           <table class="table-sm table w-full text-center">
             <thead
-              class="bg-base-200/50 text-base-content/70 text-xs font-bold uppercase"
+              class="bg-base-200 text-base-content/60 text-xs font-bold uppercase"
             >
               <tr>
                 <th class="pl-6 text-left">Año</th>
@@ -284,9 +278,9 @@ const getOutcomeConfig = (outcome: string) => {
     </div>
 
     <div class="space-y-6">
-      <div class="card bg-base-100 border-base-200 border shadow-md">
-        <div class="card-body items-center p-6 text-center">
-          <h3 class="text-base-content/50 mb-2 text-xs font-bold uppercase">
+      <div class="card bg-base-100 border-base-200 rounded-xl border shadow-md">
+        <div class="card-body items-center text-center">
+          <h3 class="text-base-content/60 mb-2 text-xs font-bold uppercase">
             Efectividad Global
           </h3>
           <div
@@ -303,10 +297,10 @@ const getOutcomeConfig = (outcome: string) => {
       </div>
 
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden border shadow-md"
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
         <div
-          class="bg-base-200/40 border-base-200 flex items-center gap-2 border-b p-4"
+          class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
         >
           <Icon name="material-symbols:history" class="text-primary" />
           <h3 class="font-bold">Últimos Partidos</h3>
@@ -318,7 +312,7 @@ const getOutcomeConfig = (outcome: string) => {
               const cfg = getOutcomeConfig(match.outcome);
 
               return (
-                <div class="hover:bg-base-200/30 flex items-center justify-between p-3 transition-colors">
+                <div class="hover:bg-base-200 flex items-center justify-between p-3 transition-colors">
                   <div class="flex items-center gap-3">
                     <div
                       class={`flex h-8 w-8 items-center justify-center rounded-full border ${cfg.bg} ${cfg.color} border-current opacity-80`}
@@ -329,13 +323,13 @@ const getOutcomeConfig = (outcome: string) => {
                       <span class="text-xs font-bold">
                         {formatDate(match.date)}
                       </span>
-                      <span class="text-base-content/60 max-w-[150px] truncate text-[10px]">
+                      <span class="text-base-content/60 max-w-[150px] truncate text-xs">
                         {match.fieldName}
                       </span>
                     </div>
                   </div>
                   <span
-                    class={`rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${cfg.bg} ${cfg.color} border-current opacity-80`}
+                    class={`rounded-lg border px-2 py-0.5 text-xs font-bold uppercase ${cfg.bg} ${cfg.color} border-current`}
                   >
                     {cfg.label}
                   </span>
@@ -346,7 +340,7 @@ const getOutcomeConfig = (outcome: string) => {
 
           {
             (!recentMatches || recentMatches.length === 0) && (
-              <div class="text-base-content/50 p-6 text-center text-sm italic">
+              <div class="text-base-content/60 p-6 text-center text-sm italic">
                 Sin partidos recientes registrados.
               </div>
             )

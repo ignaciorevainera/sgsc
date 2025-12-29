@@ -11,9 +11,9 @@ const initials = player.nickname
 
 <a
   href={`/players/${player.player_id}`}
-  class="card bg-base-100 border-base-300 hover:border-primary/40 group border shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+  class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
 >
-  <div class="card-body p-5">
+  <div class="card-body">
     <div class="mb-4 flex items-center gap-4">
       <div class="avatar placeholder">
         <div
@@ -35,7 +35,7 @@ const initials = player.nickname
     >
       <div class="stat place-items-center p-2">
         <div
-          class="stat-title text-[10px] font-bold tracking-wider uppercase opacity-60"
+          class="stat-title text-base-content/60 text-xs font-bold uppercase"
         >
           Jugados
         </div>
@@ -46,7 +46,7 @@ const initials = player.nickname
 
       <div class="stat border-base-content/5 place-items-center border-l p-2">
         <div
-          class="stat-title text-[10px] font-bold tracking-wider uppercase opacity-60"
+          class="stat-title text-base-content/60 text-xs font-bold uppercase"
         >
           Ganados
         </div>
@@ -56,9 +56,7 @@ const initials = player.nickname
       <div
         class="stat border-base-content/5 bg-primary/5 place-items-center border-l p-2"
       >
-        <div
-          class="stat-title text-primary text-[10px] font-bold tracking-wider uppercase opacity-80"
-        >
+        <div class="stat-title text-primary text-xs font-bold uppercase">
           Puntos
         </div>
         <div class="stat-value text-primary text-lg">{player.points}</div>

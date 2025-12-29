@@ -66,7 +66,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
 ---
 
 <Main title="Equipos | SGSC">
-  <div class="bg-base-300 relative mb-6 overflow-hidden rounded-2xl">
+  <div class="bg-base-300 relative mb-6 overflow-hidden rounded-xl">
     <div
       class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] bg-size-[16px_16px] opacity-[0.05]"
     >
@@ -140,10 +140,10 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
 
       <div class="mt-8 flex justify-center">
         <div
-          class="bg-base-100/50 border-base-content/10 inline-flex items-center gap-2 rounded-full border px-6 py-2 shadow-sm backdrop-blur-sm"
+          class="bg-base-100/50 border-base-content/10 inline-flex items-center gap-2 rounded-full border px-6 py-2 shadow-md backdrop-blur-sm"
         >
           <div class="h-2 w-2 rounded-full bg-yellow-400"></div>
-          <span class="text-base-content/70 font-mono font-bold"
+          <span class="text-base-content/60 font-mono font-bold"
             >{stats.draw} Empates</span
           >
         </div>
@@ -170,7 +170,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
   <div class="container mx-auto">
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div
-        class="card group overflow-hidden border border-slate-200 bg-slate-50 shadow-xl"
+        class="card group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md"
       >
         <div
           class="flex items-center justify-between border-b border-slate-200 bg-slate-200/50 p-4"
@@ -189,7 +189,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <div class="space-y-3">
             {
               topLight.map((player: any, i) => (
-                <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-2 shadow-sm transition-colors hover:border-slate-300">
+                <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-2 shadow-md transition-colors hover:border-slate-300">
                   <div class="flex items-center gap-3">
                     <div class="w-6 text-center font-mono font-bold text-slate-400">
                       #{i + 1}
@@ -211,7 +211,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
       </div>
 
       <div
-        class="card group overflow-hidden border border-slate-800 bg-slate-900 text-slate-100 shadow-xl"
+        class="card group overflow-hidden rounded-xl border border-slate-800 bg-slate-900 text-slate-100 shadow-md"
       >
         <div
           class="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 p-4"
@@ -229,7 +229,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <div class="space-y-3">
             {
               topDark.map((player: any, i) => (
-                <div class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-2 shadow-sm transition-colors hover:border-slate-500">
+                <div class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-2 shadow-md transition-colors hover:border-slate-500">
                   <div class="flex items-center gap-3">
                     <div class="w-6 text-center font-mono font-bold text-slate-500">
                       #{i + 1}
@@ -253,7 +253,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
 
     <div class="mt-10 text-center">
       <h3
-        class="text-base-content/50 mb-4 text-xs font-bold tracking-widest uppercase"
+        class="text-base-content/60 mb-4 text-xs font-bold tracking-widest uppercase"
       >
         Racha Reciente (Últimos 5)
       </h3>

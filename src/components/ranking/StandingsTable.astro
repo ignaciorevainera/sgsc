@@ -21,39 +21,36 @@ const getFormColor = (result: any) => {
 const responsiveClass = showDetails ? "" : "hidden md:table-cell";
 ---
 
-<div class="border-base-300 w-full overflow-x-auto rounded-lg border shadow-sm">
+<div class="border-base-200 w-full overflow-x-auto rounded-xl border shadow-md">
   <table class="table-zebra table-xs md:table-sm table min-w-max">
     <thead
-      class="bg-base-300 text-base-content sticky top-0 z-10 text-center text-[8px] font-bold uppercase md:text-xs"
+      class="bg-base-200 text-base-content sticky top-0 z-10 text-center text-xs font-bold uppercase"
     >
       <tr>
         <th>#</th>
         <th class="text-left">Jugador</th>
 
         <th
-          class="bg-primary/10 text-primary border-base-300 border-l text-xs font-black md:text-sm"
+          class="bg-primary/10 text-primary border-base-200 border-l text-sm font-black"
           title="Puntos Totales">PTS</th
         >
 
-        <th class="bg-base-200/50" title="Partidos Jugados">PJ</th>
+        <th class="bg-base-200" title="Partidos Jugados">PJ</th>
         <th class={`text-secondary ${responsiveClass}`} title="% Asistencia"
           >%Asist</th
         >
 
         <th class="text-success" title="Ganados">G</th>
-        <th class={`text-success/70 ${responsiveClass}`} title="% Victorias"
+        <th class={`text-success ${responsiveClass}`} title="% Victorias"
           >%Vic</th
         >
 
         <th class="text-warning" title="Empatados">E</th>
-        <th class={`text-warning/70 ${responsiveClass}`} title="% Empates"
-          >%Emp</th
+        <th class={`text-warning ${responsiveClass}`} title="% Empates">%Emp</th
         >
 
         <th class="text-error" title="Perdidos">P</th>
-        <th class={`text-error/70 ${responsiveClass}`} title="% Derrotas"
-          >%Der</th
-        >
+        <th class={`text-error ${responsiveClass}`} title="% Derrotas">%Der</th>
 
         <th class={`${responsiveClass}`}>Forma</th>
       </tr>
@@ -78,7 +75,7 @@ const responsiveClass = showDetails ? "" : "hidden md:table-cell";
             },
             index: number
           ) => (
-            <tr class="hover group text-center text-[10px] transition-colors md:text-xs">
+            <tr class="hover group text-center text-xs transition-colors">
               <td class="font-bold">
                 {index === 0 && <span class="text-sm md:text-base">🥇</span>}
                 {index === 1 && <span class="text-sm md:text-base">🥈</span>}
@@ -90,35 +87,29 @@ const responsiveClass = showDetails ? "" : "hidden md:table-cell";
                 <span>{player.nickname}</span>
               </td>
 
-              <td class="bg-primary/5 text-primary border-base-300 border-l text-sm font-black md:text-base">
+              <td class="bg-primary/5 text-primary border-base-200 border-l text-sm font-black">
                 {player.points}
               </td>
 
-              <td class="bg-base-200/30 font-semibold">{player.matches}</td>
+              <td class="bg-base-200 font-semibold">{player.matches}</td>
               <td
-                class={`text-secondary text-[8px] font-medium md:text-[10px] ${responsiveClass}`}
+                class={`text-secondary text-xs font-medium ${responsiveClass}`}
               >
                 {player.attendance_percentage}%
               </td>
 
               <td class="font-medium">{player.wins}</td>
-              <td
-                class={`text-success/80 text-[8px] md:text-[10px] ${responsiveClass}`}
-              >
+              <td class={`text-success text-xs ${responsiveClass}`}>
                 {player.win_pct}%
               </td>
 
-              <td class="text-base-content/70 font-medium">{player.draws}</td>
-              <td
-                class={`text-warning/80 text-[8px] md:text-[10px] ${responsiveClass}`}
-              >
+              <td class="text-base-content/60 font-medium">{player.draws}</td>
+              <td class={`text-warning text-xs ${responsiveClass}`}>
                 {player.draw_pct}%
               </td>
 
-              <td class="text-base-content/70 font-medium">{player.losses}</td>
-              <td
-                class={`text-error/80 text-[8px] md:text-[10px] ${responsiveClass}`}
-              >
+              <td class="text-base-content/60 font-medium">{player.losses}</td>
+              <td class={`text-error text-xs ${responsiveClass}`}>
                 {player.loss_pct}%
               </td>
 

@@ -31,14 +31,14 @@ const formatDate = (dateString: string | null) => {
 ---
 
 <div
-  class="card bg-base-100 border-base-200 group relative h-full overflow-hidden border shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+  class="card bg-base-100 border-base-200 group relative h-full overflow-hidden rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
 >
   <Icon
     name="material-symbols:stadium-rounded"
     class="text-base-content/5 pointer-events-none absolute -right-6 -bottom-6 h-32 w-32 -rotate-12 transition-transform group-hover:scale-110"
   />
 
-  <div class="card-body p-5">
+  <div class="card-body">
     {/* ENCABEZADO: Título y Ciudad */}
     <div class="mb-4 flex items-start justify-between">
       <div class="flex gap-3">
@@ -76,7 +76,7 @@ const formatDate = (dateString: string | null) => {
 
     {/* FOOTER: Última Actividad */}
     <div
-      class="border-base-100 text-base-content/50 relative z-10 mt-auto flex items-center justify-between border-t pt-4 text-xs"
+      class="border-base-200 text-base-content/60 relative z-10 mt-auto flex items-center justify-between border-t pt-4 text-xs"
     >
       <span class="flex items-center gap-1">
         <Icon name="material-symbols:calendar-today" class="h-3 w-3" /> Último juego:

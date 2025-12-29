@@ -190,7 +190,7 @@ const categories = [
         if (!leader) return null; // Si no hay datos, no renderizar
 
         return (
-          <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+          <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
             <div
               class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
             >
@@ -223,10 +223,10 @@ const categories = [
               {followers.map((player, index) => (
                 <a
                   href={`/players/${player.player_id}`}
-                  class="border-base-200 hover:bg-base-200/50 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
+                  class="border-base-200 hover:bg-base-200 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
                 >
                   <div class="flex items-center gap-3">
-                    <span class="text-base-content/40 w-6 text-center text-sm font-bold">
+                    <span class="text-base-content/60 w-6 text-center text-sm font-bold">
                       #{index + 2}
                     </span>
 
@@ -242,7 +242,7 @@ const categories = [
 
                   <div class="text-sm font-bold opacity-80">
                     {player[cat.valueKey]}{" "}
-                    <span class="text-[10px] font-normal opacity-60">
+                    <span class="text-xs font-normal opacity-60">
                       {cat.suffix
                         .replace("Triunfos", "G")
                         .replace("Partidos", "PJ")}
