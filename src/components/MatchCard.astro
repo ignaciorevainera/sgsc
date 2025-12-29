@@ -44,8 +44,10 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
 });
 ---
 
-<div class="card bg-base-100 border-base-200 rounded-xl border shadow-md">
-  <div class="card-body">
+<div
+  class="card bg-base-100 border-base-200 h-full rounded-xl border shadow-md"
+>
+  <div class="card-body gap-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Icon
@@ -66,9 +68,10 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
         </span>
       </div>
     </div>
+
     <div class="flex justify-center">
       <span
-        class={`badge badge-lg rounded font-semibold ${
+        class={`badge badge-lg rounded-lg font-semibold ${
           isDraw
             ? "badge-warning"
             : isLightWinner
@@ -80,15 +83,15 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
       </span>
     </div>
 
-    <div class="space-y-2">
+    <div class="flex flex-1 flex-col gap-3">
       {/* Equipo Claro */}
       <div
-        class={`rounded-lg border-2 p-4 bg-white dark:bg-gray-300 text-gray-900 ${
+        class={`flex-1 rounded-xl border-2 p-4 bg-white text-gray-900 ${
           isLightWinner
             ? "outline-success outline-4"
             : isDraw
               ? "border-warning"
-              : "border-gray-300 dark:border-gray-400"
+              : "border-gray-300"
         }`}
       >
         <div class="mb-3 flex items-center gap-2">
@@ -98,7 +101,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
           {
             sortedLightTeam.length > 0 ? (
               sortedLightTeam.map((mp: any) => (
-                <span class="rounded border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-900 dark:border-gray-400 dark:bg-gray-200">
+                <span class="rounded-lg border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-900">
                   {mp.players?.nickname || "Jugador"}
                 </span>
               ))
@@ -111,12 +114,12 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
 
       {/* Equipo Oscuro */}
       <div
-        class={`rounded-lg border-2 bg-slate-800 dark:bg-slate-950 text-slate-100 p-4  ${
+        class={`flex-1 rounded-xl border-2 bg-slate-800 text-slate-100 p-4 ${
           isDarkWinner
             ? "outline-success outline-4"
             : isDraw
               ? "border-warning"
-              : "border-slate-700 dark:border-slate-800"
+              : "border-slate-700"
         }`}
       >
         <div class="mb-3 flex items-center gap-2">
@@ -126,7 +129,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
           {
             sortedDarkTeam.length > 0 ? (
               sortedDarkTeam.map((mp: any) => (
-                <span class="rounded border border-slate-700 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100 dark:border-slate-800 dark:bg-slate-900">
+                <span class="rounded-lg border border-slate-700 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100">
                   {mp.players?.nickname || "Jugador"}
                 </span>
               ))

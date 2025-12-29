@@ -35,7 +35,7 @@ const formatDate = (dateString: string | null) => {
 >
   <Icon
     name="material-symbols:stadium-rounded"
-    class="text-base-content/5 pointer-events-none absolute -right-6 -bottom-6 h-32 w-32 -rotate-12 transition-transform group-hover:scale-110"
+    class="text-base-content/5 pointer-events-none absolute -right-6 -bottom-6 h-32 w-32 -rotate-12"
   />
 
   <div class="card-body">
@@ -63,7 +63,7 @@ const formatDate = (dateString: string | null) => {
       </div>
     </div>
 
-    <div class="divider my-1 opacity-50"></div>
+    <div class="divider my-1"></div>
 
     {/* ESTADÍSTICAS (Tu componente modular) */}
     <div class="relative z-10 mt-2">
@@ -81,7 +81,7 @@ const formatDate = (dateString: string | null) => {
       <span class="flex items-center gap-1">
         <Icon name="material-symbols:calendar-today" class="h-3 w-3" /> Último juego:
       </span>
-      <span class="text-base-content/80 font-bold">
+      <span class="font-bold">
         {formatDate(stats.lastMatchDate)}
       </span>
     </div>

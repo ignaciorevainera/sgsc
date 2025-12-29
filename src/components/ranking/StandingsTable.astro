@@ -17,25 +17,25 @@ const getFormColor = (result: any) => {
 
 // Clase condicional:
 // Si showDetails es true, NO ponemos 'hidden'.
-// Si es false, ponemos 'hidden md:table-cell' (oculto en movil, visible en desktop)
-const responsiveClass = showDetails ? "" : "hidden md:table-cell";
+// Si es false, ponemos 'hidden sm:table-cell' (oculto en movil, visible en sm+)
+const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
 ---
 
 <div class="border-base-200 w-full overflow-x-auto rounded-xl border shadow-md">
-  <table class="table-zebra table-xs md:table-sm table min-w-max">
+  <table class="table-zebra table-xs sm:table-sm lg:table-md table min-w-max">
     <thead
-      class="bg-base-200 text-base-content sticky top-0 z-10 text-center text-xs font-bold uppercase"
+      class="bg-base-200 text-base-content sticky top-0 z-10 text-center text-xs font-bold uppercase sm:text-sm"
     >
       <tr>
         <th>#</th>
         <th class="text-left">Jugador</th>
 
         <th
-          class="bg-primary/10 text-primary border-base-200 border-l text-sm font-black"
+          class="bg-primary/10 text-primary text-sm font-black sm:text-base"
           title="Puntos Totales">PTS</th
         >
 
-        <th class="bg-base-200" title="Partidos Jugados">PJ</th>
+        <th title="Partidos Jugados">PJ</th>
         <th class={`text-secondary ${responsiveClass}`} title="% Asistencia"
           >%Asist</th
         >
@@ -75,41 +75,41 @@ const responsiveClass = showDetails ? "" : "hidden md:table-cell";
             },
             index: number
           ) => (
-            <tr class="hover group text-center text-xs transition-colors">
+            <tr class="hover group text-center text-xs transition-colors sm:text-sm">
               <td class="font-bold">
-                {index === 0 && <span class="text-sm md:text-base">🥇</span>}
-                {index === 1 && <span class="text-sm md:text-base">🥈</span>}
-                {index === 2 && <span class="text-sm md:text-base">🥉</span>}
-                {index > 2 && <span class="opacity-50">{index + 1}</span>}
+                {index === 0 && <span class="text-base lg:text-lg">🥇</span>}
+                {index === 1 && <span class="text-base lg:text-lg">🥈</span>}
+                {index === 2 && <span class="text-base lg:text-lg">🥉</span>}
+                {index > 2 && (
+                  <span class="text-base-content/60">{index + 1}</span>
+                )}
               </td>
 
               <td class="text-left">
-                <span>{player.nickname}</span>
+                <span class="font-medium">{player.nickname}</span>
               </td>
 
-              <td class="bg-primary/5 text-primary border-base-200 border-l text-sm font-black">
+              <td class="bg-primary/5 text-primary text-sm font-black sm:text-base lg:text-lg">
                 {player.points}
               </td>
 
-              <td class="bg-base-200 font-semibold">{player.matches}</td>
-              <td
-                class={`text-secondary text-xs font-medium ${responsiveClass}`}
-              >
+              <td class="font-semibold">{player.matches}</td>
+              <td class={`text-secondary font-medium ${responsiveClass}`}>
                 {player.attendance_percentage}%
               </td>
 
               <td class="font-medium">{player.wins}</td>
-              <td class={`text-success text-xs ${responsiveClass}`}>
+              <td class={`text-success ${responsiveClass}`}>
                 {player.win_pct}%
               </td>
 
               <td class="text-base-content/60 font-medium">{player.draws}</td>
-              <td class={`text-warning text-xs ${responsiveClass}`}>
+              <td class={`text-warning ${responsiveClass}`}>
                 {player.draw_pct}%
               </td>
 
               <td class="text-base-content/60 font-medium">{player.losses}</td>
-              <td class={`text-error text-xs ${responsiveClass}`}>
+              <td class={`text-error ${responsiveClass}`}>
                 {player.loss_pct}%
               </td>
 
@@ -118,7 +118,7 @@ const responsiveClass = showDetails ? "" : "hidden md:table-cell";
                   {player.form_array &&
                     player.form_array.map((res: any) => (
                       <div
-                        class={`h-1.5 w-1.5 rounded-full md:h-2 md:w-2 ${getFormColor(res)}`}
+                        class={`h-2 w-2 rounded-full lg:h-2.5 lg:w-2.5 ${getFormColor(res)}`}
                       />
                     ))}
                 </div>

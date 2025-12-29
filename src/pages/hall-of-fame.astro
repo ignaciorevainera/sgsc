@@ -194,8 +194,11 @@ const categories = [
             <div
               class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
             >
-              <div class="absolute top-3 right-3 opacity-20">
-                <Icon name={cat.icon} class={`h-12 w-12 ${cat.color}`} />
+              <div class="absolute top-3 right-3">
+                <Icon
+                  name={cat.icon}
+                  class={`h-12 w-12 ${cat.color} opacity-20`}
+                />
               </div>
 
               <div class="mb-3 animate-bounce text-3xl">👑</div>
@@ -213,7 +216,7 @@ const categories = [
               </div>
 
               <p
-                class={`mt-4 text-xs font-bold tracking-widest uppercase opacity-60 ${cat.color}`}
+                class={`mt-4 text-xs font-bold tracking-widest uppercase ${cat.color}`}
               >
                 {cat.subtitle}
               </p>
@@ -240,9 +243,9 @@ const categories = [
                     </span>
                   </div>
 
-                  <div class="text-sm font-bold opacity-80">
+                  <div class="text-sm font-bold">
                     {player[cat.valueKey]}{" "}
-                    <span class="text-xs font-normal opacity-60">
+                    <span class="text-base-content/60 text-xs font-normal">
                       {cat.suffix
                         .replace("Triunfos", "G")
                         .replace("Partidos", "PJ")}

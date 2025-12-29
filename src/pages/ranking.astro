@@ -91,12 +91,14 @@ const hasPlayersStats = sortedPlayers.length > 0;
   />
 
   <div
-    class="bg-base-200 mb-6 flex flex-col gap-2 rounded-xl p-3 shadow-md sm:flex-row"
+    class="bg-base-200 mb-6 flex flex-col gap-2 rounded-xl p-3 shadow-md sm:flex-row sm:items-center sm:gap-4"
   >
-    <div>
-      <fieldset class="fieldset">
+    <div
+      class="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between"
+    >
+      <fieldset class="fieldset w-full">
         <legend class="fieldset-legend">Temporada</legend>
-        <select id="season" class="select select-sm">
+        <select id="season" class="select select-sm md:select-lg w-full">
           {
             seasons.map((s) => (
               <option value={s} selected={season === s}>
@@ -107,9 +109,11 @@ const hasPlayersStats = sortedPlayers.length > 0;
         </select>
       </fieldset>
 
-      <fieldset class="fieldset">
+      <div class="divider divider-horizontal hidden sm:flex"></div>
+
+      <fieldset class="fieldset w-full">
         <legend class="fieldset-legend">Ordenar por</legend>
-        <select id="sort" class="select select-sm">
+        <select id="sort" class="select select-sm md:select-lg w-full">
           {
             sortOptions.map((o) => (
               <option value={o.value} selected={sort === o.value}>
@@ -121,10 +125,10 @@ const hasPlayersStats = sortedPlayers.length > 0;
       </fieldset>
     </div>
 
-    <div class="divider m-0"></div>
+    <div class="divider m-0 sm:hidden"></div>
 
-    <div class="form-control w-full sm:w-auto">
-      <label class="label cursor-pointer justify-start gap-3 p-0 sm:py-1">
+    <div class="form-control w-full sm:hidden">
+      <label class="label cursor-pointer justify-start gap-3 p-0">
         <span class="text-xs uppercase">Vista Detallada</span>
         <input
           id="mode-toggle"

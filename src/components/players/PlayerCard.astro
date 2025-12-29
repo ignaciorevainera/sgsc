@@ -31,33 +31,29 @@ const initials = player.nickname
     </div>
 
     <div
-      class="stats stats-vertical lg:stats-horizontal bg-base-200/50 w-full overflow-hidden shadow"
+      class="stats stats-horizontal bg-base-200 w-full overflow-hidden rounded-xl"
     >
-      <div class="stat place-items-center p-2">
+      <div class="stat place-items-center px-3 py-2">
         <div
           class="stat-title text-base-content/60 text-xs font-bold uppercase"
         >
-          Jugados
+          PJ
         </div>
         <div class="stat-value text-base-content text-lg">
           {player.matches_played}
         </div>
       </div>
 
-      <div class="stat border-base-content/5 place-items-center border-l p-2">
-        <div
-          class="stat-title text-base-content/60 text-xs font-bold uppercase"
-        >
-          Ganados
+      <div class="stat place-items-center px-3 py-2">
+        <div class="stat-title text-success text-xs font-bold uppercase">
+          Gan
         </div>
         <div class="stat-value text-success text-lg">{player.wins}</div>
       </div>
 
-      <div
-        class="stat border-base-content/5 bg-primary/5 place-items-center border-l p-2"
-      >
+      <div class="stat bg-primary/10 place-items-center px-3 py-2">
         <div class="stat-title text-primary text-xs font-bold uppercase">
-          Puntos
+          Pts
         </div>
         <div class="stat-value text-primary text-lg">{player.points}</div>
       </div>
