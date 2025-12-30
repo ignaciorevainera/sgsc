@@ -1,0 +1,461 @@
+---
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+// --- 1. SEGURIDAD ---
+const supabase = createAstroSupabase(Astro);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect("/login");
+}
+
+// --- 2. DATA ---
+const { data: players } = await supabase
+  .from("players")
+  .select("*")
+  // 1. Primero por Estado: 'false' (Socio) va antes que 'true' (Invitado)
+  .order("is_guest", { ascending: true })
+  // 2. Luego Alfabéticamente por Apodo
+  .order("nickname", { ascending: true });
+
+const { data: fields } = await supabase
+  .from("fields")
+  .select("*")
+  .order("name");
+
+// --- 3. POST LOGIC ---
+let successMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  try {
+    const formData = await Astro.request.formData();
+    const date = formData.get("date");
+    const field_id = formData.get("field_id");
+    const result = formData.get("result");
+
+    const lightPlayers: any[] = [];
+    const darkPlayers: any[] = [];
+
+    // Recolectar jugadores
+    players?.forEach((p) => {
+      const selection = formData.get(`player_${p.id}`);
+      if (selection === "light") lightPlayers.push(p.id);
+      if (selection === "dark") darkPlayers.push(p.id);
+    });
+
+    if (!date || !field_id || !result)
+      throw new Error("Faltan datos obligatorios");
+    if (lightPlayers.length === 0 || darkPlayers.length === 0)
+      throw new Error("Equipos incompletos");
+
+    const { error } = await supabase.rpc("create_complete_match", {
+      p_date: date,
+      p_field_id: field_id,
+      p_result: result,
+      p_light_players: lightPlayers,
+      p_dark_players: darkPlayers,
+    });
+
+    if (error) throw error;
+    successMessage = "¡Partido registrado con éxito!";
+  } catch (err: any) {
+    errorMessage = err.message;
+  }
+}
+---
+
+<Main title="Admin - Nuevo Partido">
+  <Title title="Cargar Partido" subtitle="Panel de Administración" />
+
+  {
+    successMessage && (
+      <div
+        role="alert"
+        class="alert alert-success animate-fade-in mb-4 text-sm sm:mb-6 sm:text-base"
+      >
+        <Icon
+          name="material-symbols:check-circle"
+          class="h-5 w-5 sm:h-6 sm:w-6"
+        />
+        <span class="flex-1">{successMessage}</span>
+        <a href="/admin/add-match" class="btn btn-xs btn-ghost sm:btn-sm">
+          Cargar otro
+        </a>
+      </div>
+    )
+  }
+
+  {
+    errorMessage && (
+      <div
+        role="alert"
+        class="alert alert-error animate-fade-in mb-4 text-sm sm:mb-6 sm:text-base"
+      >
+        <Icon name="material-symbols:error" class="h-5 w-5 sm:h-6 sm:w-6" />
+        <span>{errorMessage}</span>
+      </div>
+    )
+  }
+
+  <form
+    method="POST"
+    id="matchForm"
+    class="bg-base-100 border-base-200 space-y-5 rounded-xl border p-4 shadow-md sm:space-y-8 sm:p-6"
+  >
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+      <div class="form-control">
+        <label class="label py-1 text-sm font-bold sm:py-2 sm:text-base"
+          >Fecha</label
+        >
+        <input
+          type="date"
+          name="date"
+          id="inputDate"
+          class="input input-bordered input-sm sm:input-md w-full"
+          required
+        />
+      </div>
+      <div class="form-control">
+        <label class="label py-1 text-sm font-bold sm:py-2 sm:text-base"
+          >Sede</label
+        >
+        <select
+          name="field_id"
+          id="inputField"
+          class="select select-bordered select-sm sm:select-md w-full"
+          required
+        >
+          <option disabled selected value="">Selecciona una cancha</option>
+          {
+            fields?.map((f) => (
+              <option value={f.id} data-name={f.name}>
+                {f.name}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="form-control">
+      <label class="label py-1 text-sm font-bold sm:py-2 sm:text-base"
+        >Resultado</label
+      >
+      <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+        <label
+          class="label hover:bg-base-200 cursor-pointer justify-center rounded-xl border p-2.5 has-[:checked]:border-slate-400 has-[:checked]:bg-slate-200 sm:p-4"
+        >
+          <span
+            class="label-text block text-center text-xs font-bold text-slate-600 sm:text-sm"
+            ><span class="hidden sm:inline">🌞 </span>Claro</span
+          >
+          <input
+            type="radio"
+            name="result"
+            value="light"
+            class="radio radio-sm hidden"
+            required
+          />
+        </label>
+
+        <label
+          class="label hover:bg-base-200 cursor-pointer justify-center rounded-xl border p-2.5 has-[:checked]:border-yellow-400 has-[:checked]:bg-yellow-100 sm:p-4"
+        >
+          <span
+            class="label-text block text-center text-xs font-bold text-yellow-700 sm:text-sm"
+            ><span class="hidden sm:inline">🤝 </span>Empate</span
+          >
+          <input
+            type="radio"
+            name="result"
+            value="draw"
+            class="radio radio-warning radio-sm hidden"
+          />
+        </label>
+
+        <label
+          class="label hover:bg-base-200 cursor-pointer justify-center rounded-xl border p-2.5 has-[:checked]:border-slate-600 has-[:checked]:bg-slate-800 has-[:checked]:text-white sm:p-4"
+        >
+          <span
+            class="label-text block text-center text-xs font-bold text-slate-500 has-[:checked]:text-slate-200 sm:text-sm"
+            ><span class="hidden sm:inline">🌑 </span>Oscuro</span
+          >
+          <input
+            type="radio"
+            name="result"
+            value="dark"
+            class="radio radio-neutral radio-sm hidden"
+          />
+        </label>
+      </div>
+    </div>
+
+    <div
+      class="divider text-base-content/60 text-[10px] font-bold uppercase sm:text-xs"
+    >
+      Convocatoria
+    </div>
+
+    <div
+      class="bg-base-100 max-h-[350px] overflow-x-auto rounded-xl border sm:max-h-[500px]"
+    >
+      <table class="table-pin-rows table-xs sm:table-sm table w-full">
+        <thead>
+          <tr>
+            <th class="bg-base-200 z-10 text-xs sm:text-sm">Jugador</th>
+            <th
+              class="bg-base-200 z-10 w-10 text-center text-[10px] sm:w-16 sm:text-xs"
+              ><span class="hidden sm:inline">No Jugó</span><span
+                class="sm:hidden">—</span
+              ></th
+            >
+            <th class="bg-base-200 z-10 w-10 text-center text-slate-600 sm:w-16"
+              >🌞</th
+            >
+            <th class="bg-base-200 z-10 w-10 text-center text-slate-400 sm:w-16"
+              >🌑</th
+            >
+          </tr>
+        </thead>
+        <tbody>
+          {
+            players?.map((player) => (
+              <tr class="hover">
+                <td class="text-xs font-bold sm:text-sm">
+                  <div class="flex items-center gap-1 sm:gap-2">
+                    <span class="max-w-[100px] truncate sm:max-w-none">
+                      {player.nickname}
+                    </span>
+                    {player.is_guest && (
+                      <span class="badge badge-xs badge-ghost border-base-300 text-[8px] font-normal opacity-70 sm:text-[10px]">
+                        INV
+                      </span>
+                    )}
+                  </div>
+                </td>
+
+                <td class="text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="none"
+                    class="radio radio-xs radio-ghost opacity-20"
+                    checked
+                  />
+                </td>
+
+                <td class="bg-slate-100/30 text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="light"
+                    data-nickname={player.nickname}
+                    class="radio radio-xs player-selector sm:radio-sm border-slate-300 text-slate-600 checked:border-slate-600 checked:bg-slate-600"
+                  />
+                </td>
+
+                <td class="bg-slate-900/5 text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="dark"
+                    data-nickname={player.nickname}
+                    class="radio radio-xs radio-neutral player-selector sm:radio-sm"
+                  />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <button
+      type="button"
+      id="btnPreview"
+      class="btn btn-primary btn-md sm:btn-lg w-full shadow-md"
+    >
+      <Icon name="material-symbols:visibility" class="h-5 w-5 sm:h-6 sm:w-6" />
+      <span class="text-sm sm:text-base">Previsualizar</span>
+    </button>
+  </form>
+  <dialog id="preview_modal" class="modal modal-bottom sm:modal-middle">
+    <div
+      class="modal-box bg-base-100 max-h-[85vh] overflow-hidden p-0 sm:max-h-[90vh]"
+    >
+      <div class="bg-primary text-primary-content p-3 text-center sm:p-4">
+        <h3
+          class="text-lg font-black tracking-tighter uppercase italic sm:text-xl"
+        >
+          Confirmar Partido
+        </h3>
+      </div>
+
+      <div class="p-4 sm:p-6">
+        <div
+          class="mb-4 flex items-center justify-between border-b pb-3 sm:mb-6 sm:pb-4"
+        >
+          <div class="text-left">
+            <p
+              class="text-base-content/60 text-[10px] font-bold uppercase sm:text-xs"
+            >
+              Fecha
+            </p>
+            <p class="text-base font-bold sm:text-lg" id="previewDate">
+              --/--/----
+            </p>
+          </div>
+          <div class="text-right">
+            <p
+              class="text-base-content/60 text-[10px] font-bold uppercase sm:text-xs"
+            >
+              Cancha
+            </p>
+            <p
+              class="text-primary max-w-[120px] truncate text-base font-bold sm:max-w-none sm:text-lg"
+              id="previewField"
+            >
+              ---
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-4 text-center sm:mb-6">
+          <span
+            id="previewResultBadge"
+            class="badge badge-md sm:badge-lg p-3 text-xs font-bold uppercase sm:p-4 sm:text-sm"
+          >
+            ---
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs sm:gap-4 sm:text-sm">
+          <div
+            class="rounded-xl border border-slate-200 bg-slate-100 p-2 sm:p-3"
+          >
+            <h4
+              class="mb-1.5 border-b border-slate-300 pb-1 text-[10px] font-black text-slate-500 uppercase sm:mb-2 sm:text-xs"
+            >
+              🌞 Claro
+            </h4>
+            <ul
+              id="previewLightList"
+              class="list-inside list-disc space-y-0.5 text-slate-700 sm:space-y-1"
+            >
+            </ul>
+          </div>
+          <div
+            class="rounded-xl border border-slate-900 bg-slate-800 p-2 text-slate-200 sm:p-3"
+          >
+            <h4
+              class="mb-1.5 border-b border-slate-700 pb-1 text-[10px] font-black text-slate-400 uppercase sm:mb-2 sm:text-xs"
+            >
+              🌑 Oscuro
+            </h4>
+            <ul
+              id="previewDarkList"
+              class="list-inside list-disc space-y-0.5 sm:space-y-1"
+            >
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="modal-action bg-base-200 m-0 flex flex-col-reverse gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
+      >
+        <form method="dialog" class="w-full sm:w-auto">
+          <button class="btn btn-ghost btn-sm sm:btn-md w-full sm:w-auto"
+            >Cancelar</button
+          >
+        </form>
+        <button
+          id="btnConfirm"
+          class="btn btn-success btn-sm sm:btn-md w-full text-white shadow-md sm:w-auto"
+        >
+          <Icon name="material-symbols:save" class="h-4 w-4 sm:h-5 sm:w-5" />
+          <span class="text-xs sm:text-sm">Confirmar y Guardar</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+</Main>
+
+<script is:inline>
+  // LÓGICA CLIENT-SIDE PARA EL PREVIEW
+  const btnPreview = document.getElementById("btnPreview");
+  const btnConfirm = document.getElementById("btnConfirm");
+  const modal = document.getElementById("preview_modal");
+  const form = document.getElementById("matchForm");
+
+  btnPreview.addEventListener("click", () => {
+    // 1. Validar campos básicos
+    const date = document.getElementById("inputDate").value;
+    const fieldSelect = document.getElementById("inputField");
+    const fieldName =
+      fieldSelect.options[fieldSelect.selectedIndex]?.dataset.name;
+    const resultInput = document.querySelector('input[name="result"]:checked');
+
+    if (!date || !fieldName || !resultInput) {
+      alert("Por favor completa fecha, cancha y resultado.");
+      return;
+    }
+
+    // 2. Recolectar Jugadores
+    const lightPlayers = [];
+    const darkPlayers = [];
+
+    // Buscamos todos los inputs "checked" que sean de jugadores
+    document.querySelectorAll(".player-selector:checked").forEach((input) => {
+      const nickname = input.dataset.nickname;
+      if (input.value === "light") lightPlayers.push(nickname);
+      if (input.value === "dark") darkPlayers.push(nickname);
+    });
+
+    if (lightPlayers.length === 0 || darkPlayers.length === 0) {
+      alert("Debes seleccionar jugadores para ambos equipos.");
+      return;
+    }
+
+    // 3. Llenar el Modal
+    document.getElementById("previewDate").innerText = new Date(
+      date
+    ).toLocaleDateString("es-AR");
+    document.getElementById("previewField").innerText = fieldName;
+
+    // Estilo del Badge de Resultado
+    const badge = document.getElementById("previewResultBadge");
+    const resultVal = resultInput.value;
+
+    badge.className = "badge badge-lg font-bold p-4 uppercase w-full ";
+    if (resultVal === "light") {
+      badge.classList.add("badge-ghost", "border-slate-400", "text-slate-600");
+      badge.innerText = "Ganó Claro 🌞";
+    } else if (resultVal === "dark") {
+      badge.classList.add("badge-neutral");
+      badge.innerText = "Ganó Oscuro 🌑";
+    } else {
+      badge.classList.add("badge-warning");
+      badge.innerText = "Empate 🤝";
+    }
+
+    // Listas de jugadores
+    const listLight = document.getElementById("previewLightList");
+    const listDark = document.getElementById("previewDarkList");
+    listLight.innerHTML = lightPlayers.map((p) => `<li>${p}</li>`).join("");
+    listDark.innerHTML = darkPlayers.map((p) => `<li>${p}</li>`).join("");
+
+    // 4. Mostrar Modal
+    modal.showModal();
+  });
+
+  // 5. Confirmar envío
+  btnConfirm.addEventListener("click", () => {
+    form.submit(); // Esto envía el POST real al servidor
+  });
+</script>

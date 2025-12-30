@@ -1,0 +1,143 @@
+---
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+
+// Si ya estás logueado, redirigir al Admin
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+if (session) {
+  return Astro.redirect("/admin/add-match");
+}
+
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  try {
+    const formData = await Astro.request.formData();
+    const email = formData.get("email")?.toString();
+    const password = formData.get("password")?.toString();
+
+    if (!email || !password) throw new Error("Datos incompletos.");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw new Error("Email o contraseña incorrectos.");
+
+    return Astro.redirect("/admin/add-match");
+  } catch (err: any) {
+    errorMessage = err.message;
+  }
+}
+---
+
+<Main title="Acceso Restringido">
+  <Title title="Zona Admin" subtitle="Solo personal autorizado" />
+
+  <div class="mx-auto w-full max-w-sm">
+    <div class="card bg-base-100 border-base-200 border shadow-md">
+      <div class="card-body p-5 sm:p-8">
+        {/* Icono decorativo */}
+        <div class="mb-4 flex justify-center sm:mb-6">
+          <div class="avatar placeholder">
+            <div
+              class="bg-primary text-primary-content w-14 rounded-full shadow-md sm:w-16"
+            >
+              <Icon
+                name="material-symbols:lock"
+                class="h-7 w-7 sm:h-8 sm:w-8"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Alerta de error */}
+        {
+          errorMessage && (
+            <div
+              role="alert"
+              class="alert alert-error animate-fade-in mb-4 py-2 text-xs shadow-md sm:text-sm"
+            >
+              <Icon name="material-symbols:error" class="h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )
+        }
+
+        <form method="POST" class="space-y-3 sm:space-y-4">
+          <div class="form-control">
+            <label class="label sr-only">Email</label>
+            <label
+              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
+            >
+              <Icon
+                name="material-symbols:mail"
+                class="h-4 w-4 opacity-50 sm:h-5 sm:w-5"
+              />
+              <input
+                type="email"
+                name="email"
+                class="grow text-sm sm:text-base"
+                placeholder="admin@sgsc.com"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="form-control">
+            <label class="label sr-only">Contraseña</label>
+            <label
+              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
+            >
+              <Icon
+                name="material-symbols:key"
+                class="h-4 w-4 opacity-50 sm:h-5 sm:w-5"
+              />
+              <input
+                type="password"
+                name="password"
+                class="grow text-sm sm:text-base"
+                placeholder="Contraseña"
+                required
+              />
+            </label>
+          </div>
+
+          <div class="form-control mt-6 sm:mt-8">
+            <button
+              class="btn btn-primary btn-sm btn-block hover:shadow-primary/30 sm:btn-md text-white shadow-md transition-shadow"
+            >
+              Ingresar
+              <Icon
+                name="material-symbols:login"
+                class="h-4 w-4 sm:h-5 sm:w-5"
+              />
+            </button>
+          </div>
+        </form>
+
+        <div
+          class="divider mt-6 mb-0 text-[10px] opacity-30 sm:mt-8 sm:text-xs"
+        >
+          SGSC V1.0
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-center sm:mt-8">
+      <a
+        href="/"
+        class="btn btn-ghost btn-xs sm:btn-sm opacity-50 hover:opacity-100"
+      >
+        <Icon name="material-symbols:arrow-back" class="h-4 w-4" /> Volver al inicio
+      </a>
+    </div>
+  </div>
+</Main>
