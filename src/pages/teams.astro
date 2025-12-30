@@ -46,7 +46,7 @@ rawAppearances?.forEach((record) => {
 });
 
 // @ts-ignore
-const getTopLoyal = (team) => {
+const getTopLoyal = (team: "light" | "dark") => {
   // @ts-ignore
   return (
     Object.entries(appearances[team])
@@ -66,7 +66,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
 ---
 
 <Main title="Equipos | SGSC">
-  <div class="bg-base-300 relative mb-6 overflow-hidden rounded-xl">
+  <div class="bg-base-200 relative mb-6 overflow-hidden rounded-xl">
     <div
       class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] bg-size-[16px_16px] opacity-[0.05]"
     >
@@ -97,7 +97,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
             />
           </div>
           <div
-            class="text-6xl leading-none font-black text-slate-700 drop-shadow-sm md:text-8xl dark:text-slate-300"
+            class="text-6xl leading-none font-black text-slate-700 md:text-8xl dark:text-slate-300"
           >
             {stats.light}
           </div>
@@ -126,7 +126,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
             />
           </div>
           <div
-            class="text-6xl leading-none font-black text-slate-700 drop-shadow-sm md:text-8xl dark:text-slate-300"
+            class="text-6xl leading-none font-black text-slate-700 md:text-8xl dark:text-slate-300"
           >
             {stats.dark}
           </div>
@@ -189,7 +189,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <div class="space-y-3">
             {
               topLight.map((player: any, i) => (
-                <div class="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-2 shadow-md transition-colors hover:border-slate-300">
+                <div class="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-md transition-colors hover:border-slate-300">
                   <div class="flex items-center gap-3">
                     <div class="w-6 text-center font-mono font-bold text-slate-400">
                       #{i + 1}
@@ -229,7 +229,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <div class="space-y-3">
             {
               topDark.map((player: any, i) => (
-                <div class="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800 p-2 shadow-md transition-colors hover:border-slate-500">
+                <div class="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 p-2 shadow-md transition-colors hover:border-slate-500">
                   <div class="flex items-center gap-3">
                     <div class="w-6 text-center font-mono font-bold text-slate-500">
                       #{i + 1}
@@ -251,7 +251,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
       </div>
     </div>
 
-    <div class="mt-10 text-center">
+    <div class="mt-10 mb-2 text-center">
       <h3
         class="text-base-content/60 mb-4 text-xs font-bold tracking-widest uppercase"
       >
