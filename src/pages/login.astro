@@ -50,10 +50,7 @@ if (Astro.request.method === "POST") {
             <div
               class="bg-primary text-primary-content w-14 rounded-full shadow-md sm:w-16"
             >
-              <Icon
-                name="material-symbols:lock"
-                class="h-7 w-7 sm:h-8 sm:w-8"
-              />
+              <Icon name="material-symbols:lock" size={28} />
             </div>
           </div>
         </div>
@@ -65,7 +62,7 @@ if (Astro.request.method === "POST") {
               role="alert"
               class="alert alert-error animate-fade-in mb-4 py-2 text-xs shadow-md sm:text-sm"
             >
-              <Icon name="material-symbols:error" class="h-4 w-4 shrink-0" />
+              <Icon name="material-symbols:error" class="shrink-0" size={16} />
               <span>{errorMessage}</span>
             </div>
           )
@@ -77,10 +74,7 @@ if (Astro.request.method === "POST") {
             <label
               class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
             >
-              <Icon
-                name="material-symbols:mail"
-                class="h-4 w-4 opacity-50 sm:h-5 sm:w-5"
-              />
+              <Icon name="material-symbols:mail" class="opacity-50" size={18} />
               <input
                 type="email"
                 name="email"
@@ -96,10 +90,7 @@ if (Astro.request.method === "POST") {
             <label
               class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
             >
-              <Icon
-                name="material-symbols:key"
-                class="h-4 w-4 opacity-50 sm:h-5 sm:w-5"
-              />
+              <Icon name="material-symbols:key" class="opacity-50" size={18} />
               <input
                 type="password"
                 name="password"
@@ -115,10 +106,7 @@ if (Astro.request.method === "POST") {
               class="btn btn-primary btn-sm btn-block hover:shadow-primary/30 sm:btn-md text-white shadow-md transition-shadow"
             >
               Ingresar
-              <Icon
-                name="material-symbols:login"
-                class="h-4 w-4 sm:h-5 sm:w-5"
-              />
+              <Icon name="material-symbols:login" size={18} />
             </button>
           </div>
         </form>
@@ -136,7 +124,7 @@ if (Astro.request.method === "POST") {
         href="/"
         class="btn btn-ghost btn-xs sm:btn-sm opacity-50 hover:opacity-100"
       >
-        <Icon name="material-symbols:arrow-back" class="h-4 w-4" /> Volver al inicio
+        <Icon name="material-symbols:arrow-back" size={16} /> Volver al inicio
       </a>
     </div>
   </div>

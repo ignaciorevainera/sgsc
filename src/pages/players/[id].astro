@@ -122,7 +122,7 @@ const getOutcomeConfig = (outcome: string) => {
       href="/players"
       class="text-base-content/60 hover:text-primary btn btn-soft btn-sm mb-4 gap-2"
     >
-      <Icon name="material-symbols:arrow-back" /> Volver al plantel
+      <Icon name="material-symbols:arrow-back" size={16} /> Volver al plantel
     </a>
   </div>
 
@@ -227,7 +227,11 @@ const getOutcomeConfig = (outcome: string) => {
         <div
           class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
         >
-          <Icon name="material-symbols:monitoring" class="text-primary" />
+          <Icon
+            name="material-symbols:monitoring"
+            class="text-primary"
+            size={20}
+          />
           <h3 class="font-bold">Rendimiento por Temporada</h3>
         </div>
         <div class="overflow-x-auto">
@@ -302,7 +306,11 @@ const getOutcomeConfig = (outcome: string) => {
         <div
           class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
         >
-          <Icon name="material-symbols:history" class="text-primary" />
+          <Icon
+            name="material-symbols:history"
+            class="text-primary"
+            size={20}
+          />
           <h3 class="font-bold">Últimos Partidos</h3>
         </div>
 
@@ -317,7 +325,7 @@ const getOutcomeConfig = (outcome: string) => {
                     <div
                       class={`flex h-8 w-8 items-center justify-center rounded-full border ${cfg.bg} ${cfg.color} border-current`}
                     >
-                      <Icon name={cfg.icon} class="h-4 w-4" />
+                      <Icon name={cfg.icon} size={16} />
                     </div>
                     <div class="flex flex-col">
                       <span class="text-xs font-bold">

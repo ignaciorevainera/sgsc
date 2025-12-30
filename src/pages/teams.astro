@@ -178,7 +178,11 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <h2
             class="flex items-center gap-2 text-xl font-black text-slate-700 uppercase italic"
           >
-            <Icon name="material-symbols:wb-sunny" class="text-slate-500" />
+            <Icon
+              name="material-symbols:wb-sunny"
+              class="text-slate-500"
+              size={24}
+            />
             Claros
           </h2>
         </div>
@@ -219,7 +223,11 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
           <h2
             class="flex items-center gap-2 text-xl font-black text-white uppercase italic"
           >
-            <Icon name="material-symbols:dark-mode" class="text-slate-300" /> Oscuros
+            <Icon
+              name="material-symbols:dark-mode"
+              class="text-slate-300"
+              size={24}
+            /> Oscuros
           </h2>
         </div>
         <div class="card-body">
@@ -267,7 +275,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
                   class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-slate-300 bg-slate-200 text-slate-700 shadow-md md:h-12 md:w-12"
                   title="Victoria Claro"
                 >
-                  <Icon name="material-symbols:wb-sunny" class="h-6 w-6" />
+                  <Icon name="material-symbols:wb-sunny" size={24} />
                 </div>
               );
             // VICTORIA OSCURO
@@ -277,7 +285,7 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
                   class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-slate-600 bg-slate-800 text-white shadow-md md:h-12 md:w-12"
                   title="Victoria Oscuro"
                 >
-                  <Icon name="material-symbols:dark-mode" class="h-6 w-6" />
+                  <Icon name="material-symbols:dark-mode" size={24} />
                 </div>
               );
             // EMPATE (Amarillo destacado)

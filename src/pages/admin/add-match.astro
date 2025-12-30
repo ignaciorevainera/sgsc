@@ -78,10 +78,7 @@ if (Astro.request.method === "POST") {
         role="alert"
         class="alert alert-success animate-fade-in mb-4 text-sm sm:mb-6 sm:text-base"
       >
-        <Icon
-          name="material-symbols:check-circle"
-          class="h-5 w-5 sm:h-6 sm:w-6"
-        />
+        <Icon name="material-symbols:check-circle" size={22} />
         <span class="flex-1">{successMessage}</span>
         <a href="/admin/add-match" class="btn btn-xs btn-ghost sm:btn-sm">
           Cargar otro
@@ -96,7 +93,7 @@ if (Astro.request.method === "POST") {
         role="alert"
         class="alert alert-error animate-fade-in mb-4 text-sm sm:mb-6 sm:text-base"
       >
-        <Icon name="material-symbols:error" class="h-5 w-5 sm:h-6 sm:w-6" />
+        <Icon name="material-symbols:error" size={22} />
         <span>{errorMessage}</span>
       </div>
     )
@@ -280,7 +277,7 @@ if (Astro.request.method === "POST") {
       id="btnPreview"
       class="btn btn-primary btn-md sm:btn-lg w-full shadow-md"
     >
-      <Icon name="material-symbols:visibility" class="h-5 w-5 sm:h-6 sm:w-6" />
+      <Icon name="material-symbols:visibility" size={22} />
       <span class="text-sm sm:text-base">Previsualizar</span>
     </button>
   </form>
@@ -317,7 +314,7 @@ if (Astro.request.method === "POST") {
               Cancha
             </p>
             <p
-              class="text-primary max-w-[120px] truncate text-base font-bold sm:max-w-none sm:text-lg"
+              class="text-primary max-w-30 truncate text-base font-bold sm:max-w-none sm:text-lg"
               id="previewField"
             >
               ---
@@ -378,7 +375,7 @@ if (Astro.request.method === "POST") {
           id="btnConfirm"
           class="btn btn-success btn-sm sm:btn-md w-full text-white shadow-md sm:w-auto"
         >
-          <Icon name="material-symbols:save" class="h-4 w-4 sm:h-5 sm:w-5" />
+          <Icon name="material-symbols:save" size={18} />
           <span class="text-xs sm:text-sm">Confirmar y Guardar</span>
         </button>
       </div>
