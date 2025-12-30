@@ -1,5 +1,13 @@
 ---
 import { Icon } from "astro-icon/components";
+import { createAstroSupabase } from "@/lib/supabase"; // 1. Importamos cliente SSR
+
+// 2. Lógica de sesión en el servidor
+const supabase = createAstroSupabase(Astro);
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+const isLoggedIn = !!session;
 
 const links = [
   { href: "/ranking", label: "Clasificación" },
@@ -9,7 +17,6 @@ const links = [
   { href: "/fields", label: "Canchas" },
   { href: "/hall-of-fame", label: "Salón de la Fama" },
 ];
-
 const currentPath = Astro.url.pathname;
 ---
 
@@ -46,6 +53,7 @@ const currentPath = Astro.url.pathname;
     </div>
     <a href="/" class="btn btn-ghost text-xl font-bold">SGSC</a>
   </div>
+
   <div class="navbar-center hidden lg:flex">
     <ul class="menu menu-horizontal px-1">
       {
@@ -66,7 +74,71 @@ const currentPath = Astro.url.pathname;
       }
     </ul>
   </div>
-  <div class="navbar-end">
+
+  <div class="navbar-end gap-1">
+    {/* LÓGICA CONDICIONAL: ¿Está logueado? */}
+    {
+      isLoggedIn ? (
+        // OPCIÓN A: USUARIO LOGUEADO (Dropdown con Avatar)
+        <div class="dropdown dropdown-end">
+          <div
+            tabindex="0"
+            role="button"
+            class="btn btn-ghost btn-circle avatar placeholder"
+          >
+            <div class="bg-neutral text-neutral-content w-8 rounded-full">
+              <span class="text-xs font-bold">A</span>
+            </div>
+          </div>
+          <ul
+            tabindex="0"
+            class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-1 mt-3 w-52 rounded-xl border p-2 shadow-md"
+          >
+            <li class="menu-title text-[10px] uppercase opacity-50">
+              Administrador
+            </li>
+            <li>
+              <a href="/admin/add-match" class="justify-between">
+                Cargar Partido
+                <span class="badge badge-primary badge-xs">Nuevo</span>
+              </a>
+            </li>
+            <div class="divider my-0" />
+            <li>
+              <form
+                action="/api/auth/signout"
+                method="POST"
+                class="p-0 hover:bg-transparent"
+              >
+                <button
+                  type="submit"
+                  class="text-error flex w-full items-center gap-2 px-3 py-2 text-left"
+                >
+                  <Icon name="material-symbols:logout" size={16} />
+                  Cerrar Sesión
+                </button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      ) : (
+        // OPCIÓN B: NO LOGUEADO (Tu botón original del candado)
+        <a
+          href="/login"
+          class="btn btn-ghost btn-circle tooltip tooltip-bottom"
+          data-tip="Acceso Admin"
+        >
+          <div class="indicator">
+            <Icon
+              name="material-symbols:lock-person"
+              class="text-base-content/70 h-6 w-6"
+            />
+          </div>
+        </a>
+      )
+    }
+
+    {/* Botón de Tema (Mantenemos el original) */}
     <button
       class="btn btn-ghost btn-circle"
       data-toggle-theme="light,dark"
