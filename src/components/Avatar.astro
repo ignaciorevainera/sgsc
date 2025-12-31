@@ -1,19 +1,28 @@
 ---
 interface Props {
   initial: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  ring?: boolean;
+  class?: string;
 }
 
-const { initial, size = "lg" } = Astro.props;
+const {
+  initial,
+  size = "lg",
+  ring = true,
+  class: className = "",
+} = Astro.props;
 
 const sizeClasses = {
-  sm: "w-8 text-lg",
-  md: "w-12 text-4xl",
-  lg: "w-24 text-5xl",
-  xl: "w-30 text-6xl",
+  xs: "w-8 text-xs",
+  sm: "w-12 text-xl",
+  md: "w-16 text-2xl",
+  lg: "w-20 text-3xl sm:w-24 sm:text-4xl",
+  xl: "w-28 text-5xl",
 };
 
-const ringSize = {
+const ringClasses = {
+  xs: "ring-2",
   sm: "ring-2",
   md: "ring-4",
   lg: "ring-4",
@@ -21,14 +30,14 @@ const ringSize = {
 };
 
 const sizeClass = sizeClasses[size];
-const ringClass = ringSize[size];
+const ringClass = ring ? `${ringClasses[size]} ring-base-100` : "";
 ---
 
-<div class="avatar placeholder">
+<div class={`avatar placeholder ${className}`}>
   <div
-    class={`bg-neutral text-neutral-content ring-base-100 flex items-center justify-center rounded-full shadow-md ${sizeClass} ${ringClass}`}
+    class={`bg-neutral text-neutral-content flex items-center justify-center rounded-full ${sizeClass} ${ringClass}`}
   >
-    <span class="font-semibold">
+    <span class="font-black">
       {initial}
     </span>
   </div>

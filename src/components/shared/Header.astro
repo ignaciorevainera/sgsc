@@ -1,5 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
+import Avatar from "@/components/Avatar.astro";
 import { createAstroSupabase } from "@/lib/supabase"; // 1. Importamos cliente SSR
 
 // 2. Lógica de sesión en el servidor
@@ -81,14 +82,8 @@ const currentPath = Astro.url.pathname;
       isLoggedIn ? (
         // OPCIÓN A: USUARIO LOGUEADO (Dropdown con Avatar)
         <div class="dropdown dropdown-end">
-          <div
-            tabindex="0"
-            role="button"
-            class="btn btn-ghost btn-circle avatar placeholder"
-          >
-            <div class="bg-neutral text-neutral-content w-8 rounded-full">
-              <span class="text-xs font-bold">A</span>
-            </div>
+          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+            <Avatar initial="A" size="xs" ring={false} />
           </div>
           <ul
             tabindex="0"
@@ -129,11 +124,7 @@ const currentPath = Astro.url.pathname;
           data-tip="Acceso Admin"
         >
           <div class="indicator">
-            <Icon
-              name="material-symbols:lock-person"
-              class="text-base-content/70"
-              size={24}
-            />
+            <Icon name="material-symbols:lock-person" size={24} />
           </div>
         </a>
       )
