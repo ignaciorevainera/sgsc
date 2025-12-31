@@ -3,7 +3,7 @@ import { Icon } from "astro-icon/components";
 
 const { match } = Astro.props;
 
-// Función para formatear la fecha (YYYY-MM-DD -> DD/MM/YYYY)
+// Función para formatear la fecha [cite: 114, 115]
 const formatDate = (dateString: string) => {
   if (!dateString) return "";
   const date = new Date(dateString + "T00:00:00");
@@ -14,38 +14,37 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Traducciones y lógica de ganadores
+// Traducciones y lógica de ganadores [cite: 116, 117]
 const resultLabels: Record<string, string> = {
   light: "Ganó Equipo Claro",
   dark: "Ganó Equipo Oscuro",
   draw: "Empate",
 };
+
 const isLightWinner = match.result === "light";
 const isDarkWinner = match.result === "dark";
 const isDraw = match.result === "draw";
 
-// Filtramos los jugadores por equipo
+// Filtramos y ordenamos los jugadores [cite: 118, 119, 120, 121]
 const lightTeam =
   match.match_players?.filter((mp: any) => mp.team === "light") || [];
 const darkTeam =
   match.match_players?.filter((mp: any) => mp.team === "dark") || [];
 
-// Ordenamos alfabéticamente por apodo, sin mutar el arreglo original
-const sortedLightTeam = [...lightTeam].sort((a: any, b: any) => {
-  const nameA = (a.players?.nickname || "").toLowerCase();
-  const nameB = (b.players?.nickname || "").toLowerCase();
-  return nameA.localeCompare(nameB);
-});
-
-const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
-  const nameA = (a.players?.nickname || "").toLowerCase();
-  const nameB = (b.players?.nickname || "").toLowerCase();
-  return nameA.localeCompare(nameB);
-});
+const sortedLightTeam = [...lightTeam].sort((a: any, b: any) =>
+  (a.players?.nickname || "")
+    .toLowerCase()
+    .localeCompare((b.players?.nickname || "").toLowerCase())
+);
+const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
+  (a.players?.nickname || "")
+    .toLowerCase()
+    .localeCompare((b.players?.nickname || "").toLowerCase())
+);
 ---
 
 <div
-  class="card bg-base-100 border-base-200 h-full rounded-xl border shadow-md"
+  class="card bg-base-100 border-base-200 relative h-full overflow-hidden rounded-xl border shadow-md"
 >
   <div class="card-body gap-4">
     <div class="flex items-center justify-between">
@@ -63,79 +62,75 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) => {
           size={18}
           class="text-secondary"
         />
-        <span class="truncate font-semibold">
+        <span class="max-w-30 truncate font-semibold">
           {match.fields?.name || "Cancha Desconocida"}
         </span>
       </div>
     </div>
 
-    <div class="flex justify-center">
+    <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
       <span
-        class={`badge badge-lg rounded-xl font-semibold ${
+        class={`badge badge-lg rounded-xl font-semibold h-9 ${
           isDraw
             ? "badge-warning"
             : isLightWinner
-              ? "bg-white text-black"
+              ? "bg-white text-black border border-gray-200"
               : "bg-black text-white"
         }`}
       >
         {resultLabels[match.result] || match.result}
       </span>
+
+      {/* Botón de Video/Drive al mismo nivel */}
+      {
+        match.video_url && (
+          <a
+            href={match.video_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="bg-primary/90 hover:bg-primary group flex h-9 items-center gap-2 rounded-xl px-4 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md transition-all hover:scale-105 active:scale-95"
+            title="Ver video del partido"
+          >
+            <Icon
+              name="material-symbols:play-circle"
+              size={18}
+              class="animate-pulse group-hover:animate-none"
+            />
+            <span>Ver Video</span>
+          </a>
+        )
+      }
     </div>
 
     <div class="flex flex-1 flex-col gap-3">
       {/* Equipo Claro */}
       <div
-        class={`flex-1 rounded-xl border-2 p-4 bg-white text-gray-900 ${
-          isLightWinner
-            ? "outline-success outline-4"
-            : isDraw
-              ? "border-warning"
-              : "border-gray-300"
-        }`}
+        class={`flex-1 rounded-xl border-2 p-4 bg-white text-gray-900 ${isLightWinner ? "border-success bg-success/5" : isDraw ? "border-warning" : "border-gray-100"}`}
       >
-        <div class="mb-3 flex items-center gap-2">
-          <h3 class="text-lg font-black text-gray-900">Equipo Claro</h3>
-        </div>
+        <h3 class="mb-3 text-lg font-black text-gray-900">Equipo Claro</h3>
         <div class="flex flex-wrap gap-2">
           {
-            sortedLightTeam.length > 0 ? (
-              sortedLightTeam.map((mp: any) => (
-                <span class="rounded-xl border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-900">
-                  {mp.players?.nickname || "Jugador"}
-                </span>
-              ))
-            ) : (
-              <span class="text-xs text-gray-500 italic">Sin jugadores</span>
-            )
+            sortedLightTeam.map((mp: any) => (
+              <span class="rounded-xl border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-900">
+                {mp.players?.nickname || "Jugador"}
+              </span>
+            ))
           }
         </div>
       </div>
 
       {/* Equipo Oscuro */}
       <div
-        class={`flex-1 rounded-xl border-2 bg-slate-800 text-slate-100 p-4 ${
-          isDarkWinner
-            ? "outline-success outline-4"
-            : isDraw
-              ? "border-warning"
-              : "border-slate-700"
-        }`}
+        class={`flex-1 rounded-xl border-2 bg-slate-800 text-slate-100 p-4 ${isDarkWinner ? "border-success bg-success/10" : isDraw ? "border-warning" : "border-slate-700"}`}
       >
-        <div class="mb-3 flex items-center gap-2">
-          <h3 class="text-lg font-black text-slate-100">Equipo Oscuro</h3>
-        </div>
+        <h3 class="mb-3 text-lg font-black text-slate-100">Equipo Oscuro</h3>
         <div class="flex flex-wrap gap-2">
           {
-            sortedDarkTeam.length > 0 ? (
-              sortedDarkTeam.map((mp: any) => (
-                <span class="rounded-xl border border-slate-700 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100">
-                  {mp.players?.nickname || "Jugador"}
-                </span>
-              ))
-            ) : (
-              <span class="text-xs text-slate-400 italic">Sin jugadores</span>
-            )
+            sortedDarkTeam.map((mp: any) => (
+              <span class="rounded-xl border border-slate-600 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100">
+                {mp.players?.nickname || "Jugador"}
+              </span>
+            ))
           }
         </div>
       </div>
