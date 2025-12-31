@@ -1,45 +1,58 @@
 ---
 import Main from "@/layouts/Main.astro";
 import { Icon } from "astro-icon/components";
-import { supabase } from "../../lib/supabase";
+import Avatar from "@/components/Avatar.astro";
+import { createAstroSupabase } from "@/lib/supabase";
 
-// Generar rutas estáticas (necesario si tu proyecto es SSG)
-export async function getStaticPaths() {
-  const { data: players } = await supabase.from("players").select("id");
-  return players?.map((p) => ({ params: { id: p.id } })) || [];
-}
-
+const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
 
-// Redirigir si no hay ID
 if (!id) return Astro.redirect("/players");
 
-// 1. Perfil y Estadísticas Históricas (Total de carrera)
-const { data: player, error } = await supabase
+const { data: playerInfo, error } = await supabase // Agrega 'error' aquí
+  .from("players")
+  .select("birth_date, nickname, preferred_foot")
+  .eq("id", id)
+  .single();
+
+console.log("Player Info:", playerInfo); // Si esto es null, es problema de permisos
+
+// 2. Estadísticas de carrera (Vista All Time)
+const { data: playerStats } = await supabase
   .from("view_player_stats_all_time")
   .select("*")
   .eq("player_id", id)
   .single();
 
-if (error || !player) {
-  console.error("Error cargando perfil:", error);
-  return Astro.redirect("/players");
-}
+if (!playerStats) return Astro.redirect("/players");
 
-// 2. Evolución por Temporada (Para la tabla anual)
+const player = { ...playerInfo, ...playerStats };
+
+// 3. Estadísticas por Año
 const { data: yearlyStats } = await supabase
   .from("view_player_stats_yearly")
   .select("*")
   .eq("player_id", id)
   .order("year", { ascending: false });
 
-// 3. Últimos 5 Partidos (CORREGIDO: Consultando tablas base)
-const { data: rawMatches } = await supabase
+// 4. Promedio del club
+const { data: allStats } = await supabase
+  .from("view_player_stats_all_time")
+  .select("win_pct");
+
+const clubAverageWinPct = allStats
+  ? Math.round(
+      allStats.reduce((acc, s) => acc + s.win_pct, 0) / allStats.length
+    )
+  : 0;
+
+// 5. Historial completo
+const { data: allHistory } = await supabase
   .from("match_players")
   .select(
     `
     team,
-    matches (
+    matches!inner (
       date,
       result,
       fields (name)
@@ -47,90 +60,102 @@ const { data: rawMatches } = await supabase
   `
   )
   .eq("player_id", id)
-  // Nota: Traemos más para asegurar tener los últimos reales tras ordenar
-  .limit(20);
+  .order("matches(date)", { ascending: false });
 
-// Procesamos los datos en JS para calcular el resultado (W/D/L) y ordenar correctamente
-const recentMatches = rawMatches
-  ?.map((mp: any) => {
-    const m = mp.matches;
-    let outcome = "-";
+// --- CÁLCULOS ---
+const totalMatches = player.matches_played || 0;
+const win_pct = Math.round(player.win_pct || 0);
+const draw_pct =
+  totalMatches > 0 ? Math.round((player.draws / totalMatches) * 100) : 0;
+const loss_pct =
+  totalMatches > 0 ? Math.round((player.losses / totalMatches) * 100) : 0;
 
-    // Lógica para determinar si ganó, empató o perdió
-    if (m.result === "draw") outcome = "D";
-    else if (m.result === mp.team) outcome = "W";
-    else outcome = "L";
+const light_apps =
+  allHistory?.filter((m: any) => m.team === "light").length || 0;
+const dark_apps = allHistory?.filter((m: any) => m.team === "dark").length || 0;
 
-    return {
-      date: m.date,
-      fieldName: m.fields?.name || "Cancha desc.",
-      outcome: outcome,
-    };
-  })
-  // Ordenamos por fecha descendente (más reciente primero)
-  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  // Nos quedamos solo con los últimos 5
-  .slice(0, 5);
+// Sede
+const fieldCounts: Record<string, number> = {};
+allHistory?.forEach((m: any) => {
+  const name = m.matches?.fields?.name;
+  if (name) fieldCounts[name] = (fieldCounts[name] || 0) + 1;
+});
+const topField =
+  Object.entries(fieldCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
 
-// --- HELPERS VISUALES ---
+// Edad
+const calculateAge = (birthday: string) => {
+  if (!birthday) return null;
+  const birthDate = new Date(birthday);
+  const ageDifMs = Date.now() - birthDate.getTime();
+  return Math.abs(new Date(ageDifMs).getUTCFullYear() - 1970);
+};
+const age = calculateAge(player.birth_date);
+const birthDateFormatted = player.birth_date
+  ? new Date(player.birth_date).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+    })
+  : null;
 
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-AR", {
-    day: "numeric",
+// --- TRADUCCIÓN PIERNA DOMINANTE (Nueva Lógica) ---
+const footMap: Record<string, string> = {
+  right: "Diestro",
+  left: "Zurdo",
+  both: "Ambidiestro",
+};
+// Esto nos da directamente el texto en español listo para usar en la vista
+const dominantFootLabel = player.preferred_foot
+  ? footMap[player.preferred_foot]
+  : null;
+
+// Últimos 5 partidos
+const recentMatches = allHistory?.slice(0, 5).map((mp: any) => {
+  const m = mp.matches;
+  let outcome = "L";
+  if (m.result === "draw") outcome = "D";
+  else if (m.result === mp.team) outcome = "W";
+  return { date: m.date, fieldName: m.fields?.name, outcome };
+});
+
+const formatDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString("es-ES", {
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
-};
 
 const getOutcomeConfig = (outcome: string) => {
-  switch (outcome) {
-    case "W":
-      return {
-        color: "text-success",
-        bg: "bg-success/10",
-        icon: "material-symbols:check-circle",
-        label: "Victoria",
-      };
-    case "D":
-      return {
-        color: "text-warning",
-        bg: "bg-warning/10",
-        icon: "material-symbols:remove",
-        label: "Empate",
-      };
-    case "L":
-      return {
-        color: "text-error",
-        bg: "bg-error/10",
-        icon: "material-symbols:cancel",
-        label: "Derrota",
-      };
-    default:
-      return {
-        color: "text-base-content",
-        bg: "bg-base-200",
-        icon: "material-symbols:help",
-        label: "-",
-      };
-  }
+  const configs: any = {
+    W: {
+      label: "Victoria",
+      color: "text-success",
+      bg: "bg-success/10",
+      icon: "material-symbols:trophy",
+    },
+    L: {
+      label: "Derrota",
+      color: "text-error",
+      bg: "bg-error/10",
+      icon: "material-symbols:close",
+    },
+    D: {
+      label: "Empate",
+      color: "text-warning",
+      bg: "bg-warning/10",
+      icon: "material-symbols:equal",
+    },
+  };
+  return configs[outcome] || configs.L;
 };
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
-  <div>
-    <a
-      href="/players"
-      class="text-base-content/60 hover:text-primary btn btn-soft btn-sm mb-4 gap-2"
-    >
-      <Icon name="material-symbols:arrow-back" size={16} /> Volver al plantel
-    </a>
-  </div>
-
   <div
     class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md"
   >
     <div
-      class="from-primary/20 via-base-100 to-secondary/10 relative h-32 bg-gradient-to-r"
+      class="from-primary/20 via-base-100 to-secondary/10 relative h-28 bg-gradient-to-r sm:h-32"
     >
       <div
         class="from-base-content absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] to-transparent opacity-10"
@@ -138,49 +163,72 @@ const getOutcomeConfig = (outcome: string) => {
       </div>
     </div>
 
-    <div class="card-body relative">
-      <div class="flex flex-col items-start gap-6 md:flex-row">
-        <div class="mx-auto -mt-12 md:mx-0">
-          <div class="avatar avatar-placeholder">
-            <div class="bg-neutral text-neutral-content w-24 rounded-full">
-              <span class="text-4xl">
-                {player.nickname.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          </div>
+    <div class="card-body relative px-4 py-5 sm:px-6">
+      <div
+        class="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6"
+      >
+        <div class="-mt-16 sm:-mt-14">
+          <Avatar initial={player.nickname.charAt(0).toUpperCase()} size="lg" />
         </div>
 
-        <div class="mt-2 flex-grow space-y-1 md:mt-4">
-          <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-primary text-3xl font-black md:text-4xl">
+        <div class="flex-grow space-y-2 text-center sm:mt-2 sm:text-left">
+          <div
+            class="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3"
+          >
+            <h1
+              class="text-primary text-2xl font-black sm:text-3xl md:text-4xl"
+            >
               {player.nickname}
             </h1>
-            {
-              player.is_guest && (
-                <div class="badge badge-warning font-bold">INVITADO</div>
-              )
-            }
           </div>
           <p
-            class="text-base-content/60 font-mono text-xs tracking-widest uppercase"
+            class="text-base-content/60 font-mono text-[10px] tracking-widest uppercase sm:text-xs"
           >
-            ID: {player.player_id.split("-")[0]} • Debut: {
+            ID: {id.split("-")[0]} • Debut: {
               yearlyStats?.[yearlyStats.length - 1]?.year || "-"
             }
           </p>
+          <div
+            class="flex flex-wrap items-center justify-center gap-2 sm:justify-start"
+          >
+            {
+              age && (
+                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                  <Icon name="material-symbols:calendar-today" size={12} />
+                  {age} años
+                </div>
+              )
+            }
+            {
+              birthDateFormatted && (
+                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                  <Icon name="material-symbols:cake" size={12} />
+                  {birthDateFormatted}
+                </div>
+              )
+            }
+            {
+              player.preferred_foot && dominantFootLabel && (
+                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                  <Icon name="material-symbols:footprint" size={12} />
+                  {dominantFootLabel}
+                </div>
+              )
+            }
+          </div>
         </div>
 
-        <div class="mt-4 w-full md:mt-0 md:w-auto">
+        <div class="w-full sm:w-auto">
           <div
-            class="stats bg-base-200 border-base-200 w-full border shadow-md md:w-auto"
+            class="stats bg-base-200 border-base-200 w-full border shadow-md sm:w-auto"
           >
-            <div class="stat place-items-center px-8 py-3">
+            <div class="stat place-items-center px-6 py-3 sm:px-8">
               <div
-                class="stat-title text-xs font-bold tracking-wider uppercase"
+                class="stat-title text-[10px] font-bold tracking-wider uppercase sm:text-xs"
               >
                 Puntos Históricos
               </div>
-              <div class="stat-value text-secondary text-3xl">
+              <div class="stat-value text-secondary text-2xl sm:text-3xl">
                 {player.points}
               </div>
             </div>
@@ -196,84 +244,188 @@ const getOutcomeConfig = (outcome: string) => {
         <div
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-xl font-black">{player.matches_played}</div>
-          <div class="text-base-content/60 text-xs font-bold uppercase">
-            Partidos
-          </div>
+          <span class="text-2xl font-black">{totalMatches}</span>
+          <span class="text-[10px] font-bold uppercase opacity-50"
+            >Partidos</span
+          >
         </div>
         <div
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-success text-xl font-black">{player.wins}</div>
-          <div class="text-success text-xs font-bold uppercase">Victorias</div>
+          <span class="text-success text-2xl font-black">{player.wins}</span>
+          <span class="text-success/70 text-[10px] font-bold uppercase"
+            >Victorias ({win_pct}%)</span
+          >
         </div>
         <div
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-warning text-xl font-black">{player.draws}</div>
-          <div class="text-warning text-xs font-bold uppercase">Empates</div>
+          <span class="text-warning text-2xl font-black">{player.draws}</span>
+          <span class="text-warning/70 text-[10px] font-bold uppercase"
+            >Empates ({draw_pct}%)</span
+          >
         </div>
         <div
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
-          <div class="text-error text-xl font-black">{player.losses}</div>
-          <div class="text-error text-xs font-bold uppercase">Derrotas</div>
+          <span class="text-error text-2xl font-black">{player.losses}</span>
+          <span class="text-error/70 text-[10px] font-bold uppercase"
+            >Derrotas ({loss_pct}%)</span
+          >
         </div>
       </div>
 
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+        class="card bg-base-100 border-base-200 rounded-xl border p-5 shadow-md"
+      >
+        <div class="mb-2 flex items-end justify-between">
+          <div>
+            <h3 class="text-sm font-black uppercase italic">Efectividad</h3>
+            <p class="text-primary text-[10px] font-bold uppercase opacity-50">
+              Vs Promedio del Club
+            </p>
+          </div>
+          <div class="text-right">
+            <span class="text-2xl font-black">{win_pct}%</span>
+          </div>
+        </div>
+        <div class="relative pt-5">
+          <div
+            class="absolute top-0 z-10"
+            style={`left: ${clubAverageWinPct}%`}
+          >
+            <span
+              class={`text-[9px] font-bold uppercase text-base-content/60 whitespace-nowrap ${clubAverageWinPct > 75 ? "-translate-x-full pr-1" : "pl-1"}`}
+            >
+              Media ({clubAverageWinPct}%)
+            </span>
+          </div>
+          <div
+            class="bg-base-200 border-base-300 relative h-4 overflow-hidden rounded-full border"
+          >
+            <div
+              class="border-base-content/40 absolute top-0 bottom-0 z-10 h-full border-r-2 border-dashed"
+              style={`left: ${clubAverageWinPct}%`}
+            >
+            </div>
+            <div
+              class={`h-full transition-all duration-1000 ${win_pct >= clubAverageWinPct ? "bg-success" : "bg-warning"}`}
+              style={`width: ${win_pct}%`}
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div
+          class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+        >
+          <div class="bg-base-200 border-base-200 border-b p-3 text-center">
+            <h3 class="text-xs font-bold uppercase">Preferencia de Camiseta</h3>
+          </div>
+          <div class="flex items-center justify-around p-5">
+            <div class="text-center">
+              <span
+                class="block text-3xl font-black text-slate-700 dark:text-slate-300"
+                >{light_apps}</span
+              >
+              <span
+                class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400"
+              >
+                <Icon name="material-symbols:wb-sunny" size={16} /> Claro
+              </span>
+            </div>
+            <div class="divider divider-horizontal mx-2"></div>
+            <div class="text-center">
+              <span
+                class="block text-3xl font-black text-slate-700 dark:text-slate-300"
+                >{dark_apps}</span
+              >
+              <span
+                class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400"
+              >
+                <Icon name="material-symbols:dark-mode" size={16} /> Oscuro
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="card bg-base-100 border-base-200 flex flex-row items-center gap-4 rounded-xl border p-4 shadow-md"
+        >
+          <div class="bg-primary/10 text-primary rounded-full p-3">
+            <Icon name="material-symbols:stadium-rounded" size={24} />
+          </div>
+          <div class="overflow-hidden">
+            <h4
+              class="text-[10px] font-bold tracking-wider uppercase opacity-40"
+            >
+              Cancha Favorita
+            </h4>
+            <p class="truncate text-sm font-black uppercase">{topField}</p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="card bg-base-100 border-base-200 mt-6 overflow-hidden rounded-xl border shadow-md"
       >
         <div
-          class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
+          class="bg-base-200/50 border-base-200 flex items-center justify-between border-b p-4"
         >
-          <Icon
-            name="material-symbols:monitoring"
-            class="text-primary"
-            size={20}
-          />
-          <h3 class="font-bold">Rendimiento por Temporada</h3>
+          <h3 class="text-sm font-black uppercase italic">Rendimiento Anual</h3>
+          <div
+            class="flex items-center gap-2 text-[10px] font-bold uppercase opacity-50"
+          >
+            <Icon name="material-symbols:table-chart" size={16} />
+            Historial
+          </div>
         </div>
+
         <div class="overflow-x-auto">
-          <table class="table-sm table w-full text-center">
-            <thead
-              class="bg-base-200 text-base-content/60 text-xs font-bold uppercase"
-            >
-              <tr>
+          <table class="table-zebra table-sm table w-full text-center">
+            <thead>
+              <tr
+                class="bg-base-200 text-base-content text-xs font-bold uppercase"
+              >
                 <th class="pl-6 text-left">Año</th>
+                <th class="bg-primary/10 text-primary font-black">PTS</th>
                 <th>PJ</th>
                 <th class="text-success">G</th>
                 <th class="text-warning">E</th>
                 <th class="text-error">P</th>
-                <th class="hidden sm:table-cell" title="% Efectividad"
-                  >% Efic.</th
-                >
-                <th class="hidden sm:table-cell" title="% Asistencia"
-                  >% Asist.</th
-                >
-                <th class="pr-6 text-right">Pts</th>
+                <th>Efec.</th>
               </tr>
             </thead>
             <tbody>
               {
-                yearlyStats?.map((stat) => (
-                  <tr class="hover">
-                    <td class="pl-6 text-left font-bold">{stat.year}</td>
-                    <td>{stat.matches_played}</td>
-                    <td class="text-success/80 font-medium">{stat.wins}</td>
-                    <td class="text-warning/80 font-medium">{stat.draws}</td>
-                    <td class="text-error/80 font-medium">{stat.losses}</td>
-                    <td class="hidden text-xs sm:table-cell">
-                      {stat.win_pct}%
+                yearlyStats?.map((s) => (
+                  <tr class="hover text-sm">
+                    <td class="pl-6 text-left font-bold">{s.year}</td>
+                    <td class="bg-primary/5 text-primary text-base font-black">
+                      {s.points}
                     </td>
-                    <td class="hidden text-xs sm:table-cell">
-                      {stat.attendance_pct}%
-                    </td>
-                    <td class="text-primary pr-6 text-right font-black">
-                      {stat.points}
-                    </td>
+                    <td class="font-semibold">{s.matches_played}</td>
+                    <td class="font-medium">{s.wins}</td>
+                    <td class="text-base-content/70 font-medium">{s.draws}</td>
+                    <td class="text-base-content/70 font-medium">{s.losses}</td>
+                    <td class="font-semibold">{Math.round(s.win_pct)}%</td>
                   </tr>
                 ))
+              }
+
+              {
+                (!yearlyStats || yearlyStats.length === 0) && (
+                  <tr>
+                    <td
+                      colspan="7"
+                      class="text-base-content/50 py-8 text-center text-sm italic"
+                    >
+                      No hay registros históricos disponibles.
+                    </td>
+                  </tr>
+                )
               }
             </tbody>
           </table>
@@ -282,65 +434,36 @@ const getOutcomeConfig = (outcome: string) => {
     </div>
 
     <div class="space-y-6">
-      <div class="card bg-base-100 border-base-200 rounded-xl border shadow-md">
-        <div class="card-body items-center text-center">
-          <h3 class="text-base-content/60 mb-2 text-xs font-bold uppercase">
-            Efectividad Global
-          </h3>
-          <div
-            class="radial-progress text-primary text-3xl font-black"
-            style={`--value:${player.win_pct}; --size:9rem; --thickness: 0.8rem;`}
-          >
-            {Math.round(player.win_pct)}%
-          </div>
-          <p class="text-base-content/60 mt-4 px-4 text-xs text-balance">
-            Porcentaje de puntos obtenidos sobre el total disputado en su
-            carrera.
-          </p>
-        </div>
-      </div>
-
       <div
         class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
-        <div
-          class="bg-base-200 border-base-200 flex items-center gap-2 border-b p-4"
-        >
-          <Icon
-            name="material-symbols:history"
-            class="text-primary"
-            size={20}
-          />
-          <h3 class="font-bold">Últimos Partidos</h3>
+        <div class="bg-base-200/50 border-base-200 border-b p-4">
+          <h3 class="text-sm font-black uppercase italic">Forma Reciente</h3>
         </div>
-
-        <div class="divide-base-200 flex flex-col divide-y">
+        <div class="divide-base-200 divide-y">
           {
-            recentMatches?.map((match: any) => {
-              const cfg = getOutcomeConfig(match.outcome);
-
+            recentMatches?.map((match) => {
+              const config = getOutcomeConfig(match.outcome);
               return (
-                <div class="hover:bg-base-200 flex items-center justify-between p-3 transition-colors">
-                  <div class="flex items-center gap-3">
-                    <div
-                      class={`flex h-8 w-8 items-center justify-center rounded-full border ${cfg.bg} ${cfg.color} border-current`}
-                    >
-                      <Icon name={cfg.icon} size={16} />
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-xs font-bold">
-                        {formatDate(match.date)}
-                      </span>
-                      <span class="text-base-content/60 max-w-[150px] truncate text-xs">
-                        {match.fieldName}
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    class={`rounded-xl border px-2 py-0.5 text-xs font-bold uppercase ${cfg.bg} ${cfg.color} border-current`}
+                <div class="hover:bg-base-100 flex items-center gap-3 p-3 transition-colors">
+                  <div
+                    class={`flex h-10 w-10 items-center justify-center rounded-full ${config.bg} ${config.color} shrink-0`}
                   >
-                    {cfg.label}
-                  </span>
+                    <Icon name={config.icon} size={20} />
+                  </div>
+                  <div class="flex min-w-0 flex-1 flex-col justify-center">
+                    <span class="text-xs font-bold opacity-80">
+                      {formatDate(match.date)}
+                    </span>
+                    <span class="truncate text-[10px] font-bold uppercase opacity-50">
+                      {match.fieldName}
+                    </span>
+                  </div>
+                  <div
+                    class={`badge ${config.bg} ${config.color} border-none text-[10px] font-black uppercase`}
+                  >
+                    {config.label}
+                  </div>
                 </div>
               );
             })
@@ -348,8 +471,8 @@ const getOutcomeConfig = (outcome: string) => {
 
           {
             (!recentMatches || recentMatches.length === 0) && (
-              <div class="text-base-content/60 p-6 text-center text-sm italic">
-                Sin partidos recientes registrados.
+              <div class="p-4 text-center text-xs opacity-50">
+                Sin partidos recientes
               </div>
             )
           }
