@@ -1,17 +1,35 @@
 ---
 import Main from "@/layouts/Main.astro";
-import StandingsTable from "@components/ranking/StandingsTable.astro";
-import StandingsLegend from "@components/ranking/StandingsLegend.astro";
+import StandingsTable from "@/components/ranking/StandingsTable.astro";
+import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import Title from "@/components/shared/Title.astro";
 import { Icon } from "astro-icon/components";
-import { supabase } from "@lib/supabase";
+import { createAstroSupabase } from "@/lib/supabase"; // Usamos el cliente correcto
 
-// 1. URL Params
+const supabase = createAstroSupabase(Astro);
+
+// 1. Obtener Años Disponibles Dinámicamente
+const { data: yearsData } = await supabase
+  .from("view_player_stats_yearly")
+  .select("year");
+// Filtramos años únicos y ordenamos descendente (2025, 2024...)
+const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
+  (a, b) => b - a
+);
+const currentYear = new Date().getFullYear().toString();
+// Si no hay datos, usamos el año actual como fallback
+const defaultYear =
+  availableYears.length > 0 ? String(availableYears[0]) : currentYear;
+
+// 2. URL Params
 const sort = Astro.url.searchParams.get("sort") || "points";
-const season = Astro.url.searchParams.get("season") || "2025";
+const season = Astro.url.searchParams.get("season") || defaultYear;
 const mode = Astro.url.searchParams.get("mode") || "simple";
 
-const seasons = ["2025", "2024", "2023", "Histórico"];
+// Construimos las opciones del selector incluyendo "Histórico"
+const seasons = [...availableYears.map(String), "Histórico"];
+// Si por alguna razón la lista está vacía (BD nueva), ponemos el año actual
+if (seasons.length === 1) seasons.unshift(currentYear);
 
 const sortOptions = [
   { value: "points", label: "Puntos" },
@@ -20,13 +38,12 @@ const sortOptions = [
   { value: "wins", label: "Victorias" },
   { value: "draws", label: "Empates" },
   { value: "losses", label: "Derrotas" },
-  { value: "attendance", label: "% Asistencia" },
   { value: "winRate", label: "% Victorias" },
   { value: "drawRate", label: "% Empates" },
   { value: "lossRate", label: "% Derrotas" },
 ];
 
-// 2. Consulta SQL
+// 3. Consulta SQL
 let query;
 if (season === "Histórico") {
   query = supabase.from("view_player_stats_all_time").select("*");
@@ -37,22 +54,33 @@ if (season === "Histórico") {
     .eq("year", season);
 }
 
+// Filtramos solo socios (no invitados)
+// AHORA ESTO FUNCIONARÁ PORQUE LA VISTA YA TIENE 'is_guest'
 const { data: rawPlayers, error } = await query.eq("is_guest", false);
 
-if (error) console.error(error);
+if (error) console.error("Error fetching standings:", error);
 
-// 3. Mapeo de datos
+// 4. Mapeo de datos
 const players =
   rawPlayers?.map((p) => ({
     ...p,
     matches: p.matches_played,
-    attendance_percentage: p.attendance_pct,
-    win_pct: p.win_pct,
-    draw_pct: p.draw_pct,
-    loss_pct: p.loss_pct,
+    // Mapeamos los campos nuevos de la vista SQL
+    attendance_percentage: p.attendance_pct || 0,
+
+    // IMPORTANTE: Para la TABLA (StandingsTable), pasamos las Tasas Reales
+    win_pct: p.win_rate || 0, // % de Victorias (Matches Won / Played)
+    draw_pct: p.draw_rate || 0, // % de Empates
+    loss_pct: p.loss_rate || 0, // % de Derrotas
+
+    // Pasamos el array de forma
+    form_array: p.form_array || [],
+
+    // Guardamos la efectividad real por si la necesitamos para ordenar
+    effectiveness: p.effectiveness || 0,
   })) || [];
 
-// 4. Ordenamiento
+// 5. Ordenamiento
 const sortedPlayers = [...players].sort((a, b) => {
   switch (sort) {
     case "name":
@@ -67,6 +95,7 @@ const sortedPlayers = [...players].sort((a, b) => {
       return b.losses - a.losses;
     case "attendance":
       return b.attendance_percentage - a.attendance_percentage;
+    // Ordenar por porcentajes usa las tasas
     case "winRate":
       return b.win_pct - a.win_pct;
     case "drawRate":
@@ -74,8 +103,11 @@ const sortedPlayers = [...players].sort((a, b) => {
     case "lossRate":
       return b.loss_pct - a.loss_pct;
     default:
-      if (b.points === a.points) return b.win_pct - a.win_pct;
-      return b.points - a.points;
+      // Criterio por defecto: Puntos > Efectividad (no win_rate) > Partidos
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.effectiveness !== a.effectiveness)
+        return b.effectiveness - a.effectiveness;
+      return b.matches - a.matches;
   }
 });
 
@@ -86,7 +118,7 @@ const hasPlayersStats = sortedPlayers.length > 0;
   <Title
     title="Clasificación"
     subtitle={season === "Histórico"
-      ? "Histórico de todas las temporadas"
+      ? "Histórico Global"
       : `Temporada ${season}`}
   />
 
@@ -94,26 +126,40 @@ const hasPlayersStats = sortedPlayers.length > 0;
     class="bg-base-200 mb-6 flex flex-col gap-2 rounded-xl p-3 shadow-md sm:flex-row sm:items-center sm:gap-4"
   >
     <div
-      class="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between"
+      class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <fieldset class="fieldset w-full">
-        <legend class="fieldset-legend">Temporada</legend>
-        <select id="season" class="select select-sm md:select-lg w-full">
+      {/* Selector de Temporada */}
+      <div class="form-control w-full">
+        <label class="label py-1"
+          ><span class="label-text text-xs font-bold uppercase opacity-60"
+            >Temporada</span
+          ></label
+        >
+        <select
+          id="season"
+          class="select select-bordered select-sm md:select-md w-full"
+        >
           {
             seasons.map((s) => (
-              <option value={s} selected={season === s}>
+              <option value={s} selected={String(season) === String(s)}>
                 {s}
               </option>
             ))
           }
         </select>
-      </fieldset>
+      </div>
 
-      <div class="divider divider-horizontal hidden sm:flex"></div>
-
-      <fieldset class="fieldset w-full">
-        <legend class="fieldset-legend">Ordenar por</legend>
-        <select id="sort" class="select select-sm md:select-lg w-full">
+      {/* Selector de Orden */}
+      <div class="form-control w-full">
+        <label class="label py-1"
+          ><span class="label-text text-xs font-bold uppercase opacity-60"
+            >Ordenar por</span
+          ></label
+        >
+        <select
+          id="sort"
+          class="select select-bordered select-sm md:select-md w-full"
+        >
           {
             sortOptions.map((o) => (
               <option value={o.value} selected={sort === o.value}>
@@ -122,18 +168,21 @@ const hasPlayersStats = sortedPlayers.length > 0;
             ))
           }
         </select>
-      </fieldset>
+      </div>
     </div>
 
     <div class="divider m-0 sm:hidden"></div>
 
+    {/* Toggle Vista Detallada (Móvil) */}
     <div class="form-control w-full sm:hidden">
       <label class="label cursor-pointer justify-start gap-3 p-0">
-        <span class="text-xs uppercase">Vista Detallada</span>
+        <span class="text-xs font-bold uppercase opacity-60"
+          >Vista Detallada</span
+        >
         <input
           id="mode-toggle"
           type="checkbox"
-          class="toggle toggle-accent"
+          class="toggle toggle-primary toggle-sm"
           checked={mode === "detailed"}
         />
       </label>
@@ -142,17 +191,21 @@ const hasPlayersStats = sortedPlayers.length > 0;
 
   {
     !hasPlayersStats ? (
-      <div class="alert">
-        <Icon name="material-symbols:info" />
-        <span>No hay datos para esta temporada.</span>
+      <div
+        role="alert"
+        class="alert alert-warning bg-warning/10 border-warning/20"
+      >
+        <Icon name="material-symbols:warning" class="text-warning" />
+        <span class="text-sm font-medium">
+          No hay partidos registrados para la temporada {season}.
+        </span>
       </div>
     ) : (
-      <div class="space-y-6">
+      <div class="animate-fade-in space-y-6">
         <StandingsTable
           players={sortedPlayers}
           showDetails={mode === "detailed"}
         />
-
         <StandingsLegend />
       </div>
     )
@@ -162,18 +215,17 @@ const hasPlayersStats = sortedPlayers.length > 0;
 <script>
   const s = document.getElementById("season") as HTMLSelectElement;
   const o = document.getElementById("sort") as HTMLSelectElement;
-  const m = document.getElementById("mode-toggle") as HTMLInputElement; // El checkbox
+  const m = document.getElementById("mode-toggle") as HTMLInputElement;
 
   const update = () => {
     const url = new URL(window.location.href);
-    url.searchParams.set("season", s.value);
-    url.searchParams.set("sort", o.value);
-    // Si el checkbox está marcado, mode='detailed', si no 'simple'
-    url.searchParams.set("mode", m.checked ? "detailed" : "simple");
+    if (s) url.searchParams.set("season", s.value);
+    if (o) url.searchParams.set("sort", o.value);
+    if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
     window.location.href = url.toString();
   };
 
   s?.addEventListener("change", update);
   o?.addEventListener("change", update);
-  m?.addEventListener("change", update); // Escuchamos cambios en el toggle
+  m?.addEventListener("change", update);
 </script>
