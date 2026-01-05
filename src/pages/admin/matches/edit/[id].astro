@@ -1,0 +1,345 @@
+---
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+const { id } = Astro.params;
+
+// 1. Obtener datos para llenar el formulario
+// A. El partido actual
+const { data: match, error } = await supabase
+  .from("matches")
+  .select(`*, match_players(player_id, team)`)
+  .eq("id", id)
+  .single();
+
+// Si no existe el partido, volvemos a la lista (o da error si no manejas el 404 manual)
+if (!match) return Astro.redirect("/admin/matches");
+
+// B. Listas para los selectores (Canchas y Jugadores)
+const { data: fields } = await supabase
+  .from("fields")
+  .select("*")
+  .order("name");
+const { data: players } = await supabase
+  .from("players")
+  .select("*")
+  .eq("is_active", true) // <--- Agrega esto
+  .order("is_guest", { ascending: true })
+  .order("nickname", { ascending: true });
+
+// C. Calcular quién jugaba dónde para marcar los checkboxes
+const lightIds = match.match_players
+  .filter((mp: any) => mp.team === "light")
+  .map((mp: any) => mp.player_id);
+const darkIds = match.match_players
+  .filter((mp: any) => mp.team === "dark")
+  .map((mp: any) => mp.player_id);
+
+// --- LÓGICA DE GUARDADO (POST) ---
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  // 1. Datos básicos
+  const date = formData.get("date");
+  const field_id = formData.get("field_id");
+  const result = formData.get("result"); // 'light', 'dark', 'draw'
+  const video_url = formData.get("video_url");
+
+  // 2. Actualizar tabla MATCHES
+  await supabase
+    .from("matches")
+    .update({
+      date,
+      field_id,
+      result,
+      video_url: video_url || null,
+    })
+    .eq("id", id);
+
+  // 3. Actualizar EQUIPOS (Borrar y volver a crear es lo más seguro)
+  const newLightIds = formData.getAll("team_light");
+  const newDarkIds = formData.getAll("team_dark");
+
+  // Borramos los viejos
+  await supabase.from("match_players").delete().eq("match_id", id);
+
+  // Preparamos los nuevos registros
+  const newPlayers = [
+    ...newLightIds.map((pid) => ({
+      match_id: id,
+      player_id: pid,
+      team: "light",
+    })),
+    ...newDarkIds.map((pid) => ({
+      match_id: id,
+      player_id: pid,
+      team: "dark",
+    })),
+  ];
+
+  // Insertamos los nuevos
+  if (newPlayers.length > 0) {
+    await supabase.from("match_players").insert(newPlayers);
+  }
+
+  return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
+}
+---
+
+<Main title="Editar Partido | SGSC">
+  <Title title="Editar Partido" subtitle="Panel de Administración" />
+
+  {/* Alerta de éxito */}
+  {
+    Astro.url.searchParams.get("success") && (
+      <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
+        <Icon name="material-symbols:check-circle" size={22} />
+        <span class="flex-1 text-sm sm:text-base">
+          ¡Partido actualizado correctamente!
+        </span>
+        <a href="/matches" class="btn btn-sm btn-ghost">
+          <Icon name="material-symbols:arrow-back" size={18} />
+          <span class="hidden sm:inline">Volver al historial</span>
+        </a>
+      </div>
+    )
+  }
+
+  <form method="POST" class="space-y-6">
+    {/* Sección: Información General */}
+    <div
+      class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6 lg:p-8"
+    >
+      <div class="border-base-200 flex items-center gap-2 border-b pb-4">
+        <Icon name="material-symbols:info" size={20} class="text-primary" />
+        <h2
+          class="text-base-content/70 text-sm font-bold tracking-wider uppercase"
+        >
+          Información General
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+        {/* Fecha */}
+        <div class="form-control">
+          <label class="label">
+            <span
+              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+            >
+              <Icon
+                name="material-symbols:calendar-today"
+                size={18}
+                class="text-primary"
+              />
+              Fecha del Partido
+            </span>
+          </label>
+          <input
+            type="date"
+            name="date"
+            class="input input-bordered w-full rounded-xl"
+            required
+            value={match.date}
+          />
+        </div>
+
+        {/* Sede */}
+        <div class="form-control">
+          <label class="label">
+            <span
+              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+            >
+              <Icon
+                name="material-symbols:location-on"
+                size={18}
+                class="text-secondary"
+              />
+              Sede
+            </span>
+          </label>
+          <select
+            name="field_id"
+            class="select select-bordered w-full rounded-xl"
+          >
+            {
+              fields?.map((f) => (
+                <option value={f.id} selected={f.id === match.field_id}>
+                  {f.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        {/* Resultado */}
+        <div class="form-control">
+          <label class="label">
+            <span
+              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+            >
+              <Icon
+                name="material-symbols:trophy"
+                size={18}
+                class="text-warning"
+              />
+              Resultado Final
+            </span>
+          </label>
+          <select
+            name="result"
+            class="select select-bordered w-full rounded-xl font-bold"
+          >
+            <option value="light" selected={match.result === "light"}>
+              ☀️ Ganó Equipo Claro
+            </option>
+            <option value="dark" selected={match.result === "dark"}>
+              🌙 Ganó Equipo Oscuro
+            </option>
+            <option value="draw" selected={match.result === "draw"}>
+              ⚖️ Empate
+            </option>
+          </select>
+        </div>
+
+        {/* Video URL */}
+        <div class="form-control">
+          <label class="label">
+            <span
+              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+            >
+              <Icon
+                name="material-symbols:play-circle"
+                size={18}
+                class="text-error"
+              />
+              Enlace de Video
+            </span>
+          </label>
+          <input
+            type="url"
+            name="video_url"
+            class="input input-bordered w-full rounded-xl"
+            placeholder="https://..."
+            value={match.video_url}
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div
+      class="divider text-base-content/60 text-xs font-bold tracking-wider uppercase"
+    >
+      <Icon name="material-symbols:groups" size={20} class="mr-1" />
+      Equipos
+    </div>
+
+    {/* Sección: Equipos */}
+    <div class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+      {/* Equipo Claro */}
+      <div class="rounded-xl border-2 border-gray-200 bg-white shadow-md">
+        <div
+          class="sticky top-0 z-10 flex items-center justify-center gap-2 rounded-t-xl border-b border-gray-200 bg-gray-50 p-4"
+        >
+          <Icon
+            name="material-symbols:light-mode"
+            size={22}
+            class="text-amber-500"
+          />
+          <h3
+            class="text-sm font-black tracking-wide text-gray-700 uppercase sm:text-base"
+          >
+            Equipo Claro
+          </h3>
+        </div>
+        <div class="max-h-80 space-y-1 overflow-y-auto p-3 sm:max-h-96 sm:p-4">
+          {
+            players?.map((p) => (
+              <label class="flex cursor-pointer items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-gray-100 has-[:checked]:bg-amber-50 has-[:checked]:shadow-sm sm:p-3">
+                <input
+                  type="checkbox"
+                  name="team_light"
+                  value={p.id}
+                  class="checkbox checkbox-sm border-gray-300 checked:border-amber-500 checked:bg-amber-500"
+                  checked={lightIds.includes(p.id)}
+                />
+                <span class="flex-1 text-sm font-bold text-gray-800">
+                  {p.nickname}
+                </span>
+                {p.is_guest && (
+                  <span class="badge badge-ghost badge-sm border-gray-200 text-[10px] font-medium opacity-70">
+                    INV
+                  </span>
+                )}
+              </label>
+            ))
+          }
+        </div>
+      </div>
+
+      {/* Equipo Oscuro */}
+      <div class="rounded-xl border-2 border-slate-700 bg-slate-800 shadow-md">
+        <div
+          class="sticky top-0 z-10 flex items-center justify-center gap-2 rounded-t-xl border-b border-slate-700 bg-slate-900/70 p-4"
+        >
+          <Icon
+            name="material-symbols:dark-mode"
+            size={22}
+            class="text-slate-300"
+          />
+          <h3
+            class="text-sm font-black tracking-wide text-slate-200 uppercase sm:text-base"
+          >
+            Equipo Oscuro
+          </h3>
+        </div>
+        <div class="max-h-80 space-y-1 overflow-y-auto p-3 sm:max-h-96 sm:p-4">
+          {
+            players?.map((p) => (
+              <label class="flex cursor-pointer items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-slate-700 has-[:checked]:bg-slate-600 has-[:checked]:shadow-sm sm:p-3">
+                <input
+                  type="checkbox"
+                  name="team_dark"
+                  value={p.id}
+                  class="checkbox checkbox-sm border-slate-500 checked:border-slate-300 checked:bg-slate-300"
+                  checked={darkIds.includes(p.id)}
+                />
+                <span class="flex-1 text-sm font-bold text-slate-100">
+                  {p.nickname}
+                </span>
+                {p.is_guest && (
+                  <span class="badge badge-ghost badge-sm border-slate-600 text-[10px] font-medium text-slate-400">
+                    INV
+                  </span>
+                )}
+              </label>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    {/* Botones de acción */}
+    <div
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <a
+        href="/matches"
+        class="btn btn-ghost order-2 w-full rounded-xl sm:order-1 sm:w-auto"
+      >
+        <Icon name="material-symbols:arrow-back" size={18} />
+        Cancelar
+      </a>
+      <button
+        type="submit"
+        class="btn btn-primary order-1 w-full gap-2 rounded-xl shadow-md transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] sm:order-2 sm:w-auto sm:px-8"
+      >
+        <Icon name="material-symbols:save" size={20} />
+        Guardar Cambios
+      </button>
+    </div>
+  </form>
+</Main>

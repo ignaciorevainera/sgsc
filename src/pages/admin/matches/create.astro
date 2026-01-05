@@ -1,0 +1,541 @@
+---
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+// --- 1. SEGURIDAD ---
+const supabase = createAstroSupabase(Astro);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect("/login");
+}
+
+// --- 2. DATA ---
+const { data: players } = await supabase
+  .from("players")
+  .select("*")
+  .eq("is_active", true) // <--- Agrega esto
+  // 1. Primero por Estado: 'false' (Socio) va antes que 'true' (Invitado)
+  .order("is_guest", { ascending: true })
+  // 2. Luego Alfabéticamente por Apodo
+  .order("nickname", { ascending: true });
+
+const { data: fields } = await supabase
+  .from("fields")
+  .select("*")
+  .order("name");
+
+// --- 3. POST LOGIC ---
+let successMessage = "";
+let errorMessage = "";
+
+if (Astro.request.method === "POST") {
+  try {
+    const formData = await Astro.request.formData();
+    const date = formData.get("date");
+    const field_id = formData.get("field_id");
+    const result = formData.get("result");
+
+    const lightPlayers: any[] = [];
+    const darkPlayers: any[] = [];
+
+    // Recolectar jugadores
+    players?.forEach((p) => {
+      const selection = formData.get(`player_${p.id}`);
+      if (selection === "light") lightPlayers.push(p.id);
+      if (selection === "dark") darkPlayers.push(p.id);
+    });
+
+    if (!date || !field_id || !result)
+      throw new Error("Faltan datos obligatorios");
+    if (lightPlayers.length === 0 || darkPlayers.length === 0)
+      throw new Error("Equipos incompletos");
+
+    const { error } = await supabase.rpc("create_complete_match", {
+      p_date: date,
+      p_field_id: field_id,
+      p_result: result,
+      p_light_players: lightPlayers,
+      p_dark_players: darkPlayers,
+    });
+
+    if (error) throw error;
+    successMessage = "¡Partido registrado con éxito!";
+  } catch (err: any) {
+    errorMessage = err.message;
+  }
+}
+---
+
+<Main title="Cargar Partido | SGSC">
+  <Title title="Cargar Partido" subtitle="Panel de Administración" />
+
+  {/* Alertas */}
+  {
+    successMessage && (
+      <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
+        <Icon name="material-symbols:check-circle" size={22} />
+        <span class="flex-1 text-sm sm:text-base">{successMessage}</span>
+        <a href="/admin/add-match" class="btn btn-sm btn-ghost">
+          <Icon name="material-symbols:add" size={18} />
+          <span class="hidden sm:inline">Cargar otro</span>
+        </a>
+      </div>
+    )
+  }
+
+  {
+    errorMessage && (
+      <div role="alert" class="alert alert-error mb-6 rounded-xl shadow-md">
+        <Icon name="material-symbols:error" size={22} />
+        <span class="text-sm sm:text-base">{errorMessage}</span>
+      </div>
+    )
+  }
+
+  <form
+    method="POST"
+    id="matchForm"
+    class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6 lg:p-8"
+  >
+    {/* Sección: Fecha y Sede */}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+      <div class="form-control">
+        <label class="label">
+          <span
+            class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+          >
+            <Icon
+              name="material-symbols:calendar-today"
+              size={18}
+              class="text-primary"
+            />
+            Fecha del Partido
+          </span>
+        </label>
+        <input
+          type="date"
+          name="date"
+          id="inputDate"
+          class="input input-bordered w-full rounded-xl"
+          required
+        />
+      </div>
+      <div class="form-control">
+        <label class="label">
+          <span
+            class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+          >
+            <Icon
+              name="material-symbols:location-on"
+              size={18}
+              class="text-secondary"
+            />
+            Sede
+          </span>
+        </label>
+        <select
+          name="field_id"
+          id="inputField"
+          class="select select-bordered w-full rounded-xl"
+          required
+        >
+          <option disabled selected value="">Selecciona una cancha</option>
+          {
+            fields?.map((f) => (
+              <option value={f.id} data-name={f.name}>
+                {f.name}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+    </div>
+
+    {/* Sección: Resultado */}
+    <div class="form-control">
+      <label class="label">
+        <span
+          class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+        >
+          <Icon name="material-symbols:trophy" size={18} class="text-warning" />
+          Resultado del Partido
+        </span>
+      </label>
+      <div class="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+        {/* Opción: Ganó Claro */}
+        <label
+          class="group cursor-pointer rounded-xl border-2 border-gray-200 bg-white p-3 text-center transition-all hover:border-gray-400 hover:shadow-md has-[:checked]:border-gray-500 has-[:checked]:bg-gray-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+        >
+          <div class="flex flex-col items-center gap-1 sm:gap-2">
+            <Icon
+              name="material-symbols:light-mode"
+              size={28}
+              class="text-amber-500 sm:text-3xl lg:text-4xl"
+            />
+            <span
+              class="text-xs font-bold text-gray-700 sm:text-sm lg:text-base"
+              >Claro</span
+            >
+          </div>
+          <input
+            type="radio"
+            name="result"
+            value="light"
+            class="hidden"
+            required
+          />
+        </label>
+
+        {/* Opción: Empate */}
+        <label
+          class="group cursor-pointer rounded-xl border-2 border-yellow-200 bg-yellow-50 p-3 text-center transition-all hover:border-yellow-400 hover:shadow-md has-[:checked]:border-yellow-500 has-[:checked]:bg-yellow-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+        >
+          <div class="flex flex-col items-center gap-1 sm:gap-2">
+            <Icon
+              name="material-symbols:balance"
+              size={28}
+              class="text-yellow-600 sm:text-3xl lg:text-4xl"
+            />
+            <span
+              class="text-xs font-bold text-yellow-700 sm:text-sm lg:text-base"
+              >Empate</span
+            >
+          </div>
+          <input type="radio" name="result" value="draw" class="hidden" />
+        </label>
+
+        {/* Opción: Ganó Oscuro */}
+        <label
+          class="group cursor-pointer rounded-xl border-2 border-slate-300 bg-slate-800 p-3 text-center transition-all hover:border-slate-500 hover:shadow-md has-[:checked]:border-slate-400 has-[:checked]:bg-slate-900 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+        >
+          <div class="flex flex-col items-center gap-1 sm:gap-2">
+            <Icon
+              name="material-symbols:dark-mode"
+              size={28}
+              class="text-slate-300 sm:text-3xl lg:text-4xl"
+            />
+            <span
+              class="text-xs font-bold text-slate-200 sm:text-sm lg:text-base"
+              >Oscuro</span
+            >
+          </div>
+          <input type="radio" name="result" value="dark" class="hidden" />
+        </label>
+      </div>
+    </div>
+
+    {/* Divider */}
+    <div
+      class="divider text-base-content/60 text-xs font-bold tracking-wider uppercase"
+    >
+      <Icon name="material-symbols:groups" size={20} class="mr-1" />
+      Convocatoria
+    </div>
+
+    {/* Tabla de Jugadores */}
+    <div
+      class="bg-base-100 max-h-[400px] overflow-auto rounded-xl border shadow-sm sm:max-h-[450px] lg:max-h-[500px]"
+    >
+      <table class="table-pin-rows table w-full">
+        <thead>
+          <tr class="bg-base-200">
+            <th class="text-sm font-bold sm:text-base">Jugador</th>
+            <th class="w-16 text-center text-xs sm:w-20 sm:text-sm">
+              <span class="hidden sm:inline">No Jugó</span>
+              <span class="sm:hidden">—</span>
+            </th>
+            <th class="w-16 text-center sm:w-20">
+              <Icon
+                name="material-symbols:light-mode"
+                size={22}
+                class="text-amber-500"
+              />
+            </th>
+            <th class="w-16 text-center sm:w-20">
+              <Icon
+                name="material-symbols:dark-mode"
+                size={22}
+                class="text-slate-400"
+              />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            players?.map((player) => (
+              <tr class="hover:bg-base-200/50 transition-colors">
+                <td class="py-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold sm:text-base">
+                      {player.nickname}
+                    </span>
+                    {player.is_guest && (
+                      <span class="badge badge-ghost badge-sm border-base-300 text-[10px] font-medium opacity-70">
+                        INV
+                      </span>
+                    )}
+                  </div>
+                </td>
+
+                <td class="text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="none"
+                    class="radio radio-sm radio-ghost opacity-30"
+                    checked
+                  />
+                </td>
+
+                <td class="bg-gray-50/50 text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="light"
+                    data-nickname={player.nickname}
+                    class="radio radio-sm player-selector sm:radio-md border-gray-300 checked:border-gray-600 checked:bg-gray-600"
+                  />
+                </td>
+
+                <td class="bg-slate-900/5 text-center">
+                  <input
+                    type="radio"
+                    name={`player_${player.id}`}
+                    value="dark"
+                    data-nickname={player.nickname}
+                    class="radio radio-sm radio-neutral player-selector sm:radio-md"
+                  />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <button
+      type="button"
+      id="btnPreview"
+      class="btn btn-primary btn-lg w-full gap-2 rounded-xl shadow-md transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+    >
+      <Icon name="material-symbols:visibility" size={24} />
+      <span class="text-sm font-bold sm:text-base">Previsualizar Partido</span>
+    </button>
+  </form>
+
+  {/* Modal de Previsualización */}
+  <dialog id="preview_modal" class="modal modal-bottom sm:modal-middle">
+    <div
+      class="modal-box bg-base-100 max-h-[90vh] overflow-hidden rounded-t-2xl p-0 sm:max-w-lg sm:rounded-2xl"
+    >
+      {/* Header del Modal */}
+      <div
+        class="bg-primary text-primary-content flex items-center justify-center gap-2 p-4 sm:p-5"
+      >
+        <Icon name="material-symbols:fact-check" size={24} />
+        <h3 class="text-lg font-black tracking-tight uppercase sm:text-xl">
+          Confirmar Partido
+        </h3>
+      </div>
+
+      {/* Contenido del Modal */}
+      <div class="space-y-5 p-5 sm:p-6">
+        {/* Fecha y Cancha */}
+        <div
+          class="bg-base-200/50 flex items-center justify-between rounded-xl p-4"
+        >
+          <div class="text-left">
+            <p
+              class="text-base-content/60 flex items-center gap-1 text-xs font-bold uppercase"
+            >
+              <Icon name="material-symbols:calendar-today" size={14} />
+              Fecha
+            </p>
+            <p class="text-base font-bold sm:text-lg" id="previewDate">
+              --/--/----
+            </p>
+          </div>
+          <div class="text-right">
+            <p
+              class="text-base-content/60 flex items-center justify-end gap-1 text-xs font-bold uppercase"
+            >
+              <Icon name="material-symbols:location-on" size={14} />
+              Cancha
+            </p>
+            <p
+              class="text-primary max-w-32 truncate text-base font-bold sm:max-w-none sm:text-lg"
+              id="previewField"
+            >
+              ---
+            </p>
+          </div>
+        </div>
+
+        {/* Badge de Resultado */}
+        <div class="text-center">
+          <span
+            id="previewResultBadge"
+            class="badge badge-lg h-10 px-6 text-sm font-bold uppercase"
+          >
+            ---
+          </span>
+        </div>
+
+        {/* Equipos */}
+        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+          {/* Equipo Claro */}
+          <div class="rounded-xl border-2 border-gray-200 bg-white p-3 sm:p-4">
+            <h4
+              class="mb-2 flex items-center justify-center gap-1 border-b border-gray-200 pb-2 text-xs font-black text-gray-600 uppercase sm:text-sm"
+            >
+              <Icon
+                name="material-symbols:light-mode"
+                size={16}
+                class="text-amber-500"
+              /> Claro
+            </h4>
+            <ul
+              id="previewLightList"
+              class="space-y-1 text-xs text-gray-700 sm:text-sm"
+            >
+            </ul>
+          </div>
+
+          {/* Equipo Oscuro */}
+          <div
+            class="rounded-xl border-2 border-slate-700 bg-slate-800 p-3 text-slate-200 sm:p-4"
+          >
+            <h4
+              class="mb-2 flex items-center justify-center gap-1 border-b border-slate-700 pb-2 text-xs font-black text-slate-300 uppercase sm:text-sm"
+            >
+              <Icon
+                name="material-symbols:dark-mode"
+                size={16}
+                class="text-slate-400"
+              /> Oscuro
+            </h4>
+            <ul id="previewDarkList" class="space-y-1 text-xs sm:text-sm"></ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer del Modal */}
+      <div
+        class="modal-action bg-base-200/50 m-0 flex flex-col-reverse gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+      >
+        <form method="dialog" class="w-full sm:w-auto">
+          <button class="btn btn-ghost w-full rounded-xl sm:w-auto">
+            <Icon name="material-symbols:close" size={18} />
+            Cancelar
+          </button>
+        </form>
+        <button
+          id="btnConfirm"
+          class="btn btn-success w-full gap-2 rounded-xl text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
+        >
+          <Icon name="material-symbols:save" size={20} />
+          <span>Confirmar y Guardar</span>
+        </button>
+      </div>
+    </div>
+
+    {/* Backdrop para cerrar */}
+    <form method="dialog" class="modal-backdrop">
+      <button>Cerrar</button>
+    </form>
+  </dialog>
+</Main>
+
+<script is:inline>
+  // LÓGICA CLIENT-SIDE PARA EL PREVIEW
+  const btnPreview = document.getElementById("btnPreview");
+  const btnConfirm = document.getElementById("btnConfirm");
+  const modal = document.getElementById("preview_modal");
+  const form = document.getElementById("matchForm");
+
+  btnPreview.addEventListener("click", () => {
+    // 1. Validar campos básicos
+    const date = document.getElementById("inputDate").value;
+    const fieldSelect = document.getElementById("inputField");
+    const fieldName =
+      fieldSelect.options[fieldSelect.selectedIndex]?.dataset.name;
+    const resultInput = document.querySelector('input[name="result"]:checked');
+
+    if (!date || !fieldName || !resultInput) {
+      alert("Por favor completa fecha, cancha y resultado.");
+      return;
+    }
+
+    // 2. Recolectar Jugadores
+    const lightPlayers = [];
+    const darkPlayers = [];
+
+    // Buscamos todos los inputs "checked" que sean de jugadores
+    document.querySelectorAll(".player-selector:checked").forEach((input) => {
+      const nickname = input.dataset.nickname;
+      if (input.value === "light") lightPlayers.push(nickname);
+      if (input.value === "dark") darkPlayers.push(nickname);
+    });
+
+    if (lightPlayers.length === 0 || darkPlayers.length === 0) {
+      alert("Debes seleccionar jugadores para ambos equipos.");
+      return;
+    }
+
+    // 3. Llenar el Modal
+    document.getElementById("previewDate").innerText = new Date(
+      date
+    ).toLocaleDateString("es-AR");
+    document.getElementById("previewField").innerText = fieldName;
+
+    // Estilo del Badge de Resultado
+    const badge = document.getElementById("previewResultBadge");
+    const resultVal = resultInput.value;
+
+    badge.className = "badge badge-lg h-10 px-6 text-sm font-bold uppercase ";
+    if (resultVal === "light") {
+      badge.classList.add(
+        "bg-white",
+        "text-gray-800",
+        "border",
+        "border-gray-300",
+        "shadow-sm"
+      );
+      badge.innerText = "☀️ Ganó Equipo Claro";
+    } else if (resultVal === "dark") {
+      badge.classList.add("bg-slate-800", "text-white", "border-slate-700");
+      badge.innerText = "🌙 Ganó Equipo Oscuro";
+    } else {
+      badge.classList.add("badge-warning");
+      badge.innerText = "⚖️ Empate";
+    }
+
+    // Listas de jugadores (con mejor formato)
+    const listLight = document.getElementById("previewLightList");
+    const listDark = document.getElementById("previewDarkList");
+    listLight.innerHTML = lightPlayers
+      .map(
+        (p) =>
+          `<li class="flex items-center gap-1"><span class="text-gray-400">•</span> ${p}</li>`
+      )
+      .join("");
+    listDark.innerHTML = darkPlayers
+      .map(
+        (p) =>
+          `<li class="flex items-center gap-1"><span class="text-slate-500">•</span> ${p}</li>`
+      )
+      .join("");
+
+    // 4. Mostrar Modal
+    modal.showModal();
+  });
+
+  // 5. Confirmar envío
+  btnConfirm.addEventListener("click", () => {
+    form.submit(); // Esto envía el POST real al servidor
+  });
+</script>

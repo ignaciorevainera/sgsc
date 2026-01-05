@@ -1,9 +1,17 @@
 ---
 import { Icon } from "astro-icon/components";
+import { createAstroSupabase } from "@/lib/supabase"; // 1. Importamos el cliente
 
 const { match } = Astro.props;
 
-// Función para formatear la fecha [cite: 114, 115]
+// 2. Verificamos si hay un usuario logueado
+const supabase = createAstroSupabase(Astro);
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+const isLoggedIn = !!session; // True si hay usuario, False si es anónimo
+
+// Función para formatear la fecha
 const formatDate = (dateString: string) => {
   if (!dateString) return "";
   const date = new Date(dateString + "T00:00:00");
@@ -14,7 +22,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Traducciones y lógica de ganadores [cite: 116, 117]
+// Traducciones y lógica de ganadores
 const resultLabels: Record<string, string> = {
   light: "Ganó Equipo Claro",
   dark: "Ganó Equipo Oscuro",
@@ -25,7 +33,7 @@ const isLightWinner = match.result === "light";
 const isDarkWinner = match.result === "dark";
 const isDraw = match.result === "draw";
 
-// Filtramos y ordenamos los jugadores [cite: 118, 119, 120, 121]
+// Filtramos y ordenamos los equipos
 const lightTeam =
   match.match_players?.filter((mp: any) => mp.team === "light") || [];
 const darkTeam =
@@ -44,9 +52,10 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
 ---
 
 <div
-  class="card bg-base-100 border-base-200 relative h-full overflow-hidden rounded-xl border shadow-md"
+  class="card bg-base-100 border-base-200 h-full rounded-xl border shadow-md"
 >
   <div class="card-body gap-4">
+    {/* Cabecera: Fecha y Cancha */}
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <Icon
@@ -54,64 +63,83 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
           size={18}
           class="text-primary"
         />
-        <span class="font-semibold">{formatDate(match.date)}</span>
+        <span class="text-sm font-semibold sm:text-base"
+          >{formatDate(match.date)}</span
+        >
       </div>
-      <div class="flex flex-row-reverse items-center gap-2">
+      <div class="flex flex-row-reverse items-center gap-2 overflow-hidden">
         <Icon
           name="material-symbols:location-on"
           size={18}
           class="text-secondary"
         />
-        <span class="max-w-30 truncate font-semibold">
+        <span class="truncate text-sm font-semibold sm:text-base">
           {match.fields?.name || "Cancha Desconocida"}
         </span>
       </div>
     </div>
 
-    <div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
+    {/* Fila de Resultado, Video y Editar */}
+    <div class="flex flex-col items-center justify-center gap-2 lg:flex-row">
       <span
-        class={`badge badge-lg rounded-xl font-semibold h-9 ${
+        class={`badge badge-lg rounded-xl font-bold h-9 px-4 whitespace-nowrap ${
           isDraw
             ? "badge-warning"
             : isLightWinner
-              ? "bg-white text-black border border-gray-200"
+              ? "bg-white text-black border border-gray-200 shadow-sm"
               : "bg-black text-white"
         }`}
       >
         {resultLabels[match.result] || match.result}
       </span>
 
-      {/* Botón de Video/Drive al mismo nivel */}
-      {
-        match.video_url && (
-          <a
-            href={match.video_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="bg-primary/90 hover:bg-primary group flex h-9 items-center gap-2 rounded-xl px-4 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md transition-all hover:scale-105 active:scale-95"
-            title="Ver video del partido"
-          >
-            <Icon
-              name="material-symbols:play-circle"
-              size={18}
-              class="animate-pulse group-hover:animate-none"
-            />
-            <span>Ver Video</span>
-          </a>
-        )
-      }
+      <div class="flex items-center gap-2">
+        {
+          match.video_url && (
+            <a
+              href={match.video_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="bg-primary/90 hover:bg-primary group flex h-9 items-center gap-2 rounded-xl px-4 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md transition-all hover:scale-105 active:scale-95"
+            >
+              <Icon
+                name="material-symbols:play-circle"
+                size={18}
+                class="shrink-0 animate-pulse group-hover:animate-none"
+              />
+              <span>Ver Video</span>
+            </a>
+          )
+        }
+
+        {/* Botón Editar (Solo visible para admins) */}
+        {
+          isLoggedIn && (
+            <a
+              href={`/admin/matches/edit/${match.id}`}
+              class="bg-base-300 hover:bg-base-content/20 group text-base-content flex h-9 items-center gap-2 rounded-xl px-4 py-1.5 text-[10px] font-black tracking-wider uppercase shadow-md transition-all hover:scale-105 active:scale-95"
+              title="Editar Partido"
+            >
+              <Icon name="material-symbols:edit-square-outline" size={18} />
+            </a>
+          )
+        }
+      </div>
     </div>
 
+    {/* Equipos */}
     <div class="flex flex-1 flex-col gap-3">
       {/* Equipo Claro */}
       <div
-        class={`flex-1 rounded-xl border-2 p-4 bg-white text-gray-900 ${isLightWinner ? "border-success bg-success/5" : isDraw ? "border-warning" : "border-gray-100"}`}
+        class={`flex-1 rounded-xl border-2 p-4 bg-white text-gray-900 ${isLightWinner ? "outline-success outline-4" : isDraw ? "border-warning" : "border-gray-300"}`}
       >
-        <h3 class="mb-3 text-lg font-black text-gray-900">Equipo Claro</h3>
+        <h3 class="mb-3 text-lg font-black tracking-tight text-gray-900">
+          Equipo Claro
+        </h3>
         <div class="flex flex-wrap gap-2">
           {
             sortedLightTeam.map((mp: any) => (
-              <span class="rounded-xl border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-900">
+              <span class="rounded-xl border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-900">
                 {mp.players?.nickname || "Jugador"}
               </span>
             ))
@@ -121,13 +149,15 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
 
       {/* Equipo Oscuro */}
       <div
-        class={`flex-1 rounded-xl border-2 bg-slate-800 text-slate-100 p-4 ${isDarkWinner ? "border-success bg-success/10" : isDraw ? "border-warning" : "border-slate-700"}`}
+        class={`flex-1 rounded-xl border-2 bg-slate-800 text-slate-100 p-4 ${isDarkWinner ? "outline-success outline-4" : isDraw ? "border-warning" : "border-slate-700"}`}
       >
-        <h3 class="mb-3 text-lg font-black text-slate-100">Equipo Oscuro</h3>
+        <h3 class="mb-3 text-lg font-black tracking-tight text-slate-100">
+          Equipo Oscuro
+        </h3>
         <div class="flex flex-wrap gap-2">
           {
             sortedDarkTeam.map((mp: any) => (
-              <span class="rounded-xl border border-slate-600 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100">
+              <span class="rounded-xl border border-slate-700 bg-slate-700 px-3 py-1 text-xs font-medium text-slate-100">
                 {mp.players?.nickname || "Jugador"}
               </span>
             ))
