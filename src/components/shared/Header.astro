@@ -87,18 +87,27 @@ const currentPath = Astro.url.pathname;
           </div>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-1 mt-3 w-52 rounded-xl border p-2 shadow-md"
+            class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-50 mt-3 w-52 rounded-xl border p-2 shadow-md"
           >
             <li class="menu-title text-[10px] uppercase opacity-50">
               Administrador
             </li>
+
+            {/* --- CAMBIO PRINCIPAL: Enlace al Dashboard --- */}
             <li>
-              <a href="/admin/add-match" class="justify-between">
-                Cargar Partido
-                <span class="badge badge-primary badge-xs">Nuevo</span>
+              <a href="/admin" class="flex items-center gap-2 font-semibold">
+                <Icon
+                  name="material-symbols:dashboard"
+                  size={18}
+                  class="text-primary"
+                />
+                Panel de Control
               </a>
             </li>
+            {/* --------------------------------------------- */}
+
             <div class="divider my-0" />
+
             <li>
               <form
                 action="/api/auth/signout"
@@ -117,7 +126,8 @@ const currentPath = Astro.url.pathname;
           </ul>
         </div>
       ) : (
-        // OPCIÓN B: NO LOGUEADO (Tu botón original del candado)
+        // OPCIÓN B: NO LOGUEADO (Botón candado)
+        // Nota: Asegúrate de que tu ruta sea '/signin' o '/login' según tu archivo
         <a
           href="/login"
           class="btn btn-ghost btn-circle tooltip tooltip-bottom"

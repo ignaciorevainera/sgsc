@@ -11,7 +11,7 @@ const {
   data: { session },
 } = await supabase.auth.getSession();
 if (session) {
-  return Astro.redirect("/admin/add-match");
+  return Astro.redirect("/admin");
 }
 
 let errorMessage = "";
@@ -31,7 +31,7 @@ if (Astro.request.method === "POST") {
 
     if (error) throw new Error("Email o contraseña incorrectos.");
 
-    return Astro.redirect("/admin/add-match");
+    return Astro.redirect("/admin");
   } catch (err: any) {
     errorMessage = err.message;
   }
