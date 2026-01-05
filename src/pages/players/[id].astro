@@ -4,6 +4,8 @@ import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 
+import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
+
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
 
@@ -83,21 +85,6 @@ allHistory?.forEach((m: any) => {
 const topField =
   Object.entries(fieldCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
 
-// Edad
-const calculateAge = (birthday: string) => {
-  if (!birthday) return null;
-  const birthDate = new Date(birthday);
-  const ageDifMs = Date.now() - birthDate.getTime();
-  return Math.abs(new Date(ageDifMs).getUTCFullYear() - 1970);
-};
-const age = calculateAge(player.birth_date);
-const birthDateFormatted = player.birth_date
-  ? new Date(player.birth_date).toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-    })
-  : null;
-
 // --- TRADUCCIÓN PIERNA DOMINANTE (Nueva Lógica) ---
 const footMap: Record<string, string> = {
   right: "Diestro",
@@ -117,13 +104,6 @@ const recentMatches = allHistory?.slice(0, 5).map((mp: any) => {
   else if (m.result === mp.team) outcome = "W";
   return { date: m.date, fieldName: m.fields?.name, outcome };
 });
-
-const formatDate = (dateString: string) =>
-  new Date(dateString).toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 
 const getOutcomeConfig = (outcome: string) => {
   const configs: any = {
@@ -192,18 +172,18 @@ const getOutcomeConfig = (outcome: string) => {
             class="flex flex-wrap items-center justify-center gap-2 sm:justify-start"
           >
             {
-              age && (
+              player.birth_date && (
                 <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
                   <Icon name="material-symbols:calendar-today" size={12} />
-                  {age} años
+                  {calculateAge(player.birth_date)} años
                 </div>
               )
             }
             {
-              birthDateFormatted && (
+              player.birth_date && (
                 <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
                   <Icon name="material-symbols:cake" size={12} />
-                  {birthDateFormatted}
+                  {formatDate(player.birth_date)}
                 </div>
               )
             }
