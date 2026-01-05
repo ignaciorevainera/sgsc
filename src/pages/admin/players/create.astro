@@ -1,0 +1,101 @@
+---
+import Main from "@/layouts/Main.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+
+  const nickname = formData.get("nickname");
+  // CAMBIO: Capturamos first_name y last_name por separado
+  const first_name = formData.get("first_name");
+  const last_name = formData.get("last_name");
+  const birth_date = formData.get("birth_date");
+  const preferred_foot = formData.get("preferred_foot");
+
+  const { error } = await supabase.from("players").insert({
+    nickname,
+    first_name: first_name || null, // CAMBIO
+    last_name: last_name || null, // CAMBIO
+    birth_date: birth_date || null,
+    preferred_foot: preferred_foot || null,
+  });
+
+  if (error) {
+    console.error(error);
+  } else {
+    return Astro.redirect("/admin/players");
+  }
+}
+---
+
+<Main title="Nuevo Jugador">
+  <div class="mx-auto max-w-lg px-4 py-8">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-xl font-black uppercase">Nuevo Jugador</h1>
+      <a href="/admin/players" class="btn btn-ghost btn-sm">Volver</a>
+    </div>
+
+    <form
+      method="POST"
+      class="card bg-base-100 border-base-200 space-y-4 border p-6 shadow-lg"
+    >
+      <div class="form-control">
+        <label class="label"
+          ><span class="label-text font-bold">Apodo (Requerido)</span></label
+        >
+        <input
+          type="text"
+          name="nickname"
+          required
+          class="input input-bordered"
+          placeholder="Ej: Messi"
+        />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Nombre</span></label>
+          <input
+            type="text"
+            name="first_name"
+            class="input input-bordered"
+            placeholder="Lionel"
+          />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Apellido</span></label>
+          <input
+            type="text"
+            name="last_name"
+            class="input input-bordered"
+            placeholder="Messi"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-control">
+          <label class="label"
+            ><span class="label-text">Fecha Nacimiento</span></label
+          >
+          <input type="date" name="birth_date" class="input input-bordered" />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Pie Hábil</span></label>
+          <select name="preferred_foot" class="select select-bordered">
+            <option value="right">Diestro (Derecha)</option>
+            <option value="left">Zurdo (Izquierda)</option>
+            <option value="both">Ambidiestro</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block mt-4"
+        >Guardar Jugador</button
+      >
+    </form>
+  </div>
+</Main>

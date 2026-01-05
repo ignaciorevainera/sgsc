@@ -1,0 +1,185 @@
+---
+import Main from "@/layouts/Main.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+const { id } = Astro.params;
+
+// Obtener datos actuales
+const { data: player } = await supabase
+  .from("players")
+  .select("*")
+  .eq("id", id)
+  .single();
+if (!player) return Astro.redirect("/admin/players");
+
+// --- UPDATE ---
+if (Astro.request.method === "POST") {
+  const formData = await Astro.request.formData();
+  const action = formData.get("action");
+
+  let error = null;
+
+  if (action === "toggle_status") {
+    // Borrado Lógico
+    const newStatus = !player.is_active;
+    const { error: updateError } = await supabase
+      .from("players")
+      .update({ is_active: newStatus })
+      .eq("id", id);
+    error = updateError;
+  } else {
+    // Edición normal
+    const nickname = formData.get("nickname");
+    // CAMBIO: first_name y last_name
+    const first_name = formData.get("first_name");
+    const last_name = formData.get("last_name");
+    const birth_date = formData.get("birth_date");
+    const preferred_foot = formData.get("preferred_foot");
+
+    const { error: updateError } = await supabase
+      .from("players")
+      .update({
+        nickname,
+        first_name: first_name || null, // CAMBIO
+        last_name: last_name || null, // CAMBIO
+        birth_date: birth_date || null,
+        preferred_foot: preferred_foot || null,
+      })
+      .eq("id", id);
+    error = updateError;
+  }
+
+  if (error) {
+    console.error("Error al actualizar jugador:", error);
+    return new Response(JSON.stringify(error), { status: 500 });
+  }
+
+  return Astro.redirect(`/admin/players/edit/${id}?success=true`);
+}
+---
+
+<Main title="Editar Jugador">
+  <div class="mx-auto max-w-lg px-4 py-8">
+    <div class="mb-6 flex items-center justify-between">
+      <h1 class="text-xl font-black uppercase">Editar Jugador</h1>
+      <a href="/admin/players" class="btn btn-ghost btn-sm">Volver</a>
+    </div>
+
+    {
+      Astro.url.searchParams.get("success") && (
+        <div role="alert" class="alert alert-success mb-4 p-2 text-sm">
+          <Icon name="material-symbols:check-circle" />
+          <span>Cambios guardados correctamente.</span>
+        </div>
+      )
+    }
+
+    <form
+      method="POST"
+      class="card bg-base-100 border-base-200 mb-8 space-y-4 border p-6 shadow-lg"
+    >
+      <input type="hidden" name="action" value="update" />
+
+      <div class="form-control">
+        <label class="label"
+          ><span class="label-text font-bold">Apodo</span></label
+        >
+        <input
+          type="text"
+          name="nickname"
+          value={player.nickname}
+          required
+          class="input input-bordered"
+        />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-control">
+          <label class="label"><span class="label-text">Nombre</span></label>
+          <input
+            type="text"
+            name="first_name"
+            value={player.first_name || ""}
+            class="input input-bordered"
+          />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Apellido</span></label>
+          <input
+            type="text"
+            name="last_name"
+            value={player.last_name || ""}
+            class="input input-bordered"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-control">
+          <label class="label"
+            ><span class="label-text">Fecha Nacimiento</span></label
+          >
+          <input
+            type="date"
+            name="birth_date"
+            value={player.birth_date}
+            class="input input-bordered"
+          />
+        </div>
+        <div class="form-control">
+          <label class="label"><span class="label-text">Pie Hábil</span></label>
+          <select name="preferred_foot" class="select select-bordered">
+            <option value="right" selected={player.preferred_foot === "right"}
+              >Diestro</option
+            >
+            <option value="left" selected={player.preferred_foot === "left"}
+              >Zurdo</option
+            >
+            <option value="both" selected={player.preferred_foot === "both"}
+              >Ambidiestro</option
+            >
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block mt-4"
+        >Actualizar Datos</button
+      >
+    </form>
+
+    <div class="card bg-base-200 border-base-300 border p-6">
+      <h3 class="mb-2 text-xs font-bold uppercase opacity-50">
+        Zona de Estado
+      </h3>
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="block font-bold">Estado Actual</span>
+          <span class="text-xs opacity-70">
+            {
+              player.is_active
+                ? "El jugador aparece en las listas."
+                : "El jugador está archivado."
+            }
+          </span>
+        </div>
+
+        <form method="POST">
+          <input type="hidden" name="action" value="toggle_status" />
+          {
+            player.is_active ? (
+              <button class="btn btn-error btn-sm text-white">
+                <Icon name="material-symbols:archive" /> Desactivar
+              </button>
+            ) : (
+              <button class="btn btn-success btn-sm text-white">
+                <Icon name="material-symbols:unarchive" /> Reactivar
+              </button>
+            )
+          }
+        </form>
+      </div>
+    </div>
+  </div>
+</Main>

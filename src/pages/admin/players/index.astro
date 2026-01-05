@@ -1,0 +1,113 @@
+---
+import Main from "@/layouts/Main.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+
+// CAMBIO: Seleccionamos first_name y last_name
+const { data: players } = await supabase
+  .from("players")
+  .select("*")
+  .order("nickname", { ascending: true });
+---
+
+<Main title="Gestión de Jugadores">
+  <div class="mx-auto max-w-4xl px-4 py-8">
+    <div class="mb-8 flex items-center justify-between">
+      <h1 class="flex items-center gap-2 text-2xl font-black uppercase italic">
+        <Icon name="material-symbols:groups" class="text-primary" />
+        Plantel
+      </h1>
+      <a href="/admin/players/create" class="btn btn-primary btn-sm gap-2">
+        <Icon name="material-symbols:person-add" size={18} />
+        Nuevo Jugador
+      </a>
+    </div>
+
+    <div
+      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-sm"
+    >
+      <table class="table w-full">
+        <thead>
+          <tr
+            class="bg-base-200/50 text-base-content/60 text-xs font-bold uppercase"
+          >
+            <th class="w-12"></th>
+            <th>Jugador</th>
+            <th class="text-center">Pierna</th>
+            <th class="text-center">Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            players?.map((player) => (
+              <tr class="hover group">
+                <td>
+                  <div class="avatar placeholder">
+                    <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                      <span class="text-xs font-bold">
+                        {player.nickname.charAt(0)}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="font-bold">{player.nickname}</div>
+                  {/* CAMBIO: Mostramos Nombre y Apellido si existen */}
+                  {(player.first_name || player.last_name) && (
+                    <div class="text-xs opacity-50">
+                      {player.first_name} {player.last_name}
+                    </div>
+                  )}
+                </td>
+                <td class="text-center">
+                  {player.preferred_foot === "right" && (
+                    <Icon
+                      name="material-symbols:footprint"
+                      class="inline text-blue-500"
+                      title="Diestro"
+                    />
+                  )}
+                  {player.preferred_foot === "left" && (
+                    <Icon
+                      name="material-symbols:footprint"
+                      class="inline scale-x-[-1] transform text-green-500"
+                      title="Zurdo"
+                    />
+                  )}
+                  {player.preferred_foot === "both" && (
+                    <span class="badge badge-xs badge-ghost">Ambidiestro</span>
+                  )}
+                </td>
+                <td class="text-center">
+                  {player.is_active ? (
+                    <span class="badge badge-success badge-xs gap-1 text-white">
+                      Activo
+                    </span>
+                  ) : (
+                    <span class="badge badge-error badge-xs gap-1 text-white">
+                      Inactivo
+                    </span>
+                  )}
+                </td>
+                <td class="text-right">
+                  <a
+                    href={`/admin/players/edit/${player.id}`}
+                    class="btn btn-square btn-ghost btn-sm text-info"
+                  >
+                    <Icon
+                      name="material-symbols:edit-square-outline"
+                      size={18}
+                    />
+                  </a>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Main>
