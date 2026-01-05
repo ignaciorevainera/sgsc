@@ -39,11 +39,16 @@ const { data: lastMatchData } = await supabase
 const lastMatch = lastMatchData?.[0];
 
 // 3. TOP 3 Ranking Actual (Para el Podio)
-// Usamos la vista anual del 2025 (o cambia a 'view_player_stats_all_time' si prefieres histórico)
+// Obtenemos el año del último partido registrado para mostrar los líderes de esa temporada
+const lastMatchYear = lastMatch
+  ? new Date(lastMatch.date).getFullYear()
+  : new Date().getFullYear();
+
 const { data: topPlayers } = await supabase
   .from("view_player_stats_yearly")
   .select("*")
-  .eq("year", 2025) // Ojo: Asegúrate que coincida con tu temporada actual
+  .eq("year", lastMatchYear)
+  .eq("is_guest", false) // Excluir jugadores invitados
   .order("points", { ascending: false })
   .limit(3);
 
@@ -112,7 +117,7 @@ const features = [
         <div class="mb-4 flex items-center gap-2">
           <Icon name="material-symbols:trophy" class="text-warning" size={24} />
           <h2 class="text-primary text-xl font-black uppercase italic">
-            Líderes 2025
+            Líderes {lastMatchYear}
           </h2>
         </div>
 
