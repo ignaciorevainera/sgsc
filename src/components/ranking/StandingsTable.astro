@@ -63,6 +63,7 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
         players.map(
           (
             player: {
+              player_id: string;
               nickname: unknown;
               matches: unknown;
               attendance_percentage: unknown;
@@ -77,7 +78,10 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
             },
             index: number
           ) => (
-            <tr class="hover group text-center text-xs transition-colors sm:text-sm">
+            <tr
+              class="hover group cursor-pointer text-center text-xs transition-colors sm:text-sm"
+              onclick={`window.location.href='/players/${player.player_id}'`}
+            >
               <td class="font-bold">
                 {index === 0 && <span class="text-base lg:text-lg">🥇</span>}
                 {index === 1 && <span class="text-base lg:text-lg">🥈</span>}
@@ -88,7 +92,9 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
               </td>
 
               <td class="text-left">
-                <span class="font-medium">{player.nickname}</span>
+                <span class="group-hover:text-primary font-medium transition-colors">
+                  {player.nickname}
+                </span>
               </td>
 
               <td class="bg-primary/5 text-primary text-sm font-black sm:text-base lg:text-lg">
