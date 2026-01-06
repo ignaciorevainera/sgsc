@@ -1,0 +1,47 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  backHref?: string;
+  backLabel?: string;
+  icon?: string;
+  iconColor?: string;
+}
+
+const {
+  title,
+  subtitle,
+  backHref,
+  backLabel = "Volver",
+  icon,
+  iconColor = "text-primary",
+} = Astro.props;
+---
+
+<div
+  class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+>
+  <div>
+    <h1 class="flex items-center gap-2 text-xl font-black uppercase">
+      {icon && <Icon name={icon} class={iconColor} />}
+      {title}
+    </h1>
+    {
+      subtitle && (
+        <p class="text-base-content/60 mt-1 text-xs font-bold uppercase">
+          {subtitle}
+        </p>
+      )
+    }
+  </div>
+  {
+    backHref && (
+      <a href={backHref} class="btn btn-ghost btn-sm rounded-xl">
+        <Icon name="material-symbols:arrow-back" size={16} />
+        {backLabel}
+      </a>
+    )
+  }
+</div>

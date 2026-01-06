@@ -1,0 +1,25 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  type: "success" | "error" | "warning" | "info";
+  message: string;
+  class?: string;
+}
+
+const { type, message, class: className = "" } = Astro.props;
+
+const icons: Record<string, string> = {
+  success: "material-symbols:check-circle",
+  error: "material-symbols:error",
+  warning: "material-symbols:warning",
+  info: "material-symbols:info",
+};
+
+const alertClass = `alert alert-${type} rounded-xl shadow-md ${className}`;
+---
+
+<div role="alert" class={alertClass}>
+  <Icon name={icons[type]} />
+  <span>{message}</span>
+</div>
