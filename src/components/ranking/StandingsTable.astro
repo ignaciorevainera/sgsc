@@ -17,10 +17,22 @@ const getFormColor = (result: any) => {
   }
 };
 
-// Clase condicional:
-// Si showDetails es true, NO ponemos 'hidden'.
-// Si es false, ponemos 'hidden sm:table-cell' (oculto en movil, visible en sm+)
+// Clase condicional para columnas responsive
 const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
+
+// Colores de fondo para el podio
+const getPodiumClass = (index: number) => {
+  switch (index) {
+    case 0:
+      return "bg-amber-500/10";
+    case 1:
+      return "bg-slate-400/10";
+    case 2:
+      return "bg-amber-700/10";
+    default:
+      return "";
+  }
+};
 ---
 
 <TableWrapper class="w-full">
@@ -79,8 +91,7 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
             index: number
           ) => (
             <tr
-              class="hover group cursor-pointer text-center text-xs transition-colors sm:text-sm"
-              onclick={`window.location.href='/players/${player.player_id}'`}
+              class={`hover text-center text-xs transition-colors sm:text-sm ${getPodiumClass(index)}`}
             >
               <td class="font-bold">
                 {index === 0 && <span class="text-base lg:text-lg">🥇</span>}
@@ -92,9 +103,12 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
               </td>
 
               <td class="text-left">
-                <span class="group-hover:text-primary font-medium transition-colors">
+                <a
+                  href={`/players/${player.player_id}`}
+                  class="hover:text-primary font-medium transition-colors hover:underline"
+                >
                   {player.nickname}
-                </span>
+                </a>
               </td>
 
               <td class="bg-primary/5 text-primary text-sm font-black sm:text-base lg:text-lg">
