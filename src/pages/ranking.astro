@@ -3,6 +3,7 @@ import Main from "@/layouts/Main.astro";
 import StandingsTable from "@/components/ranking/StandingsTable.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import Title from "@/components/shared/Title.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { Icon } from "astro-icon/components";
 import { createAstroSupabase } from "@/lib/supabase"; // Usamos el cliente correcto
 
@@ -58,7 +59,8 @@ if (season === "Histórico") {
 // AHORA ESTO FUNCIONARÁ PORQUE LA VISTA YA TIENE 'is_guest'
 const { data: rawPlayers, error } = await query.eq("is_guest", false);
 
-if (error) console.error("Error fetching standings:", error);
+const hasError = !!error;
+const hasPlayersStats = !hasError && rawPlayers && rawPlayers.length > 0;
 
 // 4. Mapeo de datos
 const players =
@@ -110,8 +112,6 @@ const sortedPlayers = [...players].sort((a, b) => {
       return b.matches - a.matches;
   }
 });
-
-const hasPlayersStats = sortedPlayers.length > 0;
 ---
 
 <Main title="Clasificación | SGSC">
@@ -191,18 +191,29 @@ const hasPlayersStats = sortedPlayers.length > 0;
     </div>
   </div>
 
+  {/* Error de conexión */}
   {
-    !hasPlayersStats ? (
-      <div
-        role="alert"
-        class="alert alert-warning bg-warning/10 border-warning/20 rounded-xl shadow-md"
-      >
-        <Icon name="material-symbols:warning" class="text-warning" />
-        <span class="text-sm font-medium">
-          No hay partidos registrados para la temporada {season}.
-        </span>
-      </div>
-    ) : (
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar la clasificación. Por favor, intenta más tarde."
+      />
+    )
+  }
+
+  {/* Sin datos para la temporada */}
+  {
+    !hasError && !hasPlayersStats && (
+      <Alert
+        type="warning"
+        message={`No hay partidos registrados para la temporada ${season}.`}
+      />
+    )
+  }
+
+  {/* Tabla de clasificación */}
+  {
+    hasPlayersStats && (
       <div class="animate-fade-in space-y-6">
         <StandingsTable
           players={sortedPlayers}

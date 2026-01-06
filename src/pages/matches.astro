@@ -2,6 +2,7 @@
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@components/MatchCard.astro";
 import Title from "@/components/shared/Title.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { supabase } from "@lib/supabase";
 
 // 1. Traemos TODOS los partidos ordenados por fecha (más reciente primero)
@@ -19,9 +20,8 @@ const { data: matches, error } = await supabase
   )
   .order("date", { ascending: false });
 
-if (error) {
-  console.error("Error cargando partidos:", error);
-}
+const hasError = !!error;
+const hasMatches = !hasError && matches && matches.length > 0;
 
 // 2. Lógica para agrupar por AÑO (Temporadas)
 // Transformamos la lista plana en un objeto: { "2025": [...], "2024": [...] }
@@ -42,12 +42,20 @@ const years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
     subtitle="Revisa todos los partidos jugados en la historia del club, organizados por temporada."
   />
 
-  {/* Si no hay datos */}
+  {/* Error de conexión/consulta */}
   {
-    !matches?.length && (
-      <div class="alert alert-info rounded-xl shadow-md">
-        <span>No se encontraron partidos registrados.</span>
-      </div>
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar el historial de partidos. Por favor, intenta más tarde."
+      />
+    )
+  }
+
+  {/* Sin datos (pero sin error) */}
+  {
+    !hasError && !hasMatches && (
+      <Alert type="info" message="No se encontraron partidos registrados." />
     )
   }
 

@@ -2,6 +2,7 @@
 import Main from "@/layouts/Main.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import TableWrapper from "@/components/shared/TableWrapper.astro";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -62,9 +63,7 @@ const formatDate = (dateString: string) => {
       </a>
     </div>
 
-    <div
-      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-md"
-    >
+    <TableWrapper>
       <table class="table-sm table w-full">
         <thead>
           <tr
@@ -151,6 +150,6 @@ const formatDate = (dateString: string) => {
           }
         </tbody>
       </table>
-    </div>
+    </TableWrapper>
   </div>
 </Main>

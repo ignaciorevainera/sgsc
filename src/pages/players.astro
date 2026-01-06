@@ -2,6 +2,7 @@
 import Main from "@/layouts/Main.astro";
 import PlayerCard from "@/components/players/PlayerCard.astro";
 import Title from "@/components/shared/Title.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { supabase } from "@/lib/supabase";
 
 // 1. Consultar la vista histórica
@@ -11,9 +12,8 @@ const { data: players, error } = await supabase
   .eq("is_guest", false) // Solo jugadores oficiales
   .order("nickname", { ascending: true });
 
-if (error) console.error("Error al cargar jugadores:", error);
-
-const hasPlayers = players && players.length > 0;
+const hasError = !!error;
+const hasPlayers = !hasError && players && players.length > 0;
 ---
 
 <Main title="Plantel | SGSC">
@@ -22,24 +22,23 @@ const hasPlayers = players && players.length > 0;
     subtitle="¡Haz click en cualquier jugador para conocer todas sus estadísticas!"
   />
 
+  {/* Error de conexión/consulta */}
   {
-    !hasPlayers && (
-      <div class="alert alert-warning rounded-xl shadow-md">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          class="h-6 w-6 shrink-0 stroke-current"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span>No hay jugadores registrados en el sistema.</span>
-      </div>
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo conectar con el servidor. Por favor, intenta más tarde."
+      />
+    )
+  }
+
+  {/* Sin datos (pero sin error) */}
+  {
+    !hasError && !hasPlayers && (
+      <Alert
+        type="warning"
+        message="No hay jugadores registrados en el sistema."
+      />
     )
   }
 

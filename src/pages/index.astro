@@ -2,12 +2,13 @@
 import Main from "@/layouts/Main.astro";
 import { supabase } from "@/lib/supabase";
 import MatchCard from "@/components/MatchCard.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { Icon } from "astro-icon/components";
 
 // --- CONSULTAS A SUPABASE ---
 
 // 1. Contadores Rápidos (Optimizados)
-const { count: matchesCount } = await supabase
+const { count: matchesCount, error: matchesCountError } = await supabase
   .from("matches")
   .select("*", { count: "exact", head: true });
 
@@ -51,6 +52,9 @@ const { data: topPlayers } = await supabase
   .eq("is_guest", false) // Excluir jugadores invitados
   .order("points", { ascending: false })
   .limit(3);
+
+// Variable de error general para la página
+const hasConnectionError = !!matchesCountError;
 
 // --- CONFIGURACIÓN UI ---
 
@@ -115,6 +119,17 @@ const features = [
   </section>
 
   <section class="container mx-auto space-y-12 pb-12">
+    {/* Alerta de error de conexión */}
+    {
+      hasConnectionError && (
+        <Alert
+          type="error"
+          message="Hubo un problema al cargar los datos. Algunas secciones pueden no mostrarse correctamente."
+          class="mb-6"
+        />
+      )
+    }
+
     <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
       <div class="animate-fade-up">
         <div class="mb-4 flex items-center gap-2">

@@ -2,6 +2,8 @@
 import Main from "@/layouts/Main.astro";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
+import SectionTitle from "@/components/shared/SectionTitle.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 
 import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
@@ -11,13 +13,14 @@ const { id } = Astro.params;
 
 if (!id) return Astro.redirect("/players");
 
-const { data: playerInfo, error } = await supabase // Agrega 'error' aquí
+const { data: playerInfo, error: playerInfoError } = await supabase
   .from("players")
   .select("birth_date, nickname, preferred_foot")
   .eq("id", id)
   .single();
 
-console.log("Player Info:", playerInfo); // Si esto es null, es problema de permisos
+// Si hay error de conexión o jugador no existe, redirigir
+if (playerInfoError || !playerInfo) return Astro.redirect("/players");
 
 // 2. Estadísticas de carrera (Vista All Time)
 const { data: playerStats } = await supabase
@@ -260,7 +263,7 @@ const getOutcomeConfig = (outcome: string) => {
       >
         <div class="mb-2 flex items-end justify-between">
           <div>
-            <h3 class="text-sm font-black uppercase italic">Efectividad</h3>
+            <SectionTitle>Efectividad</SectionTitle>
             <p class="text-primary/60 text-[10px] font-bold uppercase">
               Vs Promedio del Club
             </p>
@@ -358,7 +361,7 @@ const getOutcomeConfig = (outcome: string) => {
         <div
           class="bg-base-200/50 border-base-200 flex items-center justify-between border-b p-4"
         >
-          <h3 class="text-sm font-black uppercase italic">Rendimiento Anual</h3>
+          <SectionTitle>Rendimiento Anual</SectionTitle>
           <div
             class="text-base-content/60 flex items-center gap-2 text-[10px] font-bold uppercase"
           >
@@ -422,7 +425,7 @@ const getOutcomeConfig = (outcome: string) => {
         class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
         <div class="bg-base-200/50 border-base-200 border-b p-4">
-          <h3 class="text-sm font-black uppercase italic">Forma Reciente</h3>
+          <SectionTitle>Forma Reciente</SectionTitle>
         </div>
         <div class="divide-base-200 divide-y">
           {

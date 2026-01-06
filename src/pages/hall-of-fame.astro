@@ -2,6 +2,7 @@
 import Main from "@/layouts/Main.astro";
 import Avatar from "@/components/Avatar.astro";
 import Title from "@/components/shared/Title.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
 
@@ -11,7 +12,7 @@ const { data: players, error } = await supabase
   .select("*")
   .eq("is_guest", false);
 
-if (error) console.error(error);
+const hasError = !!error;
 const safePlayers = players || [];
 
 // 2. Helper Top 5
@@ -181,82 +182,104 @@ const categories = [
     />
   </div>
 
-  <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-    {
-      categories.map((cat) => {
-        const leader = cat.data[0];
-        const followers = cat.data.slice(1);
+  {/* Error de conexión */}
+  {
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar el Salón de la Fama. Por favor, intenta más tarde."
+      />
+    )
+  }
 
-        if (!leader) return null; // Si no hay datos, no renderizar
+  {/* Sin datos */}
+  {
+    !hasError && safePlayers.length === 0 && (
+      <Alert
+        type="info"
+        message="Aún no hay suficientes datos para mostrar el Salón de la Fama."
+      />
+    )
+  }
 
-        return (
-          <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
-            <div
-              class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
-            >
-              <div class="absolute top-3 right-3">
-                <Icon
-                  name={cat.icon}
-                  class={`h-12 w-12 ${cat.color} opacity-20`}
-                />
-              </div>
+  {
+    !hasError && safePlayers.length > 0 && (
+      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {categories.map((cat) => {
+          const leader = cat.data[0];
+          const followers = cat.data.slice(1);
 
-              <div class="mb-3 animate-bounce text-3xl">👑</div>
+          if (!leader) return null; // Si no hay datos, no renderizar
 
-              <Avatar initial={leader.nickname.charAt(0).toUpperCase()} />
-
-              <h2 class="text-base-content mt-4 text-2xl font-black tracking-tight">
-                {leader.nickname}
-              </h2>
-
+          return (
+            <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
               <div
-                class={`badge badge-lg mt-1 rounded-xl border-none font-bold text-white ${cat.bg}`}
+                class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
               >
-                {leader[cat.valueKey]} {cat.suffix}
+                <div class="absolute top-3 right-3">
+                  <Icon
+                    name={cat.icon}
+                    class={`h-12 w-12 ${cat.color} opacity-20`}
+                  />
+                </div>
+
+                <div class="mb-3 animate-bounce text-3xl">👑</div>
+
+                <Avatar initial={leader.nickname.charAt(0).toUpperCase()} />
+
+                <h2 class="text-base-content mt-4 text-2xl font-black tracking-tight">
+                  {leader.nickname}
+                </h2>
+
+                <div
+                  class={`badge badge-lg mt-1 rounded-xl border-none font-bold text-white ${cat.bg}`}
+                >
+                  {leader[cat.valueKey]} {cat.suffix}
+                </div>
+
+                <p
+                  class={`mt-4 text-xs font-bold tracking-widest uppercase ${cat.color}`}
+                >
+                  {cat.subtitle}
+                </p>
               </div>
 
-              <p
-                class={`mt-4 text-xs font-bold tracking-widest uppercase ${cat.color}`}
-              >
-                {cat.subtitle}
-              </p>
+              <div class="bg-base-100 grow">
+                {followers.map((player, index) => (
+                  <a
+                    href={`/players/${player.player_id}`}
+                    class="border-base-200 hover:bg-base-200 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
+                  >
+                    <div class="flex items-center gap-3">
+                      <span class="text-base-content/60 w-6 text-center text-sm font-bold">
+                        #{index + 2}
+                      </span>
+
+                      <Avatar
+                        initial={player.nickname.charAt(0).toUpperCase()}
+                        size="sm"
+                      />
+
+                      <span class="group-hover:text-primary text-sm font-semibold transition-colors">
+                        {player.nickname}
+                      </span>
+                    </div>
+
+                    <div class="text-sm font-bold">
+                      {player[cat.valueKey]}{" "}
+                      <span class="text-base-content/60 text-xs font-normal">
+                        {cat.suffix
+                          .replace("Triunfos", "G")
+                          .replace("Partidos", "PJ")}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
-
-            <div class="bg-base-100 grow">
-              {followers.map((player, index) => (
-                <a
-                  href={`/players/${player.player_id}`}
-                  class="border-base-200 hover:bg-base-200 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
-                >
-                  <div class="flex items-center gap-3">
-                    <span class="text-base-content/60 w-6 text-center text-sm font-bold">
-                      #{index + 2}
-                    </span>
-
-                    <Avatar
-                      initial={player.nickname.charAt(0).toUpperCase()}
-                      size="sm"
-                    />
-
-                    <span class="group-hover:text-primary text-sm font-semibold transition-colors">
-                      {player.nickname}
-                    </span>
-                  </div>
-
-                  <div class="text-sm font-bold">
-                    {player[cat.valueKey]}{" "}
-                    <span class="text-base-content/60 text-xs font-normal">
-                      {cat.suffix
-                        .replace("Triunfos", "G")
-                        .replace("Partidos", "PJ")}
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        );
-      })
-    }
-  </div>
+          );
+        })}
+      </div>
+    )
+  }
 </Main>

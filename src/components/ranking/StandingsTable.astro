@@ -1,4 +1,6 @@
 ---
+import TableWrapper from "@/components/shared/TableWrapper.astro";
+
 const { players, showDetails } = Astro.props;
 
 // Helper para colores de racha
@@ -21,7 +23,7 @@ const getFormColor = (result: any) => {
 const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
 ---
 
-<div class="border-base-200 w-full overflow-x-auto rounded-xl border shadow-md">
+<TableWrapper class="w-full">
   <table class="table-zebra table-xs sm:table-sm lg:table-md table min-w-max">
     <thead
       class="bg-base-200 text-base-content sticky top-0 z-10 text-center text-xs font-bold uppercase sm:text-sm"
@@ -129,4 +131,4 @@ const responsiveClass = showDetails ? "" : "hidden sm:table-cell";
       }
     </tbody>
   </table>
-</div>
+</TableWrapper>

@@ -1,14 +1,16 @@
 ---
 import Main from "@/layouts/Main.astro";
 import { Icon } from "astro-icon/components";
+import Alert from "@/components/shared/Alert.astro";
 import { supabase } from "@/lib/supabase";
 
 // 1. Obtener todos los partidos
-const { data: allMatches } = await supabase
+const { data: allMatches, error: matchesError } = await supabase
   .from("matches")
   .select("result, date")
   .order("date", { ascending: false });
 
+const hasError = !!matchesError;
 const matches = allMatches || [];
 const totalMatches = matches.length;
 
@@ -63,9 +65,33 @@ const topDark = getTopLoyal("dark");
 
 // 3. Últimos 5 Enfrentamientos
 const recentForm = matches.slice(0, 5).map((m) => m.result);
+const hasMatches = !hasError && matches.length > 0;
 ---
 
 <Main title="Equipos | SGSC">
+  {/* Error de conexión */}
+  {
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar el historial de equipos. Por favor, intenta más tarde."
+        class="mb-6"
+      />
+    )
+  }
+
+  {/* Sin datos */}
+  {
+    !hasError && !hasMatches && (
+      <Alert
+        type="info"
+        message="Aún no hay partidos registrados para mostrar el historial."
+        class="mb-6"
+      />
+    )
+  }
+
+  {hasMatches && (
   <div class="bg-base-200 relative mb-6 overflow-hidden rounded-xl">
     <div
       class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] bg-size-[16px_16px] opacity-[0.05]"
@@ -302,4 +328,5 @@ const recentForm = matches.slice(0, 5).map((m) => m.result);
       </div>
     </div>
   </div>
+  )}
 </Main>

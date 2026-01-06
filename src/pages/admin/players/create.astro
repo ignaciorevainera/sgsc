@@ -2,6 +2,7 @@
 import Main from "@/layouts/Main.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import PageHeader from "@/components/shared/PageHeader.astro";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -33,11 +34,7 @@ if (Astro.request.method === "POST") {
 
 <Main title="Nuevo Jugador">
   <div class="mx-auto max-w-lg px-4 py-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-xl font-black uppercase">Nuevo Jugador</h1>
-      <a href="/admin/players" class="btn btn-ghost btn-sm rounded-xl">Volver</a
-      >
-    </div>
+    <PageHeader title="Nuevo Jugador" backHref="/admin/players" />
 
     <form
       method="POST"

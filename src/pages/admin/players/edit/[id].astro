@@ -2,6 +2,8 @@
 import Main from "@/layouts/Main.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import PageHeader from "@/components/shared/PageHeader.astro";
+import Alert from "@/components/shared/Alert.astro";
 
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
@@ -62,21 +64,15 @@ if (Astro.request.method === "POST") {
 
 <Main title="Editar Jugador">
   <div class="mx-auto max-w-lg px-4 py-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-xl font-black uppercase">Editar Jugador</h1>
-      <a href="/admin/players" class="btn btn-ghost btn-sm rounded-xl">Volver</a
-      >
-    </div>
+    <PageHeader title="Editar Jugador" backHref="/admin/players" />
 
     {
       Astro.url.searchParams.get("success") && (
-        <div
-          role="alert"
-          class="alert alert-success mb-4 rounded-xl p-2 text-sm shadow-md"
-        >
-          <Icon name="material-symbols:check-circle" />
-          <span>Cambios guardados correctamente.</span>
-        </div>
+        <Alert
+          type="success"
+          message="Cambios guardados correctamente."
+          class="mb-4"
+        />
       )
     }
 

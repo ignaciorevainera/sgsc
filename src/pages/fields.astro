@@ -2,11 +2,12 @@
 import Main from "@/layouts/Main.astro";
 import FieldCard from "@/components/FieldCard.astro";
 import Title from "@/components/shared/Title.astro";
+import Alert from "@/components/shared/Alert.astro";
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
 
 // 1. Traemos canchas + partidos
-const { data: rawFields } = await supabase.from("fields").select(`
+const { data: rawFields, error } = await supabase.from("fields").select(`
     id,
     name,
     city,
@@ -57,6 +58,9 @@ const totalMatchesGlobal = fields.reduce(
   0
 );
 
+const hasError = !!error;
+const hasFields = !hasError && fields.length > 0;
+
 // Helper para formato de fecha
 const formatDate = (dateString: string | null) => {
   if (!dateString) return "Sin partidos";
@@ -74,28 +78,51 @@ const formatDate = (dateString: string | null) => {
     subtitle="Explora las sedes donde se juegan los partidos y sus estadísticas."
   />
 
-  <div
-    class="stats stats-vertical sm:stats-horizontal bg-base-100 border-base-200 mb-10 w-full rounded-xl border shadow-md"
-  >
-    <div class="stat place-items-center md:place-items-start">
-      <div class="stat-figure text-primary hidden md:block">
-        <Icon name="material-symbols:stadium-outline" size={42} />
-      </div>
-      <div class="stat-title">Sedes Visitadas</div>
-      <div class="stat-value text-primary">{totalUniqueFields}</div>
-      <div class="stat-desc">Canchas distintas</div>
-    </div>
-    <div class="stat place-items-center md:place-items-start">
-      <div class="stat-figure text-secondary hidden md:block">
-        <Icon name="material-symbols:sports-soccer" size={42} />
-      </div>
-      <div class="stat-title">Partidos Totales</div>
-      <div class="stat-value text-secondary">{totalMatchesGlobal}</div>
-      <div class="stat-desc">En todas las sedes</div>
-    </div>
-  </div>
+  {/* Error de conexión */}
+  {
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar la información de las sedes. Por favor, intenta más tarde."
+      />
+    )
+  }
 
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    {fields.map((field) => <FieldCard field={field} />)}
-  </div>
+  {/* Sin datos */}
+  {
+    !hasError && !hasFields && (
+      <Alert type="info" message="No hay sedes registradas en el sistema." />
+    )
+  }
+
+  {
+    hasFields && (
+      <>
+        <div class="stats stats-vertical sm:stats-horizontal bg-base-100 border-base-200 mb-10 w-full rounded-xl border shadow-md">
+          <div class="stat place-items-center md:place-items-start">
+            <div class="stat-figure text-primary hidden md:block">
+              <Icon name="material-symbols:stadium-outline" size={42} />
+            </div>
+            <div class="stat-title">Sedes Visitadas</div>
+            <div class="stat-value text-primary">{totalUniqueFields}</div>
+            <div class="stat-desc">Canchas distintas</div>
+          </div>
+          <div class="stat place-items-center md:place-items-start">
+            <div class="stat-figure text-secondary hidden md:block">
+              <Icon name="material-symbols:sports-soccer" size={42} />
+            </div>
+            <div class="stat-title">Partidos Totales</div>
+            <div class="stat-value text-secondary">{totalMatchesGlobal}</div>
+            <div class="stat-desc">En todas las sedes</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {fields.map((field) => (
+            <FieldCard field={field} />
+          ))}
+        </div>
+      </>
+    )
+  }
 </Main>
