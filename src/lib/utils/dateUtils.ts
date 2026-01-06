@@ -19,7 +19,7 @@ export const getSafeDate = (
  */
 export const formatDate = (
   dateString: string,
-  style: "short" | "long" = "short",
+  style: "short" | "medium" | "long" = "short",
 ): string => {
   const date = getSafeDate(dateString);
   if (!date) return "N/A";
@@ -33,6 +33,11 @@ export const formatDate = (
     options.weekday = "short";
     options.day = "numeric";
     options.month = "short";
+  } else if (style === "medium") {
+    // Estilo con año: "11 Abr 2026"
+    options.day = "numeric";
+    options.month = "short";
+    options.year = "numeric";
   } else {
     // Estilo por defecto: "11/04/2026"
     options.day = "2-digit";
