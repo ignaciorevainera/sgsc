@@ -24,7 +24,7 @@ const hasPlayers = players && players.length > 0;
 
   {
     !hasPlayers && (
-      <div class="alert alert-warning shadow-md">
+      <div class="alert alert-warning rounded-xl shadow-md">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -45,7 +45,7 @@ const hasPlayers = players && players.length > 0;
 
   {
     hasPlayers && (
-      <div class="animate-fade-in grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="animate-fade-in grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {players.map((player) => (
           <PlayerCard player={player} />
         ))}

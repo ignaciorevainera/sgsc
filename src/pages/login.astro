@@ -42,7 +42,7 @@ if (Astro.request.method === "POST") {
   <Title title="Acceso Admin" subtitle="Solo personal autorizado" />
 
   <div class="mx-auto w-full max-w-sm">
-    <div class="card bg-base-100 border-base-200 border shadow-md">
+    <div class="card bg-base-100 border-base-200 rounded-xl border shadow-md">
       <div class="card-body p-5 sm:p-8">
         {/* Icono decorativo */}
         <div class="mb-4 flex justify-center sm:mb-6">
@@ -60,7 +60,7 @@ if (Astro.request.method === "POST") {
           errorMessage && (
             <div
               role="alert"
-              class="alert alert-error animate-fade-in mb-4 py-2 text-xs shadow-md sm:text-sm"
+              class="alert alert-error animate-fade-in mb-4 rounded-xl py-2 text-xs shadow-md sm:text-sm"
             >
               <Icon name="material-symbols:error" class="shrink-0" size={16} />
               <span>{errorMessage}</span>
@@ -72,7 +72,7 @@ if (Astro.request.method === "POST") {
           <div class="form-control">
             <label class="label sr-only">Email</label>
             <label
-              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
+              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 rounded-xl transition-colors"
             >
               <Icon name="material-symbols:mail" class="opacity-50" size={18} />
               <input
@@ -88,7 +88,7 @@ if (Astro.request.method === "POST") {
           <div class="form-control">
             <label class="label sr-only">Contraseña</label>
             <label
-              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 transition-colors"
+              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 rounded-xl transition-colors"
             >
               <Icon name="material-symbols:key" class="opacity-50" size={18} />
               <input
@@ -103,7 +103,7 @@ if (Astro.request.method === "POST") {
 
           <div class="form-control mt-6 sm:mt-8">
             <button
-              class="btn btn-primary btn-sm btn-block hover:shadow-primary/30 sm:btn-md text-white shadow-md transition-shadow"
+              class="btn btn-primary btn-sm btn-block hover:shadow-primary/30 sm:btn-md rounded-xl text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Ingresar
               <Icon name="material-symbols:login" size={18} />
@@ -122,7 +122,7 @@ if (Astro.request.method === "POST") {
     <div class="mt-6 text-center sm:mt-8">
       <a
         href="/"
-        class="btn btn-ghost btn-xs sm:btn-sm opacity-50 hover:opacity-100"
+        class="btn btn-ghost btn-xs sm:btn-sm rounded-xl opacity-50 hover:opacity-100"
       >
         <Icon name="material-symbols:arrow-back" size={16} /> Volver al inicio
       </a>

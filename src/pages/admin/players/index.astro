@@ -19,14 +19,17 @@ const { data: players } = await supabase
         <Icon name="material-symbols:groups" class="text-primary" />
         Plantel
       </h1>
-      <a href="/admin/players/create" class="btn btn-primary btn-sm gap-2">
+      <a
+        href="/admin/players/create"
+        class="btn btn-primary btn-sm gap-2 rounded-xl shadow-md"
+      >
         <Icon name="material-symbols:person-add" size={18} />
         Nuevo Jugador
       </a>
     </div>
 
     <div
-      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-sm"
+      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-md"
     >
       <table class="table w-full">
         <thead>
@@ -57,7 +60,7 @@ const { data: players } = await supabase
                   <div class="font-bold">{player.nickname}</div>
                   {/* CAMBIO: Mostramos Nombre y Apellido si existen */}
                   {(player.first_name || player.last_name) && (
-                    <div class="text-xs opacity-50">
+                    <div class="text-base-content/60 text-xs">
                       {player.first_name} {player.last_name}
                     </div>
                   )}

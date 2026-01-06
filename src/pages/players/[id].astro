@@ -173,7 +173,7 @@ const getOutcomeConfig = (outcome: string) => {
           >
             {
               player.birth_date && (
-                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
                   <Icon name="material-symbols:calendar-today" size={12} />
                   {calculateAge(player.birth_date)} años
                 </div>
@@ -181,7 +181,7 @@ const getOutcomeConfig = (outcome: string) => {
             }
             {
               player.birth_date && (
-                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
                   <Icon name="material-symbols:cake" size={12} />
                   {formatDate(player.birth_date)}
                 </div>
@@ -189,7 +189,7 @@ const getOutcomeConfig = (outcome: string) => {
             }
             {
               player.preferred_foot && dominantFootLabel && (
-                <div class="badge bg-base-content/10 gap-1 border-none text-xs font-semibold">
+                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
                   <Icon name="material-symbols:footprint" size={12} />
                   {dominantFootLabel}
                 </div>
@@ -200,7 +200,7 @@ const getOutcomeConfig = (outcome: string) => {
 
         <div class="w-full sm:w-auto">
           <div
-            class="stats bg-base-200 border-base-200 w-full border shadow-md sm:w-auto"
+            class="stats bg-base-200 border-base-200 w-full rounded-xl border shadow-md sm:w-auto"
           >
             <div class="stat place-items-center px-6 py-3 sm:px-8">
               <div
@@ -225,7 +225,7 @@ const getOutcomeConfig = (outcome: string) => {
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
           <span class="text-2xl font-black">{totalMatches}</span>
-          <span class="text-[10px] font-bold uppercase opacity-50"
+          <span class="text-base-content/60 text-[10px] font-bold uppercase"
             >Partidos</span
           >
         </div>
@@ -261,7 +261,7 @@ const getOutcomeConfig = (outcome: string) => {
         <div class="mb-2 flex items-end justify-between">
           <div>
             <h3 class="text-sm font-black uppercase italic">Efectividad</h3>
-            <p class="text-primary text-[10px] font-bold uppercase opacity-50">
+            <p class="text-primary/60 text-[10px] font-bold uppercase">
               Vs Promedio del Club
             </p>
           </div>
@@ -343,7 +343,7 @@ const getOutcomeConfig = (outcome: string) => {
           </div>
           <div class="overflow-hidden">
             <h4
-              class="text-[10px] font-bold tracking-wider uppercase opacity-40"
+              class="text-base-content/60 text-[10px] font-bold tracking-wider uppercase"
             >
               Cancha Favorita
             </h4>
@@ -360,7 +360,7 @@ const getOutcomeConfig = (outcome: string) => {
         >
           <h3 class="text-sm font-black uppercase italic">Rendimiento Anual</h3>
           <div
-            class="flex items-center gap-2 text-[10px] font-bold uppercase opacity-50"
+            class="text-base-content/60 flex items-center gap-2 text-[10px] font-bold uppercase"
           >
             <Icon name="material-symbols:table-chart" size={16} />
             Historial
@@ -439,7 +439,7 @@ const getOutcomeConfig = (outcome: string) => {
                     <span class="text-xs font-bold opacity-80">
                       {formatDate(match.date)}
                     </span>
-                    <span class="truncate text-[10px] font-bold uppercase opacity-50">
+                    <span class="text-base-content/60 truncate text-[10px] font-bold uppercase">
                       {match.fieldName}
                     </span>
                   </div>
@@ -455,7 +455,7 @@ const getOutcomeConfig = (outcome: string) => {
 
           {
             (!recentMatches || recentMatches.length === 0) && (
-              <div class="p-4 text-center text-xs opacity-50">
+              <div class="text-base-content/60 p-4 text-center text-xs">
                 Sin partidos recientes
               </div>
             )

@@ -79,7 +79,7 @@ if (Astro.request.method === "POST") {
       <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
         <Icon name="material-symbols:check-circle" size={22} />
         <span class="flex-1 text-sm sm:text-base">{successMessage}</span>
-        <a href="/admin/add-match" class="btn btn-sm btn-ghost">
+        <a href="/admin/add-match" class="btn btn-sm btn-ghost rounded-xl">
           <Icon name="material-symbols:add" size={18} />
           <span class="hidden sm:inline">Cargar otro</span>
         </a>
@@ -99,7 +99,7 @@ if (Astro.request.method === "POST") {
   <form
     method="POST"
     id="matchForm"
-    class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6 lg:p-8"
+    class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
   >
     {/* Sección: Fecha y Sede */}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
@@ -238,7 +238,7 @@ if (Astro.request.method === "POST") {
 
     {/* Tabla de Jugadores */}
     <div
-      class="bg-base-100 max-h-[400px] overflow-auto rounded-xl border shadow-sm sm:max-h-[450px] lg:max-h-[500px]"
+      class="bg-base-100 border-base-200 max-h-[400px] overflow-auto rounded-xl border shadow-md sm:max-h-[450px] lg:max-h-[500px]"
     >
       <table class="table-pin-rows table w-full">
         <thead>

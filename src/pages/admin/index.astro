@@ -29,13 +29,18 @@ const { count: playerCount } = await supabase
         <h1 class="text-primary text-3xl font-black uppercase italic">
           Panel de Control
         </h1>
-        <p class="text-sm font-bold tracking-wider uppercase opacity-60">
+        <p
+          class="text-base-content/60 text-sm font-bold tracking-wider uppercase"
+        >
           Bienvenido, Admin
         </p>
       </div>
 
       <form action="/api/auth/signout" method="post">
-        <button type="submit" class="btn btn-outline btn-error btn-sm gap-2">
+        <button
+          type="submit"
+          class="btn btn-outline btn-error btn-sm gap-2 rounded-xl"
+        >
           <Icon name="material-symbols:logout" />
           Cerrar Sesión
         </button>
@@ -45,7 +50,7 @@ const { count: playerCount } = await supabase
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div class="space-y-4">
         <h2
-          class="flex items-center gap-2 text-sm font-black uppercase opacity-40"
+          class="text-base-content/60 flex items-center gap-2 text-sm font-black uppercase"
         >
           <Icon name="material-symbols:sports-soccer" /> Gestión de Partidos
         </h2>
@@ -53,7 +58,7 @@ const { count: playerCount } = await supabase
         <div class="grid gap-4">
           <a
             href="/admin/matches/create"
-            class="card bg-base-100 border-base-200 hover:border-primary/50 group border shadow-md transition-all hover:shadow-xl"
+            class="card bg-base-100 border-base-200 hover:border-primary/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
           >
             <div class="card-body flex flex-row items-center gap-4">
               <div
@@ -63,7 +68,7 @@ const { count: playerCount } = await supabase
               </div>
               <div>
                 <h3 class="text-lg font-black">Nuevo Partido</h3>
-                <p class="text-xs font-bold uppercase opacity-60">
+                <p class="text-base-content/60 text-xs font-bold uppercase">
                   Registrar resultado reciente
                 </p>
               </div>
@@ -72,7 +77,7 @@ const { count: playerCount } = await supabase
 
           <a
             href="/admin/matches"
-            class="card bg-base-100 border-base-200 hover:border-secondary/50 group border shadow-md transition-all hover:shadow-xl"
+            class="card bg-base-100 border-base-200 hover:border-secondary/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
           >
             <div class="card-body flex flex-row items-center gap-4">
               <div
@@ -82,7 +87,7 @@ const { count: playerCount } = await supabase
               </div>
               <div>
                 <h3 class="text-lg font-black">Historial y Edición</h3>
-                <p class="text-xs font-bold uppercase opacity-60">
+                <p class="text-base-content/60 text-xs font-bold uppercase">
                   Corregir datos
                 </p>
               </div>
@@ -93,7 +98,7 @@ const { count: playerCount } = await supabase
 
       <div class="space-y-4">
         <h2
-          class="flex items-center gap-2 text-sm font-black uppercase opacity-40"
+          class="text-base-content/60 flex items-center gap-2 text-sm font-black uppercase"
         >
           <Icon name="material-symbols:groups" /> Gestión de Plantel
         </h2>
@@ -101,7 +106,7 @@ const { count: playerCount } = await supabase
         <div class="grid gap-4">
           <a
             href="/admin/players/create"
-            class="card bg-base-100 border-base-200 hover:border-success/50 group border shadow-md transition-all hover:shadow-xl"
+            class="card bg-base-100 border-base-200 hover:border-success/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
           >
             <div class="card-body flex flex-row items-center gap-4">
               <div
@@ -111,7 +116,7 @@ const { count: playerCount } = await supabase
               </div>
               <div>
                 <h3 class="text-lg font-black">Agregar Jugador</h3>
-                <p class="text-xs font-bold uppercase opacity-60">
+                <p class="text-base-content/60 text-xs font-bold uppercase">
                   Alta de nuevo integrante
                 </p>
               </div>
@@ -120,7 +125,7 @@ const { count: playerCount } = await supabase
 
           <a
             href="/admin/players"
-            class="card bg-base-100 border-base-200 hover:border-warning/50 group border shadow-md transition-all hover:shadow-xl"
+            class="card bg-base-100 border-base-200 hover:border-warning/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
           >
             <div class="card-body flex flex-row items-center gap-4">
               <div
@@ -130,7 +135,7 @@ const { count: playerCount } = await supabase
               </div>
               <div>
                 <h3 class="text-lg font-black">Editar Plantel</h3>
-                <p class="text-xs font-bold uppercase opacity-60">
+                <p class="text-base-content/60 text-xs font-bold uppercase">
                   Bajas y modificaciones ({playerCount} activos)
                 </p>
               </div>

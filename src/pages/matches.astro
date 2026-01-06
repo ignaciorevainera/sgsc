@@ -45,7 +45,7 @@ const years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
   {/* Si no hay datos */}
   {
     !matches?.length && (
-      <div class="alert alert-info">
+      <div class="alert alert-info rounded-xl shadow-md">
         <span>No se encontraron partidos registrados.</span>
       </div>
     )

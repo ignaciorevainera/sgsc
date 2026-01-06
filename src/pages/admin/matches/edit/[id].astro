@@ -100,7 +100,7 @@ if (Astro.request.method === "POST") {
         <span class="flex-1 text-sm sm:text-base">
           ¡Partido actualizado correctamente!
         </span>
-        <a href="/matches" class="btn btn-sm btn-ghost">
+        <a href="/matches" class="btn btn-sm btn-ghost rounded-xl">
           <Icon name="material-symbols:arrow-back" size={18} />
           <span class="hidden sm:inline">Volver al historial</span>
         </a>
@@ -111,7 +111,7 @@ if (Astro.request.method === "POST") {
   <form method="POST" class="space-y-6">
     {/* Sección: Información General */}
     <div
-      class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6 lg:p-8"
+      class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
     >
       <div class="border-base-200 flex items-center gap-2 border-b pb-4">
         <Icon name="material-symbols:info" size={20} class="text-primary" />

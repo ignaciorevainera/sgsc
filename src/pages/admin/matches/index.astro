@@ -48,14 +48,14 @@ const formatDate = (dateString: string) => {
           />
           Historial de Partidos
         </h1>
-        <p class="mt-1 text-xs font-bold uppercase opacity-60">
+        <p class="text-base-content/60 mt-1 text-xs font-bold uppercase">
           {matches?.length || 0} partidos registrados
         </p>
       </div>
 
       <a
         href="/admin/matches/create"
-        class="btn btn-primary btn-sm gap-2 shadow-lg"
+        class="btn btn-primary btn-sm gap-2 rounded-xl shadow-md"
       >
         <Icon name="material-symbols:add" size={18} />
         Nuevo
@@ -63,7 +63,7 @@ const formatDate = (dateString: string) => {
     </div>
 
     <div
-      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-sm"
+      class="bg-base-100 border-base-200 overflow-x-auto rounded-xl border shadow-md"
     >
       <table class="table-sm table w-full">
         <thead>
@@ -142,7 +142,7 @@ const formatDate = (dateString: string) => {
               <tr>
                 <td
                   colspan="5"
-                  class="py-8 text-center text-sm italic opacity-50"
+                  class="text-base-content/60 py-8 text-center text-sm italic"
                 >
                   No hay partidos cargados todavía.
                 </td>
