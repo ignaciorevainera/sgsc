@@ -3,10 +3,11 @@ import Main from "@/layouts/Main.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import TableWrapper from "@/components/shared/TableWrapper.astro";
+import PageHeader from "@/components/shared/PageHeader.astro";
+import Avatar from "@/components/Avatar.astro";
 
 const supabase = createAstroSupabase(Astro);
 
-// CAMBIO: Seleccionamos first_name y last_name
 const { data: players } = await supabase
   .from("players")
   .select("*")
@@ -14,15 +15,14 @@ const { data: players } = await supabase
 ---
 
 <Main title="Gestión de Jugadores">
-  <div class="mx-auto max-w-4xl px-4 py-8">
-    <div class="mb-8 flex items-center justify-between">
-      <h1 class="flex items-center gap-2 text-2xl font-black uppercase italic">
-        <Icon name="material-symbols:groups" class="text-primary" />
-        Plantel
-      </h1>
+  <div class="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+    <div
+      class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-8"
+    >
+      <PageHeader title="Plantel" backHref="/admin" />
       <a
         href="/admin/players/create"
-        class="btn btn-primary btn-sm gap-2 rounded-xl shadow-md"
+        class="btn btn-primary btn-sm lg:btn-md gap-2 rounded-xl shadow-md"
       >
         <Icon name="material-symbols:person-add" size={18} />
         Nuevo Jugador
@@ -30,14 +30,14 @@ const { data: players } = await supabase
     </div>
 
     <TableWrapper>
-      <table class="table w-full">
+      <table class="table-xs sm:table-sm lg:table-md table w-full">
         <thead>
           <tr
-            class="bg-base-200/50 text-base-content/60 text-xs font-bold uppercase"
+            class="bg-base-200/50 text-base-content/60 text-xs font-bold uppercase lg:text-sm"
           >
-            <th class="w-12"></th>
+            <th class="w-10 lg:w-14"></th>
             <th>Jugador</th>
-            <th class="text-center">Pierna</th>
+            <th class="hidden text-center sm:table-cell">Pierna</th>
             <th class="text-center">Estado</th>
             <th class="text-right">Acciones</th>
           </tr>
@@ -47,28 +47,25 @@ const { data: players } = await supabase
             players?.map((player) => (
               <tr class="hover group">
                 <td>
-                  <div class="avatar placeholder">
-                    <div class="bg-neutral text-neutral-content w-8 rounded-full">
-                      <span class="text-xs font-bold">
-                        {player.nickname.charAt(0)}
-                      </span>
-                    </div>
-                  </div>
+                  <Avatar
+                    initial={player.nickname.charAt(0).toUpperCase()}
+                    size="sm"
+                  />
                 </td>
                 <td>
-                  <div class="font-bold">{player.nickname}</div>
-                  {/* CAMBIO: Mostramos Nombre y Apellido si existen */}
+                  <div class="font-bold lg:text-base">{player.nickname}</div>
                   {(player.first_name || player.last_name) && (
-                    <div class="text-base-content/60 text-xs">
+                    <div class="text-base-content/60 text-xs lg:text-sm">
                       {player.first_name} {player.last_name}
                     </div>
                   )}
                 </td>
-                <td class="text-center">
+                <td class="hidden text-center sm:table-cell">
                   {player.preferred_foot === "right" && (
                     <Icon
                       name="material-symbols:footprint"
                       class="inline text-blue-500"
+                      size={20}
                       title="Diestro"
                     />
                   )}
@@ -76,20 +73,23 @@ const { data: players } = await supabase
                     <Icon
                       name="material-symbols:footprint"
                       class="inline scale-x-[-1] transform text-green-500"
+                      size={20}
                       title="Zurdo"
                     />
                   )}
                   {player.preferred_foot === "both" && (
-                    <span class="badge badge-xs badge-ghost">Ambidiestro</span>
+                    <span class="badge badge-xs badge-ghost lg:badge-sm">
+                      Ambidiestro
+                    </span>
                   )}
                 </td>
                 <td class="text-center">
                   {player.is_active ? (
-                    <span class="badge badge-success badge-xs gap-1 text-white">
+                    <span class="badge badge-success badge-xs lg:badge-sm gap-1 text-white">
                       Activo
                     </span>
                   ) : (
-                    <span class="badge badge-error badge-xs gap-1 text-white">
+                    <span class="badge badge-error badge-xs lg:badge-sm gap-1 text-white">
                       Inactivo
                     </span>
                   )}
@@ -97,11 +97,18 @@ const { data: players } = await supabase
                 <td class="text-right">
                   <a
                     href={`/admin/players/edit/${player.id}`}
-                    class="btn btn-square btn-ghost btn-sm text-info"
+                    class="btn btn-square btn-ghost btn-xs text-info lg:btn-sm"
+                    title="Editar jugador"
                   >
                     <Icon
-                      name="material-symbols:edit-square-outline"
+                      name="material-symbols:edit"
+                      size={16}
+                      class="lg:hidden"
+                    />
+                    <Icon
+                      name="material-symbols:edit"
                       size={18}
+                      class="hidden lg:block"
                     />
                   </a>
                 </td>
@@ -109,7 +116,10 @@ const { data: players } = await supabase
             ))
           }
         </tbody>
+        >
+        <Icon name="material-symbols:edit-square-outline" size={18} />
       </table>
     </TableWrapper>
   </div>
+  )) }
 </Main>

@@ -2,6 +2,9 @@
 import Main from "@/layouts/Main.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import PageHeader from "@/components/shared/PageHeader.astro";
+import Card from "@/components/shared/Card.astro";
+import SectionTitle from "@/components/shared/SectionTitle.astro";
 
 const supabase = createAstroSupabase(Astro);
 const {
@@ -10,137 +13,254 @@ const {
 
 if (!session) return Astro.redirect("/signin");
 
-// Opcional: Obtener conteos rápidos para mostrar en el dashboard
+// Obtener conteos rápidos para mostrar en el dashboard
 const { count: matchCount } = await supabase
   .from("matches")
   .select("*", { count: "exact", head: true });
-const { count: playerCount } = await supabase
+
+// Jugadores habituales (socios) activos
+const { count: regularPlayerCount } = await supabase
   .from("players")
   .select("*", { count: "exact", head: true })
-  .eq("is_active", true);
+  .eq("is_active", true)
+  .eq("is_guest", false);
+
+// Jugadores invitados activos
+const { count: guestPlayerCount } = await supabase
+  .from("players")
+  .select("*", { count: "exact", head: true })
+  .eq("is_active", true)
+  .eq("is_guest", true);
 ---
 
 <Main title="Panel de Administración">
-  <div class="mx-auto max-w-5xl px-4 py-10">
+  <div class="mx-auto max-w-7xl px-4 py-6 lg:py-10">
     <div
-      class="mb-10 flex flex-col items-center justify-between gap-4 md:flex-row"
+      class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-10"
     >
-      <div>
-        <h1 class="text-primary text-3xl font-black uppercase italic">
-          Panel de Control
-        </h1>
-        <p
-          class="text-base-content/60 text-sm font-bold tracking-wider uppercase"
-        >
-          Bienvenido, Admin
-        </p>
-      </div>
+      <PageHeader title="Panel de Control" />
 
       <form action="/api/auth/signout" method="post">
         <button
           type="submit"
-          class="btn btn-outline btn-error btn-sm gap-2 rounded-xl"
+          class="btn btn-outline btn-error btn-sm lg:btn-md gap-2 rounded-xl"
         >
-          <Icon name="material-symbols:logout" />
-          Cerrar Sesión
+          <Icon name="material-symbols:logout" size={20} />
+          <span class="hidden sm:inline">Cerrar Sesión</span>
         </button>
       </form>
     </div>
 
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div class="space-y-4">
-        <h2
-          class="text-base-content/60 flex items-center gap-2 text-sm font-black uppercase"
-        >
-          <Icon name="material-symbols:sports-soccer" /> Gestión de Partidos
-        </h2>
-
-        <div class="grid gap-4">
-          <a
-            href="/admin/matches/create"
-            class="card bg-base-100 border-base-200 hover:border-primary/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
+    <!-- Estadísticas rápidas -->
+    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:mb-10 lg:gap-6">
+      <Card>
+        <div class="flex flex-col items-center p-4 text-center lg:p-6">
+          <div class="bg-primary/10 text-primary mb-3 rounded-full p-3 lg:p-4">
+            <Icon
+              name="material-symbols:sports-soccer"
+              size={24}
+              class="lg:hidden"
+            />
+            <Icon
+              name="material-symbols:sports-soccer"
+              size={32}
+              class="hidden lg:block"
+            />
+          </div>
+          <span class="text-3xl font-black lg:text-4xl">{matchCount || 0}</span>
+          <span
+            class="text-base-content/60 mt-1 text-xs font-bold uppercase lg:text-sm"
+            >Partidos</span
           >
-            <div class="card-body flex flex-row items-center gap-4">
+        </div>
+      </Card>
+
+      <Card>
+        <div class="flex flex-col items-center p-4 text-center lg:p-6">
+          <div
+            class="bg-secondary/10 text-secondary mb-3 rounded-full p-3 lg:p-4"
+          >
+            <Icon name="material-symbols:groups" size={24} class="lg:hidden" />
+            <Icon
+              name="material-symbols:groups"
+              size={32}
+              class="hidden lg:block"
+            />
+          </div>
+          <span class="text-3xl font-black lg:text-4xl"
+            >{regularPlayerCount || 0}</span
+          >
+          <span
+            class="text-base-content/60 mt-1 text-xs font-bold uppercase lg:text-sm"
+            >Jugadores Habituales</span
+          >
+        </div>
+      </Card>
+
+      <Card>
+        <div class="flex flex-col items-center p-4 text-center lg:p-6">
+          <div class="bg-accent/10 text-accent mb-3 rounded-full p-3 lg:p-4">
+            <Icon
+              name="material-symbols:person-add"
+              size={24}
+              class="lg:hidden"
+            />
+            <Icon
+              name="material-symbols:person-add"
+              size={32}
+              class="hidden lg:block"
+            />
+          </div>
+          <span class="text-3xl font-black lg:text-4xl"
+            >{guestPlayerCount || 0}</span
+          >
+          <span
+            class="text-base-content/60 mt-1 text-xs font-bold uppercase lg:text-sm"
+            >Jugadores Invitados</span
+          >
+        </div>
+      </Card>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+      <div class="space-y-4 lg:space-y-6">
+        <SectionTitle>
+          <Icon name="material-symbols:sports-soccer" class="inline" /> Gestión de
+          Partidos
+        </SectionTitle>
+
+        <div class="grid gap-4 lg:gap-5">
+          <Card hover>
+            <a
+              href="/admin/matches/create"
+              class="group flex flex-row items-center gap-4 p-4 lg:gap-5 lg:p-6"
+            >
               <div
-                class="bg-primary/10 text-primary group-hover:bg-primary rounded-full p-4 transition-colors group-hover:text-white"
+                class="bg-primary/10 text-primary group-hover:bg-primary shrink-0 rounded-full p-3 transition-all group-hover:scale-110 group-hover:text-white lg:p-4"
               >
-                <Icon name="material-symbols:add-circle-outline" size={32} />
+                <Icon
+                  name="material-symbols:add-circle-outline"
+                  size={28}
+                  class="lg:hidden"
+                />
+                <Icon
+                  name="material-symbols:add-circle-outline"
+                  size={36}
+                  class="hidden lg:block"
+                />
               </div>
-              <div>
-                <h3 class="text-lg font-black">Nuevo Partido</h3>
-                <p class="text-base-content/60 text-xs font-bold uppercase">
+              <div class="min-w-0">
+                <h3 class="text-base font-black lg:text-lg">Nuevo Partido</h3>
+                <p
+                  class="text-base-content/60 text-xs font-bold uppercase lg:text-sm"
+                >
                   Registrar resultado reciente
                 </p>
               </div>
-            </div>
-          </a>
+            </a>
+          </Card>
 
-          <a
-            href="/admin/matches"
-            class="card bg-base-100 border-base-200 hover:border-secondary/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
-          >
-            <div class="card-body flex flex-row items-center gap-4">
+          <Card hover>
+            <a
+              href="/admin/matches"
+              class="group flex flex-row items-center gap-4 p-4 lg:gap-5 lg:p-6"
+            >
               <div
-                class="bg-secondary/10 text-secondary group-hover:bg-secondary rounded-full p-4 transition-colors group-hover:text-white"
+                class="bg-secondary/10 text-secondary group-hover:bg-secondary shrink-0 rounded-full p-3 transition-all group-hover:scale-110 group-hover:text-white lg:p-4"
               >
-                <Icon name="material-symbols:edit-document-rounded" size={32} />
+                <Icon
+                  name="material-symbols:edit-document-rounded"
+                  size={28}
+                  class="lg:hidden"
+                />
+                <Icon
+                  name="material-symbols:edit-document-rounded"
+                  size={36}
+                  class="hidden lg:block"
+                />
               </div>
-              <div>
-                <h3 class="text-lg font-black">Historial y Edición</h3>
-                <p class="text-base-content/60 text-xs font-bold uppercase">
+              <div class="min-w-0">
+                <h3 class="text-base font-black lg:text-lg">
+                  Historial y Edición
+                </h3>
+                <p
+                  class="text-base-content/60 text-xs font-bold uppercase lg:text-sm"
+                >
                   Corregir datos
                 </p>
               </div>
-            </div>
-          </a>
+            </a>
+          </Card>
         </div>
       </div>
 
-      <div class="space-y-4">
-        <h2
-          class="text-base-content/60 flex items-center gap-2 text-sm font-black uppercase"
-        >
-          <Icon name="material-symbols:groups" /> Gestión de Plantel
-        </h2>
+      <div class="space-y-4 lg:space-y-6">
+        <SectionTitle>
+          <Icon name="material-symbols:groups" class="inline" /> Gestión de Plantel
+        </SectionTitle>
 
-        <div class="grid gap-4">
-          <a
-            href="/admin/players/create"
-            class="card bg-base-100 border-base-200 hover:border-success/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
-          >
-            <div class="card-body flex flex-row items-center gap-4">
+        <div class="grid gap-4 lg:gap-5">
+          <Card hover>
+            <a
+              href="/admin/players/create"
+              class="group flex flex-row items-center gap-4 p-4 lg:gap-5 lg:p-6"
+            >
               <div
-                class="bg-success/10 text-success group-hover:bg-success rounded-full p-4 transition-colors group-hover:text-white"
+                class="bg-accent/10 text-accent group-hover:bg-accent shrink-0 rounded-full p-3 transition-all group-hover:scale-110 group-hover:text-white lg:p-4"
               >
-                <Icon name="material-symbols:person-add" size={32} />
+                <Icon
+                  name="material-symbols:person-add"
+                  size={28}
+                  class="lg:hidden"
+                />
+                <Icon
+                  name="material-symbols:person-add"
+                  size={36}
+                  class="hidden lg:block"
+                />
               </div>
-              <div>
-                <h3 class="text-lg font-black">Agregar Jugador</h3>
-                <p class="text-base-content/60 text-xs font-bold uppercase">
-                  Alta de nuevo integrante
+              <div class="min-w-0">
+                <h3 class="text-base font-black lg:text-lg">Nuevo Jugador</h3>
+                <p
+                  class="text-base-content/60 text-xs font-bold uppercase lg:text-sm"
+                >
+                  Agregar al plantel
                 </p>
               </div>
-            </div>
-          </a>
+            </a>
+          </Card>
 
-          <a
-            href="/admin/players"
-            class="card bg-base-100 border-base-200 hover:border-warning/50 group rounded-xl border shadow-md transition-all hover:shadow-lg"
-          >
-            <div class="card-body flex flex-row items-center gap-4">
+          <Card hover>
+            <a
+              href="/admin/players"
+              class="group flex flex-row items-center gap-4 p-4 lg:gap-5 lg:p-6"
+            >
               <div
-                class="bg-warning/10 text-warning group-hover:bg-warning rounded-full p-4 transition-colors group-hover:text-white"
+                class="bg-info/10 text-info group-hover:bg-info shrink-0 rounded-full p-3 transition-all group-hover:scale-110 group-hover:text-white lg:p-4"
               >
-                <Icon name="material-symbols:manage-accounts" size={32} />
+                <Icon
+                  name="material-symbols:list-alt"
+                  size={28}
+                  class="lg:hidden"
+                />
+                <Icon
+                  name="material-symbols:list-alt"
+                  size={36}
+                  class="hidden lg:block"
+                />
               </div>
-              <div>
-                <h3 class="text-lg font-black">Editar Plantel</h3>
-                <p class="text-base-content/60 text-xs font-bold uppercase">
-                  Bajas y modificaciones ({playerCount} activos)
+              <div class="min-w-0">
+                <h3 class="text-base font-black lg:text-lg">
+                  Gestionar Jugadores
+                </h3>
+                <p
+                  class="text-base-content/60 text-xs font-bold uppercase lg:text-sm"
+                >
+                  Editar información
                 </p>
               </div>
-            </div>
-          </a>
+            </a>
+          </Card>
         </div>
       </div>
     </div>
