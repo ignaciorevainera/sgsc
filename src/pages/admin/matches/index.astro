@@ -85,7 +85,7 @@ const formatDate = (dateString: string) => {
                 </td>
 
                 <td class="max-w-37.5 truncate text-sm font-bold">
-                  {match.fields?.[0]?.name || "Sin cancha"}
+                  {(match.fields as any)?.name || "Sin cancha"}
                 </td>
 
                 <td class="text-center">
