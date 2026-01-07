@@ -41,6 +41,18 @@ const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen r
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
 
+    <!-- Theme color para móviles -->
+    <meta
+      name="theme-color"
+      content="#570df8"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#1d232a"
+      media="(prefers-color-scheme: dark)"
+    />
+
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content={type} />

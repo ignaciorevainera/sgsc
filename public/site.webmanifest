@@ -1,6 +1,9 @@
 {
   "name": "Solo Gente Súper Comprometida",
   "short_name": "SGSC",
+  "description": "Resultados, estadísticas y ranking del grupo Solo Gente Súper Comprometida.",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -15,7 +18,8 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
+  "theme_color": "#570df8",
   "background_color": "#ffffff",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "portrait"
 }
