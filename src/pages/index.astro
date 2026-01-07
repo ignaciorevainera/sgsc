@@ -1,4 +1,6 @@
 ---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import Main from "@/layouts/Main.astro";
 import { supabase } from "@/lib/supabase";
 import MatchCard from "@/components/MatchCard.astro";
