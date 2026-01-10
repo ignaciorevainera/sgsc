@@ -3,6 +3,7 @@ interface Props {
   initial: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   ring?: boolean;
+  interactive?: boolean;
   class?: string;
 }
 
@@ -10,6 +11,7 @@ const {
   initial,
   size = "lg",
   ring = true,
+  interactive = true,
   class: className = "",
 } = Astro.props;
 
@@ -30,12 +32,18 @@ const ringClasses = {
 };
 
 const sizeClass = sizeClasses[size];
-const ringClass = ring ? `${ringClasses[size]} ring-base-100` : "";
+const ringClass = ring
+  ? `${ringClasses[size]} ring-slate-200 ring-offset-2 ring-offset-base-100`
+  : "";
+
+const interactiveClass = interactive
+  ? `transition-all duration-200 ${ring ? "hover:ring-primary group-hover:ring-primary" : ""} hover:shadow-md group-hover:shadow-md`
+  : "";
 ---
 
-<div class={`avatar placeholder ${className}`}>
+<div class={`avatar avatar-placeholder placeholder ${className}`}>
   <div
-    class={`bg-neutral text-neutral-content flex items-center justify-center rounded-full ${sizeClass} ${ringClass}`}
+    class={`bg-neutral text-neutral-content flex items-center justify-center rounded-full ${sizeClass} ${ringClass} ${interactiveClass}`}
   >
     <span class="font-black">
       {initial}
