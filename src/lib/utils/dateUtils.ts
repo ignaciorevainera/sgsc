@@ -19,7 +19,7 @@ export const getSafeDate = (
  */
 export const formatDate = (
   dateString: string,
-  style: "short" | "medium" | "long" = "short",
+  style: "short" | "medium" | "long" | "compact" = "short",
 ): string => {
   const date = getSafeDate(dateString);
   if (!date) return "N/A";
@@ -36,6 +36,10 @@ export const formatDate = (
   } else if (style === "medium") {
     // Estilo con año: "11 Abr 2026"
     options.day = "numeric";
+    options.month = "short";
+    options.year = "numeric";
+  } else if (style === "compact") {
+    // Estilo para FieldCard: "Abr 2026"
     options.month = "short";
     options.year = "numeric";
   } else {

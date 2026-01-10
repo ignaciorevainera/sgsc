@@ -1,0 +1,19 @@
+---
+interface Props {
+  nickname: string;
+  team: "light" | "dark";
+}
+
+const { nickname, team } = Astro.props;
+
+const teamStyles = {
+  light: "border-slate-300 bg-white/80 text-slate-700",
+  dark: "border-slate-700 bg-slate-700/80 text-slate-100",
+};
+---
+
+<span
+  class={`badge badge-sm h-fit rounded-lg border py-1 font-medium ${teamStyles[team]}`}
+>
+  {nickname}
+</span>

@@ -62,16 +62,6 @@ const totalMatchesGlobal = fields.reduce(
 
 const hasError = !!error;
 const hasFields = !hasError && fields.length > 0;
-
-// Helper para formato de fecha
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "Sin partidos";
-  return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-};
 ---
 
 <Main title="Sedes | SGSC">
