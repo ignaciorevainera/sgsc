@@ -1,7 +1,7 @@
 ---
 import { Icon } from "astro-icon/components";
-import ResultStats from "./ResultStats.astro"; // ✅ Usamos tu componente
-
+import ResultStats from "./ResultStats.astro";
+import { formatDate } from "@/lib/utils/dateUtils";
 interface Props {
   field: {
     id: string;
@@ -19,15 +19,6 @@ interface Props {
 
 const { field } = Astro.props;
 const { stats } = field;
-
-// Helper de fecha
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "Sin actividad";
-  return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
-    month: "short",
-    year: "numeric",
-  });
-};
 ---
 
 <div
@@ -40,15 +31,13 @@ const formatDate = (dateString: string | null) => {
 
   <div class="card-body">
     {/* ENCABEZADO: Título y Ciudad */}
-    <div class="mb-4 flex items-start justify-between">
+    <div class="flex items-start justify-between">
       <div class="flex gap-3">
-        <div class="mt-1">
-          <Icon
-            name="material-symbols:location-on"
-            class="text-error"
-            size={24}
-          />
-        </div>
+        <Icon
+          name="material-symbols:location-on"
+          class="text-error"
+          size={24}
+        />
         <div>
           <h2 class="card-title text-xl leading-tight font-bold">
             {field.name}
@@ -58,15 +47,15 @@ const formatDate = (dateString: string | null) => {
       </div>
 
       {/* Badge de PJ */}
-      <div class="badge badge-neutral rounded-xl shrink-0 font-bold">
+      <div class="badge badge-neutral shrink-0 rounded-xl font-bold">
         {stats.totalMatches} PJ
       </div>
     </div>
 
-    <div class="divider my-1"></div>
+    <div class="divider"></div>
 
-    {/* ESTADÍSTICAS (Tu componente modular) */}
-    <div class="relative z-10 mt-2">
+    {/* ESTADÍSTICAS */}
+    <div>
       <ResultStats
         lightWins={stats.lightWins}
         darkWins={stats.darkWins}
@@ -74,15 +63,21 @@ const formatDate = (dateString: string | null) => {
       />
     </div>
 
+    <div class="divider m-0"></div>
+
     {/* FOOTER: Última Actividad */}
     <div
-      class="border-base-200 text-base-content/60 relative z-10 mt-auto flex items-center justify-between border-t pt-4 text-xs"
+      class="text-base-content/60 relative z-10 flex items-center justify-between text-xs"
     >
       <span class="flex items-center gap-1">
-        <Icon name="material-symbols:calendar-today" size={12} /> Último juego:
+        <Icon name="material-symbols:calendar-today" size={14} /> Último juego:
       </span>
       <span class="font-bold">
-        {formatDate(stats.lastMatchDate)}
+        {
+          stats.lastMatchDate
+            ? formatDate(stats.lastMatchDate, "compact")
+            : "Sin actividad"
+        }
       </span>
     </div>
   </div>

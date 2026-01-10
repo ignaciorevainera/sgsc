@@ -9,32 +9,27 @@ const { lightWins, darkWins, draws } = Astro.props;
 ---
 
 <div class="grid grid-cols-3 gap-2 text-center">
-  {/* Ganó Claro */}
+  {/* Victorias Claro */}
   <div
-    class="flex flex-col items-center rounded-xl border-2 border-gray-300 bg-white p-3 text-gray-900"
+    class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-slate-300 bg-slate-100 p-3"
   >
-    <span class="text-sm font-bold uppercase">Claro</span>
-    <span class="text-xl font-black">{lightWins}</span>
-    <span class="text-xs text-gray-500"> Victorias </span>
+    <span class="text-2xl font-black text-slate-700">{lightWins}</span>
+    <span class="text-xs font-bold text-slate-500 uppercase">Claro</span>
   </div>
 
   {/* Empates */}
   <div
-    class="border-warning bg-warning/10 flex flex-col items-center rounded-xl border-2 p-3"
+    class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-yellow-400 bg-yellow-100 p-3"
   >
-    <span class="text-warning text-xs font-bold uppercase"> Empates </span>
-    <span class="text-warning text-xl font-black">
-      {draws}
-    </span>
-    <span class="text-warning/70 text-xs">Igualdad</span>
+    <span class="text-2xl font-black text-yellow-700">{draws}</span>
+    <span class="text-xs font-bold text-yellow-700 uppercase">Empates</span>
   </div>
 
-  {/* Ganó Oscuro */}
+  {/* Victorias Oscuro */}
   <div
-    class="flex flex-col items-center rounded-xl border-2 border-slate-700 bg-slate-800 p-3 text-slate-100"
+    class="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-slate-700 bg-slate-800 p-3"
   >
-    <span class="text-xs font-bold uppercase">Oscuro</span>
-    <span class="text-xl font-black">{darkWins}</span>
-    <span class="text-xs text-slate-300">Victorias</span>
+    <span class="text-2xl font-black text-slate-100">{darkWins}</span>
+    <span class="text-xs font-bold text-slate-400 uppercase">Oscuro</span>
   </div>
 </div>
