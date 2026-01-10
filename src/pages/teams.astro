@@ -5,6 +5,7 @@ import Main from "@/layouts/Main.astro";
 import { Icon } from "astro-icon/components";
 import Alert from "@/components/shared/Alert.astro";
 import { supabase } from "@/lib/supabase";
+import Title from "@/components/shared/Title.astro";
 
 // 1. Obtener todos los partidos
 const { data: allMatches, error: matchesError } = await supabase
@@ -93,27 +94,20 @@ const hasMatches = !hasError && matches.length > 0;
     )
   }
 
+  <Title title="Historial de Equipos" subtitle="Desempeño y lealtad de los equipos Claro y Oscuro a lo largo de la historia." />
+
   {hasMatches && (
   <div class="bg-base-200 relative mb-6 overflow-hidden rounded-xl">
     <div
-      class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] bg-size-[16px_16px] opacity-[0.05]"
+      class="absolute inset-0 bg-[radial-gradient(#000000_1px,transparent_2px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_2px)] bg-size-[16px_16px] opacity-[0.09] dark:opacity-[0.05]"
     >
     </div>
 
     <div class="relative z-10 container mx-auto px-4 py-12 text-center">
-      <h1
-        class="text-base-content mb-2 text-4xl font-black tracking-tighter uppercase italic md:text-5xl"
-      >
-        El Historial
-      </h1>
-      <p
-        class="text-base-content/60 mb-10 text-xs font-bold tracking-widest uppercase"
-      >
-        Clásico de todos los tiempos
-      </p>
+
 
       <div
-        class="flex flex-col items-center justify-center gap-8 md:flex-row md:gap-20"
+        class="flex flex-col items-center justify-center gap-8 sm:flex-row sm:gap-20"
       >
         <div class="group flex flex-col items-center">
           <div
@@ -168,12 +162,11 @@ const hasMatches = !hasError && matches.length > 0;
 
       <div class="mt-8 flex justify-center">
         <div
-          class="bg-base-100/50 border-base-content/10 inline-flex items-center gap-2 rounded-full border px-6 py-2 shadow-md backdrop-blur-sm"
+          class="bg-base-100/50 border-base-content/10 inline-flex items-center gap-2 rounded-full  border px-6 py-2 shadow-md backdrop-blur-sm"
         >
           <div class="h-2 w-2 rounded-full bg-yellow-400"></div>
           <span class="text-base-content/60 font-mono font-bold"
-            >{stats.draw} Empates</span
-          >
+            >{stats.draw} Empates</span>
         </div>
       </div>
 
@@ -228,7 +221,7 @@ const hasMatches = !hasError && matches.length > 0;
                     </div>
                     <div class="font-bold text-slate-700">{player.name}</div>
                   </div>
-                  <div class="badge rounded-xl border-none bg-slate-100 font-bold text-slate-600">
+                  <div class="badge badge-sm rounded-xl border-none bg-slate-100 font-bold text-slate-600">
                     {player.count} PJ
                   </div>
                 </div>
@@ -238,7 +231,7 @@ const hasMatches = !hasError && matches.length > 0;
         </div>
         <Icon
           name="material-symbols:wb-sunny"
-          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 rotate-12 text-slate-200/50"
+          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 rotate-12 text-slate-300/40"
         />
       </div>
 
@@ -272,7 +265,7 @@ const hasMatches = !hasError && matches.length > 0;
                     </div>
                     <div class="font-bold text-slate-200">{player.name}</div>
                   </div>
-                  <div class="badge rounded-xl border-none bg-slate-700 font-bold text-slate-300">
+                  <div class="badge badge-sm rounded-xl border-none bg-slate-700 font-bold text-slate-300">
                     {player.count} PJ
                   </div>
                 </div>
@@ -282,7 +275,7 @@ const hasMatches = !hasError && matches.length > 0;
         </div>
         <Icon
           name="material-symbols:dark-mode"
-          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 -rotate-12 text-slate-800/50"
+          class="pointer-events-none absolute -right-6 -bottom-6 h-40 w-40 -rotate-12 text-slate-700/50"
         />
       </div>
     </div>
@@ -319,10 +312,10 @@ const hasMatches = !hasError && matches.length > 0;
             // EMPATE (Amarillo destacado)
             return (
               <div
-                class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-yellow-400 bg-yellow-100 font-black text-yellow-700 shadow-md md:h-12 md:w-12"
+                class="flex h-10 w-10 cursor-help items-center justify-center rounded-xl border-2 border-yellow-400 bg-yellow-100 text-yellow-700 shadow-md md:h-12 md:w-12"
                 title="Empate"
               >
-                E
+                <Icon name="material-symbols:balance" size={24} />
               </div>
             );
           })

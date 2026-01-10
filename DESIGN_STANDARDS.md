@@ -12,7 +12,7 @@ Este documento define los estándares de diseño, colores, componentes y patrone
 - **Bordes**: `border-slate-300` / `border-slate-200`
 - **Texto principal**: `text-slate-700` / `text-slate-800`
 - **Texto secundario**: `text-slate-500` / `text-slate-600`
-- **Iconos**: `text-amber-500` para light-mode icon
+- **Iconos**: `text-slate-300/40` para light-mode icon
 - **Uso**: Representa al equipo claro en partidos y estadísticas
 
 #### Equipo Oscuro

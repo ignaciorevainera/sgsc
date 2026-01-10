@@ -1,5 +1,5 @@
 ---
-Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import Main from "@/layouts/Main.astro";
 import Avatar from "@/components/Avatar.astro";
@@ -78,7 +78,7 @@ const topUndefeated = getTop5(
 const categories = [
   {
     title: "Leyenda Absoluta",
-    subtitle: "Máximo Goleador de Puntos",
+    subtitle: "Mayor cantidad de Puntos",
     icon: "material-symbols:trophy",
     color: "text-amber-500",
     bg: "bg-amber-500",
@@ -100,7 +100,7 @@ const categories = [
   },
   {
     title: "Asistencia Perfecta",
-    subtitle: "Mayor % de Presencia en Torneos",
+    subtitle: "Mayor % de Presencia en Partidos",
     icon: "material-symbols:event-available",
     color: "text-indigo-500",
     bg: "bg-indigo-500",
@@ -111,7 +111,7 @@ const categories = [
   },
   {
     title: "El Ganador",
-    subtitle: "Más partidos ganados (Cantidad)",
+    subtitle: "Más partidos ganados",
     icon: "material-symbols:verified",
     color: "text-blue-500",
     bg: "bg-blue-500",
@@ -122,7 +122,7 @@ const categories = [
   },
   {
     title: "El Histórico",
-    subtitle: "Más partidos jugados (Cantidad)",
+    subtitle: "Más partidos jugados",
     icon: "material-symbols:calendar-month",
     color: "text-purple-500",
     bg: "bg-purple-500",
@@ -180,7 +180,7 @@ const categories = [
 
     <Title
       title="Salón de la Fama"
-      subtitle="Honor y gloria a los líderes históricos del torneo."
+      subtitle="Jugadores legendarios y récords históricos del club."
     />
   </div>
 
@@ -206,7 +206,7 @@ const categories = [
 
   {
     !hasError && safePlayers.length > 0 && (
-      <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => {
           const leader = cat.data[0];
           const followers = cat.data.slice(1);
