@@ -1,5 +1,6 @@
 ---
 import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import TableWrapper from "@/components/shared/TableWrapper.astro";
@@ -35,12 +36,12 @@ const formatDate = (dateString: string) => {
 ---
 
 <Main title="Administrar Partidos">
-  <div class="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+  <Title title="Historial de Partidos" subtitle="Panel de Administración" />
+  <div class="w-full py-6 lg:py-8">
     <div
       class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-8"
     >
       <div>
-        <PageHeader title="Historial de Partidos" backHref="/admin" />
         <p
           class="text-base-content/60 mt-2 text-xs font-bold uppercase lg:text-sm"
         >
@@ -78,7 +79,7 @@ const formatDate = (dateString: string) => {
                   {formatDate(match.date)}
                 </td>
 
-                <td class="max-w-[150px] truncate text-sm font-bold lg:max-w-none lg:text-base">
+                <td class="max-w-37.5 truncate text-sm font-bold lg:max-w-none lg:text-base">
                   {(match.fields as any)?.name || "Sin cancha"}
                 </td>
 

@@ -1,5 +1,6 @@
 ---
 import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import PageHeader from "@/components/shared/PageHeader.astro";
@@ -63,9 +64,8 @@ if (Astro.request.method === "POST") {
 ---
 
 <Main title="Editar Jugador">
+  <Title title="Editar Jugador" subtitle="Panel de Administración" />
   <div class="mx-auto max-w-lg px-4 py-8">
-    <PageHeader title="Editar Jugador" backHref="/admin/players" />
-
     {
       Astro.url.searchParams.get("success") && (
         <Alert

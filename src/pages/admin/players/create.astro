@@ -1,5 +1,6 @@
 ---
 import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import PageHeader from "@/components/shared/PageHeader.astro";
@@ -33,9 +34,8 @@ if (Astro.request.method === "POST") {
 ---
 
 <Main title="Nuevo Jugador">
+  <Title title="Nuevo Jugador" subtitle="Panel de Administración" />
   <div class="mx-auto max-w-lg px-4 py-8">
-    <PageHeader title="Nuevo Jugador" backHref="/admin/players" />
-
     <form
       method="POST"
       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"

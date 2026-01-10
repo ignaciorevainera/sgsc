@@ -1,5 +1,6 @@
 ---
 import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import TableWrapper from "@/components/shared/TableWrapper.astro";
@@ -15,11 +16,11 @@ const { data: players } = await supabase
 ---
 
 <Main title="Gestión de Jugadores">
-  <div class="mx-auto max-w-7xl px-4 py-6 lg:py-8">
+  <Title title="Plantel" subtitle="Panel de Administración" />
+  <div class="w-full py-6 lg:py-8">
     <div
       class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-8"
     >
-      <PageHeader title="Plantel" backHref="/admin" />
       <a
         href="/admin/players/create"
         class="btn btn-primary btn-sm lg:btn-md gap-2 rounded-xl shadow-md"
