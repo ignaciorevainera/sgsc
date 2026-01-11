@@ -225,27 +225,19 @@ const sortedPlayers = [...players].sort((a, b) => {
 </Main>
 
 <script>
-  // Importante: Escuchamos el evento 'astro:page-load'
-  document.addEventListener("astro:page-load", () => {
-    // 1. Buscamos los elementos DENTRO de la función para encontrarlos siempre
-    const s = document.getElementById("season") as HTMLSelectElement;
-    const o = document.getElementById("sort") as HTMLSelectElement;
-    const m = document.getElementById("mode-toggle") as HTMLInputElement;
+  const s = document.getElementById("season") as HTMLSelectElement;
+  const o = document.getElementById("sort") as HTMLSelectElement;
+  const m = document.getElementById("mode-toggle") as HTMLInputElement;
 
-    // 2. Definimos la función de actualización
-    const update = () => {
-      const url = new URL(window.location.href);
-      if (s) url.searchParams.set("season", s.value);
-      if (o) url.searchParams.set("sort", o.value);
-      if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
+  const update = () => {
+    const url = new URL(window.location.href);
+    if (s) url.searchParams.set("season", s.value);
+    if (o) url.searchParams.set("sort", o.value);
+    if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
+    window.location.href = url.toString();
+  };
 
-      // Forzamos la navegación (Astro la interceptará si usas ViewTransitions)
-      window.location.href = url.toString();
-    };
-
-    // 3. Agregamos los eventos de nuevo
-    s?.addEventListener("change", update);
-    o?.addEventListener("change", update);
-    m?.addEventListener("change", update);
-  });
+  s?.addEventListener("change", update);
+  o?.addEventListener("change", update);
+  m?.addEventListener("change", update);
 </script>
