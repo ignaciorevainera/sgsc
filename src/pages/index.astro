@@ -130,8 +130,9 @@ const features = [
       )
     }
 
-    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
-      <div class="animate-fade-up">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-9">
+      <!-- Líderes: 5 columnas en desktop -->
+      <div class="lg:col-span-3">
         <div class="mb-4 flex items-center gap-2">
           <Icon name="material-symbols:trophy" class="text-warning" size={24} />
           <h2 class="text-primary text-xl font-black uppercase italic">
@@ -185,10 +186,10 @@ const features = [
                 </div>
               )
             }
-            <div class="border-base-200 border-t p-2 text-center">
+            <div class="border-base-200 mt-auto border-t p-2 text-center">
               <a
                 href="/ranking"
-                class="btn btn-ghost btn-xs text-base-content/60 hover:text-primary w-full rounded-xl"
+                class="btn btn-ghost btn-xs btn-wide w-full rounded-xl"
               >
                 Ver tabla completa
               </a>
@@ -197,7 +198,8 @@ const features = [
         </div>
       </div>
 
-      <div class="animate-fade-up" style="animation-delay: 100ms">
+      <!-- Último Resultado: 6 columnas en desktop -->
+      <div class="flex flex-col lg:col-span-6">
         <div class="mb-4 flex items-center gap-2">
           <Icon
             name="material-symbols:history"
@@ -209,61 +211,60 @@ const features = [
           </h2>
         </div>
 
-        {
-          lastMatch ? (
-            <MatchCard match={lastMatch} />
-          ) : (
-            <div class="alert bg-base-100 border-base-200 rounded-xl border shadow-md">
-              <Icon name="material-symbols:info" class="text-info" size={20} />
-              <span>No hay partidos registrados recientemente.</span>
-            </div>
-          )
-        }
+        <div class="flex-1 [&>div]:h-full [&>div>.card-body]:h-full">
+          {
+            lastMatch ? (
+              <MatchCard match={lastMatch} />
+            ) : (
+              <div class="alert bg-base-100 border-base-200 rounded-xl border shadow-md">
+                <Icon
+                  name="material-symbols:info"
+                  class="text-info"
+                  size={20}
+                />
+                <span>No hay partidos registrados recientemente.</span>
+              </div>
+            )
+          }
+        </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <!-- Feature Cards: 3 columnas cada una -->
       {
         features.map((feature, index) => (
-          <div
-            class="animate-fade-up"
-            style={`animation-delay: ${(index + 2) * 100}ms`}
+          <a
+            href={feature.href}
+            class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3"
           >
-            <a
-              href={feature.href}
-              class="card bg-base-100 border-base-200 group h-full rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div class="card-body">
-                <div
-                  class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
-                >
-                  <Icon name={feature.icon} size={30} />
-                </div>
-                <h3 class="card-title group-hover:text-primary transition-colors">
-                  {feature.title}
-                </h3>
-                <p class="text-base-content/60 text-sm">
-                  {feature.description}
-                </p>
+            <div class="card-body">
+              <div
+                class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
+              >
+                <Icon name={feature.icon} size={30} />
               </div>
-            </a>
-          </div>
+              <h3 class="card-title group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
+              <p class="text-base-content/60 text-sm">{feature.description}</p>
+            </div>
+          </a>
         ))
       }
-    </div>
 
-    <div
-      class="alert bg-primary/5 border-base-200 text-base-content rounded-xl border shadow-md"
-    >
-      <Icon
-        name="material-symbols:info-outline"
-        class="text-primary"
-        size={24}
-      />
-      <div>
-        <h3 class="text-primary font-bold">¿Cuándo se juega?</h3>
-        <div class="text-base-content/60 text-xs">
-          Organiza el próximo partido desde el grupo de WhatsApp oficial.
+      <!-- Info Alert: 9 columnas -->
+      <div
+        class="alert bg-primary/5 border-base-200 text-base-content rounded-xl border shadow-md lg:col-span-9"
+      >
+        <Icon
+          name="material-symbols:info-outline"
+          class="text-primary"
+          size={24}
+        />
+        <div>
+          <h3 class="text-primary font-bold">¿Cuándo se juega?</h3>
+          <div class="text-base-content/60 text-xs">
+            Organiza el próximo partido desde el grupo de WhatsApp oficial.
+          </div>
         </div>
       </div>
     </div>
