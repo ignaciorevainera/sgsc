@@ -1,12 +1,12 @@
 ---
-import Main from "@/layouts/Main.astro";
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
+import { createAstroSupabase } from "@/lib/supabase";
+import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
+import Main from "@/layouts/Main.astro";
 import SectionTitle from "@/components/shared/SectionTitle.astro";
-import Alert from "@/components/shared/Alert.astro";
-import { createAstroSupabase } from "@/lib/supabase";
-
-import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
 
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;

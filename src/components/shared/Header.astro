@@ -1,7 +1,7 @@
 ---
+import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
-import { createAstroSupabase } from "@/lib/supabase"; // 1. Importamos cliente SSR
 
 // 2. Lógica de sesión en el servidor
 const supabase = createAstroSupabase(Astro);

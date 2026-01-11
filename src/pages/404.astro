@@ -1,6 +1,8 @@
 ---
-import Main from "@/layouts/Main.astro";
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import { Icon } from "astro-icon/components";
+import Main from "@/layouts/Main.astro";
 ---
 
 <Main title="¡Orsai! | Página no encontrada">

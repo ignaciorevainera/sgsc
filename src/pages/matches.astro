@@ -1,11 +1,11 @@
 ---
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
+import { supabase } from "@lib/supabase";
+import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@components/MatchCard.astro";
 import Title from "@/components/shared/Title.astro";
-import Alert from "@/components/shared/Alert.astro";
-import { supabase } from "@lib/supabase";
 
 // 1. Traemos TODOS los partidos ordenados por fecha (más reciente primero)
 const { data: matches, error } = await supabase

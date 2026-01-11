@@ -1,13 +1,10 @@
 ---
-Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
-
-import Main from "@/layouts/Main.astro";
-import StandingsTable from "@/components/ranking/StandingsTable.astro";
-import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
-import Title from "@/components/shared/Title.astro";
+import { createAstroSupabase } from "@/lib/supabase";
 import Alert from "@/components/shared/Alert.astro";
-import { Icon } from "astro-icon/components";
-import { createAstroSupabase } from "@/lib/supabase"; // Usamos el cliente correcto
+import Main from "@/layouts/Main.astro";
+import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
+import StandingsTable from "@/components/ranking/StandingsTable.astro";
+import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -228,19 +225,27 @@ const sortedPlayers = [...players].sort((a, b) => {
 </Main>
 
 <script>
-  const s = document.getElementById("season") as HTMLSelectElement;
-  const o = document.getElementById("sort") as HTMLSelectElement;
-  const m = document.getElementById("mode-toggle") as HTMLInputElement;
+  // Importante: Escuchamos el evento 'astro:page-load'
+  document.addEventListener("astro:page-load", () => {
+    // 1. Buscamos los elementos DENTRO de la función para encontrarlos siempre
+    const s = document.getElementById("season") as HTMLSelectElement;
+    const o = document.getElementById("sort") as HTMLSelectElement;
+    const m = document.getElementById("mode-toggle") as HTMLInputElement;
 
-  const update = () => {
-    const url = new URL(window.location.href);
-    if (s) url.searchParams.set("season", s.value);
-    if (o) url.searchParams.set("sort", o.value);
-    if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
-    window.location.href = url.toString();
-  };
+    // 2. Definimos la función de actualización
+    const update = () => {
+      const url = new URL(window.location.href);
+      if (s) url.searchParams.set("season", s.value);
+      if (o) url.searchParams.set("sort", o.value);
+      if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
 
-  s?.addEventListener("change", update);
-  o?.addEventListener("change", update);
-  m?.addEventListener("change", update);
+      // Forzamos la navegación (Astro la interceptará si usas ViewTransitions)
+      window.location.href = url.toString();
+    };
+
+    // 3. Agregamos los eventos de nuevo
+    s?.addEventListener("change", update);
+    o?.addEventListener("change", update);
+    m?.addEventListener("change", update);
+  });
 </script>

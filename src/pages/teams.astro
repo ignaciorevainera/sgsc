@@ -1,10 +1,10 @@
 ---
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
-import Main from "@/layouts/Main.astro";
 import { Icon } from "astro-icon/components";
-import Alert from "@/components/shared/Alert.astro";
 import { supabase } from "@/lib/supabase";
+import Alert from "@/components/shared/Alert.astro";
+import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 // 1. Obtener todos los partidos

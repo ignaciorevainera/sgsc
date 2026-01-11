@@ -1,11 +1,10 @@
 ---
-import Main from "@/layouts/Main.astro";
-import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
-import { Icon } from "astro-icon/components";
+import ActionCard from "@/components/admin/ActionCard.astro";
+import Main from "@/layouts/Main.astro";
 import SectionTitle from "@/components/shared/SectionTitle.astro";
 import StatCard from "@/components/admin/StatCard.astro";
-import ActionCard from "@/components/admin/ActionCard.astro";
+import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
 const {

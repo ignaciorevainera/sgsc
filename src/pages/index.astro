@@ -1,9 +1,11 @@
 ---
-import Main from "@/layouts/Main.astro";
-import { supabase } from "@/lib/supabase";
-import MatchCard from "@/components/MatchCard.astro";
-import Alert from "@/components/shared/Alert.astro";
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import { Icon } from "astro-icon/components";
+import { supabase } from "@/lib/supabase";
+import Alert from "@/components/shared/Alert.astro";
+import Main from "@/layouts/Main.astro";
+import MatchCard from "@/components/MatchCard.astro";
 
 // --- CONSULTAS A SUPABASE ---
 

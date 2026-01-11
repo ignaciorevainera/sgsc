@@ -1,12 +1,12 @@
 ---
 Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300');
 
-import Main from "@/layouts/Main.astro";
-import FieldCard from "@/components/FieldCard.astro";
-import Title from "@/components/shared/Title.astro";
-import Alert from "@/components/shared/Alert.astro";
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
+import Alert from "@/components/shared/Alert.astro";
+import FieldCard from "@/components/FieldCard.astro";
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
 
 // 1. Traemos canchas + partidos
 const { data: rawFields, error } = await supabase.from("fields").select(`
