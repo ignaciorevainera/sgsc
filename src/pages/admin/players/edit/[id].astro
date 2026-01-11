@@ -65,121 +65,106 @@ if (Astro.request.method === "POST") {
 
 <Main title="Editar Jugador">
   <Title title="Editar Jugador" subtitle="Panel de Administración" />
-  <div class="mx-auto max-w-lg px-4 py-8">
-    {
-      Astro.url.searchParams.get("success") && (
-        <Alert
-          type="success"
-          message="Cambios guardados correctamente."
-          class="mb-4"
-        />
-      )
-    }
+  {
+    Astro.url.searchParams.get("success") && (
+      <Alert
+        type="success"
+        message="Cambios guardados correctamente."
+        class="mb-4"
+      />
+    )
+  }
 
+  <div class="flex flex-col gap-6">
     <form
       method="POST"
-      class="card bg-base-100 border-base-200 mb-8 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+      class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
     >
       <input type="hidden" name="action" value="update" />
 
-      <div class="form-control">
-        <label class="label">
-          <span
-            class="label-text text-base-content/60 text-xs font-bold uppercase"
-            >Apodo</span
-          >
-        </label>
-        <input
-          type="text"
-          name="nickname"
-          value={player.nickname}
-          required
-          class="input input-bordered w-full rounded-xl"
-        />
-      </div>
+      <div class="grid grid-cols-4 gap-2">
+        <div class="form-control col-span-4">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Apodo</legend>
+            <input
+              type="text"
+              name="nickname"
+              value={player.nickname}
+              required
+              class="input input-bordered w-full rounded-xl"
+            />
+          </fieldset>
+        </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text text-base-content/60 text-xs font-bold uppercase"
-              >Nombre</span
-            >
-          </label>
-          <input
-            type="text"
-            name="first_name"
-            value={player.first_name || ""}
-            class="input input-bordered w-full rounded-xl"
-          />
+        <div class="form-control col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Nombre</legend>
+            <input
+              type="text"
+              name="first_name"
+              value={player.first_name || ""}
+              class="input input-bordered w-full rounded-xl"
+            />
+          </fieldset>
         </div>
-        <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text text-base-content/60 text-xs font-bold uppercase"
-              >Apellido</span
-            >
-          </label>
-          <input
-            type="text"
-            name="last_name"
-            value={player.last_name || ""}
-            class="input input-bordered w-full rounded-xl"
-          />
-        </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text text-base-content/60 text-xs font-bold uppercase"
-              >Fecha Nacimiento</span
-            >
-          </label>
-          <input
-            type="date"
-            name="birth_date"
-            value={player.birth_date}
-            class="input input-bordered w-full rounded-xl"
-          />
+        <div class="form-control col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Apellido</legend>
+            <input
+              type="text"
+              name="last_name"
+              value={player.last_name || ""}
+              class="input input-bordered w-full rounded-xl"
+            />
+          </fieldset>
         </div>
-        <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text text-base-content/60 text-xs font-bold uppercase"
-              >Pie Hábil</span
+
+        <div class="form-control col-span-4 sm:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Fecha Nacimiento</legend>
+            <input
+              type="date"
+              name="birth_date"
+              value={player.birth_date}
+              class="input input-bordered w-full rounded-xl"
+            />
+          </fieldset>
+        </div>
+
+        <div class="form-control col-span-4 sm:col-span-2">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Pie Hábil</legend>
+            <select
+              name="preferred_foot"
+              class="select select-bordered w-full rounded-xl"
             >
-          </label>
-          <select
-            name="preferred_foot"
-            class="select select-bordered w-full rounded-xl"
-          >
-            <option value="right" selected={player.preferred_foot === "right"}
-              >Diestro</option
-            >
-            <option value="left" selected={player.preferred_foot === "left"}
-              >Zurdo</option
-            >
-            <option value="both" selected={player.preferred_foot === "both"}
-              >Ambidiestro</option
-            >
-          </select>
+              <option value="right" selected={player.preferred_foot === "right"}
+                >Diestro</option
+              >
+              <option value="left" selected={player.preferred_foot === "left"}
+                >Zurdo</option
+              >
+              <option value="both" selected={player.preferred_foot === "both"}
+                >Ambidiestro
+              </option>
+            </select>
+          </fieldset>
         </div>
       </div>
-
-      <button
-        type="submit"
-        class="btn btn-primary btn-block mt-6 rounded-xl shadow-md transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-        >Actualizar Datos</button
-      >
     </form>
+
+    <button
+      type="submit"
+      class="btn btn-primary btn-block rounded-xl shadow-md transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+      >Actualizar Datos</button
+    >
 
     <div class="card bg-base-200 border-base-200 rounded-xl border p-4 sm:p-6">
       <h3 class="text-base-content/60 mb-2 text-xs font-bold uppercase">
         Zona de Estado
       </h3>
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-2">
         <div>
           <span class="block font-bold">Estado Actual</span>
           <span class="text-xs opacity-70">
@@ -195,11 +180,11 @@ if (Astro.request.method === "POST") {
           <input type="hidden" name="action" value="toggle_status" />
           {
             player.is_active ? (
-              <button class="btn btn-error btn-sm rounded-xl text-white">
+              <button class="btn btn-error btn-sm sm:btn-md rounded-xl text-white">
                 <Icon name="material-symbols:archive" /> Desactivar
               </button>
             ) : (
-              <button class="btn btn-success btn-sm rounded-xl text-white">
+              <button class="btn btn-success btn-sm sm:btn-md rounded-xl text-white">
                 <Icon name="material-symbols:unarchive" /> Reactivar
               </button>
             )

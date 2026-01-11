@@ -3,124 +3,153 @@ import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
-import TableWrapper from "@/components/shared/TableWrapper.astro";
-import PageHeader from "@/components/shared/PageHeader.astro";
-import Avatar from "@/components/Avatar.astro";
 
 const supabase = createAstroSupabase(Astro);
 
 const { data: players } = await supabase
   .from("players")
   .select("*")
+  .order("is_guest", { ascending: true })
   .order("nickname", { ascending: true });
 ---
 
 <Main title="Gestión de Jugadores">
   <Title title="Plantel" subtitle="Panel de Administración" />
-  <div class="w-full py-6 lg:py-8">
-    <div
-      class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-8"
+
+  {/* Header con contador y botón */}
+  <div
+    class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <span class="text-base-content/60 text-sm font-bold uppercase">
+      {players?.length || 0} jugadores registrados
+    </span>
+    <a
+      href="/admin/players/create"
+      class="btn btn-primary btn-sm sm:btn-md gap-2 rounded-xl shadow-md"
     >
-      <a
-        href="/admin/players/create"
-        class="btn btn-primary btn-sm lg:btn-md gap-2 rounded-xl shadow-md"
-      >
-        <Icon name="material-symbols:person-add" size={18} />
-        Nuevo Jugador
-      </a>
+      <Icon name="material-symbols:person-add" size={18} />
+      Nuevo Jugador
+    </a>
+  </div>
+
+  {/* Lista de jugadores */}
+  <div
+    class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+  >
+    {/* Header */}
+    <div
+      class="bg-base-200/50 text-base-content/60 grid grid-cols-[1fr_3rem_2.5rem] items-center gap-2 px-3 py-2 text-xs font-bold uppercase sm:grid-cols-[1fr_3rem_3.5rem_2.5rem] sm:gap-3"
+    >
+      <span>Jugador</span>
+      <span class="hidden text-center sm:block">Pierna</span>
+      <span class="text-center">Estado</span>
+      <span class="sr-only">Acciones</span>
     </div>
 
-    <TableWrapper>
-      <table class="table-xs sm:table-sm lg:table-md table w-full">
-        <thead>
-          <tr
-            class="bg-base-200/50 text-base-content/60 text-xs font-bold uppercase lg:text-sm"
-          >
-            <th class="w-10 lg:w-14"></th>
-            <th>Jugador</th>
-            <th class="hidden text-center sm:table-cell">Pierna</th>
-            <th class="text-center">Estado</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            players?.map((player) => (
-              <tr class="hover group">
-                <td>
-                  <Avatar
-                    initial={player.nickname.charAt(0).toUpperCase()}
-                    size="sm"
+    {/* Filas de jugadores */}
+    <div class="divide-base-200 divide-y">
+      {
+        players?.map((player) => (
+          <div class="hover:bg-base-200/50 grid grid-cols-[1fr_3rem_2.5rem] items-center gap-2 px-3 py-2 transition-colors sm:grid-cols-[1fr_3rem_3.5rem_2.5rem] sm:gap-3">
+            {/* Nombre */}
+            <div class="flex min-w-0 items-center gap-1.5">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-bold">{player.nickname}</div>
+                {(player.first_name || player.last_name) && (
+                  <div class="text-base-content/60 truncate text-xs">
+                    {player.first_name} {player.last_name}
+                  </div>
+                )}
+              </div>
+              {player.is_guest && (
+                <span class="badge badge-ghost badge-xs border-base-300 shrink-0 opacity-60">
+                  INV
+                </span>
+              )}
+            </div>
+
+            {/* Pierna preferida - solo en sm+ */}
+            <div class="hidden justify-center sm:flex">
+              {player.preferred_foot === "right" && (
+                <span class="tooltip" data-tip="Diestro">
+                  <Icon
+                    name="material-symbols:footprint"
+                    class="text-blue-500"
+                    size={20}
                   />
-                </td>
-                <td>
-                  <div class="font-bold lg:text-base">{player.nickname}</div>
-                  {(player.first_name || player.last_name) && (
-                    <div class="text-base-content/60 text-xs lg:text-sm">
-                      {player.first_name} {player.last_name}
-                    </div>
-                  )}
-                </td>
-                <td class="hidden text-center sm:table-cell">
-                  {player.preferred_foot === "right" && (
-                    <Icon
-                      name="material-symbols:footprint"
-                      class="inline text-blue-500"
-                      size={20}
-                      title="Diestro"
-                    />
-                  )}
-                  {player.preferred_foot === "left" && (
-                    <Icon
-                      name="material-symbols:footprint"
-                      class="inline scale-x-[-1] transform text-green-500"
-                      size={20}
-                      title="Zurdo"
-                    />
-                  )}
-                  {player.preferred_foot === "both" && (
-                    <span class="badge badge-xs badge-ghost lg:badge-sm">
-                      Ambidiestro
-                    </span>
-                  )}
-                </td>
-                <td class="text-center">
-                  {player.is_active ? (
-                    <span class="badge badge-success badge-xs lg:badge-sm gap-1 text-white">
-                      Activo
-                    </span>
-                  ) : (
-                    <span class="badge badge-error badge-xs lg:badge-sm gap-1 text-white">
-                      Inactivo
-                    </span>
-                  )}
-                </td>
-                <td class="text-right">
-                  <a
-                    href={`/admin/players/edit/${player.id}`}
-                    class="btn btn-square btn-ghost btn-xs text-info lg:btn-sm"
-                    title="Editar jugador"
-                  >
-                    <Icon
-                      name="material-symbols:edit"
-                      size={16}
-                      class="lg:hidden"
-                    />
-                    <Icon
-                      name="material-symbols:edit"
-                      size={18}
-                      class="hidden lg:block"
-                    />
-                  </a>
-                </td>
-              </tr>
-            ))
-          }
-        </tbody>
-        >
-        <Icon name="material-symbols:edit-square-outline" size={18} />
-      </table>
-    </TableWrapper>
+                </span>
+              )}
+              {player.preferred_foot === "left" && (
+                <span class="tooltip" data-tip="Zurdo">
+                  <Icon
+                    name="material-symbols:footprint"
+                    class="scale-x-[-1] transform text-green-500"
+                    size={20}
+                  />
+                </span>
+              )}
+              {player.preferred_foot === "both" && (
+                <span class="tooltip" data-tip="Ambidiestro">
+                  <Icon
+                    name="material-symbols:steps"
+                    class="text-purple-500"
+                    size={20}
+                  />
+                </span>
+              )}
+              {!player.preferred_foot && (
+                <span class="text-base-content/20">—</span>
+              )}
+            </div>
+
+            {/* Estado */}
+            <div class="flex justify-center">
+              {player.is_active ? (
+                <span class="tooltip" data-tip="Activo">
+                  <Icon
+                    name="material-symbols:check-circle"
+                    class="text-success"
+                    size={20}
+                  />
+                </span>
+              ) : (
+                <span class="tooltip" data-tip="Inactivo">
+                  <Icon
+                    name="material-symbols:cancel"
+                    class="text-error"
+                    size={20}
+                  />
+                </span>
+              )}
+            </div>
+
+            {/* Acciones */}
+            <div class="flex justify-center">
+              <a
+                href={`/admin/players/edit/${player.id}`}
+                class="text-info hover:text-info/80 transition-colors"
+                title="Editar jugador"
+              >
+                <Icon name="material-symbols:edit" size={20} />
+              </a>
+            </div>
+          </div>
+        ))
+      }
+
+      {/* Empty state */}
+      {
+        (!players || players.length === 0) && (
+          <div class="text-base-content/60 flex flex-col items-center gap-2 py-12 text-center text-sm">
+            <Icon
+              name="material-symbols:group"
+              size={48}
+              class="text-base-content/20"
+            />
+            <span>No hay jugadores registrados aún.</span>
+          </div>
+        )
+      }
+    </div>
   </div>
-  )) }
 </Main>
