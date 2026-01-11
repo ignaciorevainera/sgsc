@@ -3,8 +3,7 @@ import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
-import TableWrapper from "@/components/shared/TableWrapper.astro";
-import PageHeader from "@/components/shared/PageHeader.astro";
+import { formatDate } from "@/lib/utils/dateUtils";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -25,134 +24,151 @@ const { data: matches } = await supabase
   `
   )
   .order("date", { ascending: false });
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  });
-};
 ---
 
 <Main title="Administrar Partidos">
   <Title title="Historial de Partidos" subtitle="Panel de Administración" />
-  <div class="w-full py-6 lg:py-8">
-    <div
-      class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center lg:mb-8"
-    >
-      <div>
-        <p
-          class="text-base-content/60 mt-2 text-xs font-bold uppercase lg:text-sm"
-        >
-          {matches?.length || 0} partidos registrados
-        </p>
-      </div>
 
-      <a
-        href="/admin/matches/create"
-        class="btn btn-primary btn-sm lg:btn-md gap-2 rounded-xl shadow-md"
-      >
-        <Icon name="material-symbols:add" size={18} />
-        Nuevo Partido
-      </a>
+  {/* Header con contador y botón */}
+  <div
+    class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <span class="text-base-content/60 text-sm font-bold uppercase">
+      {matches?.length || 0} partidos registrados
+    </span>
+    <a
+      href="/admin/matches/create"
+      class="btn btn-primary btn-sm sm:btn-md gap-2 rounded-xl shadow-md"
+    >
+      <Icon name="material-symbols:add" size={18} />
+      <span class="sm:inline">Nuevo Partido</span>
+    </a>
+  </div>
+
+  {/* Lista de partidos */}
+  <div
+    class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+  >
+    {/* Header */}
+    <div
+      class="bg-base-200/50 text-base-content/60 grid grid-cols-[4.5rem_1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-2 py-2 text-xs font-bold uppercase sm:grid-cols-[6rem_1fr_3rem_3rem_3rem] sm:gap-2 sm:px-3"
+    >
+      <span>Fecha</span>
+      <span>Sede</span>
+      <span class="flex justify-center text-center">
+        <Icon
+          name="material-symbols:emoji-events"
+          size={14}
+          class="sm:hidden"
+        />
+        <span class="hidden sm:inline">Res.</span>
+      </span>
+      <span class="flex justify-center text-center">
+        <Icon name="material-symbols:videocam" size={14} class="sm:hidden" />
+        <span class="hidden sm:inline">Video</span>
+      </span>
+      <span class="sr-only">Acciones</span>
     </div>
 
-    <TableWrapper>
-      <table class="table-xs sm:table-sm lg:table-md table w-full">
-        <thead>
-          <tr
-            class="bg-base-200/50 text-base-content/60 text-xs font-bold uppercase lg:text-sm"
-          >
-            <th class="w-20 lg:w-28">Fecha</th>
-            <th>Sede</th>
-            <th class="text-center">Resultado</th>
-            <th class="hidden text-center sm:table-cell">Media</th>
-            <th class="pr-4 text-right lg:pr-6">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            matches?.map((match) => (
-              <tr class="hover group transition-colors">
-                <td class="font-mono text-xs font-bold opacity-70 lg:text-sm">
-                  {formatDate(match.date)}
-                </td>
+    {/* Filas de partidos */}
+    <div class="divide-base-200 divide-y">
+      {
+        matches?.map((match) => (
+          <div class="hover:bg-base-200/50 grid grid-cols-[4.5rem_1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-2 py-2 transition-colors sm:grid-cols-[6rem_1fr_3rem_3rem_3rem] sm:gap-2 sm:px-3">
+            {/* Fecha */}
+            <span class="font-mono text-xs font-semibold opacity-70">
+              {formatDate(match.date, "short")}
+            </span>
 
-                <td class="max-w-37.5 truncate text-sm font-bold lg:max-w-none lg:text-base">
-                  {(match.fields as any)?.name || "Sin cancha"}
-                </td>
+            {/* Sede */}
+            <div class="flex min-w-0 items-center gap-1.5">
+              <Icon
+                name="material-symbols:location-on"
+                size={14}
+                class="text-secondary hidden shrink-0 sm:inline"
+              />
+              <span class="truncate text-xs font-medium sm:text-sm">
+                {(match.fields as any)?.name || "Sin sede"}
+              </span>
+            </div>
 
-                <td class="text-center">
-                  {match.result === "draw" && (
-                    <span class="badge badge-warning badge-xs lg:badge-sm font-bold">
-                      Empate
-                    </span>
-                  )}
-                  {match.result === "light" && (
-                    <span class="badge badge-outline badge-xs lg:badge-sm bg-white font-bold text-black">
-                      Claro
-                    </span>
-                  )}
-                  {match.result === "dark" && (
-                    <span class="badge badge-outline badge-xs lg:badge-sm font-bold">
-                      Oscuro
-                    </span>
-                  )}
-                </td>
+            {/* Resultado */}
+            <div class="flex justify-center">
+              {match.result === "draw" && (
+                <span class="tooltip tooltip-left" data-tip="Empate">
+                  <Icon
+                    name="material-symbols:balance"
+                    size={20}
+                    class="text-yellow-500"
+                  />
+                </span>
+              )}
+              {match.result === "light" && (
+                <span class="tooltip tooltip-left" data-tip="Ganó Claro">
+                  <Icon
+                    name="material-symbols:wb-sunny"
+                    size={20}
+                    class="text-slate-500"
+                  />
+                </span>
+              )}
+              {match.result === "dark" && (
+                <span class="tooltip tooltip-left" data-tip="Ganó Oscuro">
+                  <Icon
+                    name="material-symbols:dark-mode"
+                    size={20}
+                    class="text-slate-700"
+                  />
+                </span>
+              )}
+            </div>
 
-                <td class="hidden text-center sm:table-cell">
-                  {match.video_url ? (
-                    <Icon
-                      name="material-symbols:videocam"
-                      class="text-success inline"
-                      size={18}
-                    />
-                  ) : (
-                    <Icon
-                      name="material-symbols:videocam-off"
-                      class="text-base-content/30 inline"
-                      size={18}
-                    />
-                  )}
-                </td>
-
-                <td class="pr-4 text-right lg:pr-6">
-                  <a
-                    href={`/admin/matches/edit/${match.id}`}
-                    class="btn btn-square btn-ghost btn-xs text-info lg:btn-sm"
-                    title="Editar partido"
-                  >
-                    <Icon
-                      name="material-symbols:edit"
-                      size={16}
-                      class="lg:hidden"
-                    />
-                    <Icon
-                      name="material-symbols:edit"
-                      size={18}
-                      class="hidden lg:block"
-                    />
-                  </a>
-                </td>
-              </tr>
-            ))
-          }
-
-          {
-            (!matches || matches.length === 0) && (
-              <tr>
-                <td
-                  colspan="5"
-                  class="text-base-content/60 py-12 text-center text-sm lg:text-base"
+            {/* Video */}
+            <div class="flex justify-center">
+              {match.video_url ? (
+                <a
+                  href={match.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-success hover:text-success/80 transition-colors"
+                  title="Ver video del partido"
                 >
-                  No hay partidos registrados aún.
-                </td>
-              </tr>
-            )
-          }
-        </tbody>
-      </table>
-    </TableWrapper>
+                  <Icon name="material-symbols:play-circle" size={20} />
+                </a>
+              ) : (
+                <span class="text-base-content/20" title="Sin video">
+                  <Icon name="material-symbols:videocam-off" size={18} />
+                </span>
+              )}
+            </div>
+
+            {/* Acciones */}
+            <div class="flex justify-center">
+              <a
+                href={`/admin/matches/edit/${match.id}`}
+                class="text-info hover:text-info/80 transition-colors"
+                title="Editar partido"
+              >
+                <Icon name="material-symbols:edit" size={20} />
+              </a>
+            </div>
+          </div>
+        ))
+      }
+
+      {/* Empty state */}
+      {
+        (!matches || matches.length === 0) && (
+          <div class="text-base-content/60 flex flex-col items-center gap-2 py-12 text-center text-sm">
+            <Icon
+              name="material-symbols:sports-soccer"
+              size={48}
+              class="text-base-content/20"
+            />
+            <span>No hay partidos registrados aún.</span>
+          </div>
+        )
+      }
+    </div>
   </div>
 </Main>
