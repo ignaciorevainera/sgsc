@@ -59,9 +59,16 @@ if (Astro.request.method === "POST") {
     })
     .eq("id", id);
 
-  // 3. Actualizar EQUIPOS (Borrar y volver a crear es lo más seguro)
-  const newLightIds = formData.getAll("team_light");
-  const newDarkIds = formData.getAll("team_dark");
+  // 3. Actualizar EQUIPOS (Recolectar de radio buttons)
+  const newLightIds: string[] = [];
+  const newDarkIds: string[] = [];
+
+  // Recorrer todos los jugadores y ver su selección
+  players?.forEach((p) => {
+    const selection = formData.get(`player_${p.id}`);
+    if (selection === "light") newLightIds.push(p.id);
+    if (selection === "dark") newDarkIds.push(p.id);
+  });
 
   // Borramos los viejos
   await supabase.from("match_players").delete().eq("match_id", id);
@@ -113,118 +120,73 @@ if (Astro.request.method === "POST") {
     <div
       class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
     >
-      <div class="border-base-200 flex items-center gap-2 border-b pb-4">
-        <Icon name="material-symbols:info" size={20} class="text-primary" />
-        <h2
-          class="text-base-content/70 text-sm font-bold tracking-wider uppercase"
-        >
-          Información General
-        </h2>
-      </div>
-
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
         {/* Fecha */}
         <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
-            >
-              <Icon
-                name="material-symbols:calendar-today"
-                size={18}
-                class="text-primary"
-              />
-              Fecha del Partido
-            </span>
-          </label>
-          <input
-            type="date"
-            name="date"
-            class="input input-bordered w-full rounded-xl"
-            required
-            value={match.date}
-          />
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Fecha del Partido</legend>
+            <input
+              type="date"
+              name="date"
+              class="input input-bordered w-full rounded-xl"
+              required
+              value={match.date}
+            />
+          </fieldset>
         </div>
 
         {/* Sede */}
         <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Sede</legend>
+            <select
+              name="field_id"
+              class="select select-bordered w-full rounded-xl"
             >
-              <Icon
-                name="material-symbols:location-on"
-                size={18}
-                class="text-secondary"
-              />
-              Sede
-            </span>
-          </label>
-          <select
-            name="field_id"
-            class="select select-bordered w-full rounded-xl"
-          >
-            {
-              fields?.map((f) => (
-                <option value={f.id} selected={f.id === match.field_id}>
-                  {f.name}
-                </option>
-              ))
-            }
-          </select>
+              {
+                fields?.map((f) => (
+                  <option value={f.id} selected={f.id === match.field_id}>
+                    {f.name}
+                  </option>
+                ))
+              }
+            </select>
+          </fieldset>
         </div>
 
         {/* Resultado */}
         <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Resultado Final </legend>
+            <select
+              name="result"
+              class="select select-bordered w-full rounded-xl font-bold"
             >
-              <Icon
-                name="material-symbols:trophy"
-                size={18}
-                class="text-warning"
-              />
-              Resultado Final
-            </span>
-          </label>
-          <select
-            name="result"
-            class="select select-bordered w-full rounded-xl font-bold"
-          >
-            <option value="light" selected={match.result === "light"}>
-              ☀️ Ganó Equipo Claro
-            </option>
-            <option value="dark" selected={match.result === "dark"}>
-              🌙 Ganó Equipo Oscuro
-            </option>
-            <option value="draw" selected={match.result === "draw"}>
-              ⚖️ Empate
-            </option>
-          </select>
+              <option value="light" selected={match.result === "light"}>
+                Claro
+              </option>
+              <option value="dark" selected={match.result === "dark"}>
+                Oscuro
+              </option>
+              <option value="draw" selected={match.result === "draw"}>
+                Empate
+              </option>
+            </select>
+          </fieldset>
         </div>
 
         {/* Video URL */}
         <div class="form-control">
-          <label class="label">
-            <span
-              class="label-text flex items-center gap-2 text-sm font-bold sm:text-base"
-            >
-              <Icon
-                name="material-symbols:play-circle"
-                size={18}
-                class="text-error"
-              />
-              Enlace de Video
-            </span>
-          </label>
-          <input
-            type="url"
-            name="video_url"
-            class="input input-bordered w-full rounded-xl"
-            placeholder="https://..."
-            value={match.video_url}
-          />
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Enlace de Video</legend>
+            <input
+              type="url"
+              name="video_url"
+              class="input input-bordered w-full rounded-xl"
+              placeholder="https://..."
+              value={match.video_url}
+            />
+          </fieldset>
         </div>
       </div>
     </div>
@@ -233,92 +195,94 @@ if (Astro.request.method === "POST") {
     <div
       class="divider text-base-content/60 text-xs font-bold tracking-wider uppercase"
     >
-      <Icon name="material-symbols:groups" size={20} class="mr-1" />
-      Equipos
+      Convocatoria
     </div>
 
     {/* Sección: Equipos */}
-    <div class="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-      {/* Equipo Claro */}
-      <div class="rounded-xl border-2 border-gray-200 bg-white shadow-md">
-        <div
-          class="sticky top-0 z-10 flex items-center justify-center gap-2 rounded-t-xl border-b border-gray-200 bg-gray-50 p-4"
-        >
+    <div
+      class="bg-base-100 border-base-200 max-h-96 overflow-auto rounded-xl border shadow-md"
+    >
+      {/* Header */}
+      <div
+        class="bg-base-200 sticky top-0 z-10 grid grid-cols-[1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-3 py-2 sm:grid-cols-[1fr_3rem_3rem_3rem] sm:gap-2"
+      >
+        <span class="text-xs font-bold sm:text-sm">Jugador</span>
+        <span class="text-base-content/60 text-center text-xs">—</span>
+        <span class="flex justify-center">
           <Icon
-            name="material-symbols:light-mode"
-            size={22}
-            class="text-amber-500"
+            name="material-symbols:wb-sunny"
+            class="text-base text-slate-500 sm:text-xl dark:text-slate-300"
           />
-          <h3
-            class="text-sm font-black tracking-wide text-gray-700 uppercase sm:text-base"
-          >
-            Equipo Claro
-          </h3>
-        </div>
-        <div class="max-h-80 space-y-1 overflow-y-auto p-3 sm:max-h-96 sm:p-4">
-          {
-            players?.map((p) => (
-              <label class="flex cursor-pointer items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-gray-100 has-[:checked]:bg-amber-50 has-[:checked]:shadow-sm sm:p-3">
-                <input
-                  type="checkbox"
-                  name="team_light"
-                  value={p.id}
-                  class="checkbox checkbox-sm border-gray-300 checked:border-amber-500 checked:bg-amber-500"
-                  checked={lightIds.includes(p.id)}
-                />
-                <span class="flex-1 text-sm font-bold text-gray-800">
-                  {p.nickname}
-                </span>
-                {p.is_guest && (
-                  <span class="badge badge-ghost badge-sm border-gray-200 text-[10px] font-medium opacity-70">
-                    INV
-                  </span>
-                )}
-              </label>
-            ))
-          }
-        </div>
-      </div>
-
-      {/* Equipo Oscuro */}
-      <div class="rounded-xl border-2 border-slate-700 bg-slate-800 shadow-md">
-        <div
-          class="sticky top-0 z-10 flex items-center justify-center gap-2 rounded-t-xl border-b border-slate-700 bg-slate-900/70 p-4"
-        >
+        </span>
+        <span class="flex justify-center">
           <Icon
             name="material-symbols:dark-mode"
-            size={22}
-            class="text-slate-300"
+            class="text-base text-slate-500 sm:text-xl dark:text-slate-300"
           />
-          <h3
-            class="text-sm font-black tracking-wide text-slate-200 uppercase sm:text-base"
-          >
-            Equipo Oscuro
-          </h3>
-        </div>
-        <div class="max-h-80 space-y-1 overflow-y-auto p-3 sm:max-h-96 sm:p-4">
-          {
-            players?.map((p) => (
-              <label class="flex cursor-pointer items-center gap-3 rounded-xl p-2.5 transition-all hover:bg-slate-700 has-[:checked]:bg-slate-600 has-[:checked]:shadow-sm sm:p-3">
-                <input
-                  type="checkbox"
-                  name="team_dark"
-                  value={p.id}
-                  class="checkbox checkbox-sm border-slate-500 checked:border-slate-300 checked:bg-slate-300"
-                  checked={darkIds.includes(p.id)}
-                />
-                <span class="flex-1 text-sm font-bold text-slate-100">
-                  {p.nickname}
-                </span>
-                {p.is_guest && (
-                  <span class="badge badge-ghost badge-sm border-slate-600 text-[10px] font-medium text-slate-400">
-                    INV
+        </span>
+      </div>
+
+      {/* Filas de jugadores */}
+      <div class="divide-base-200 divide-y">
+        {
+          players?.map((p) => {
+            const isLight = lightIds.includes(p.id);
+            const isDark = darkIds.includes(p.id);
+            const isNone = !isLight && !isDark;
+
+            return (
+              <div class="hover:bg-base-200/50 grid grid-cols-[1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-3 py-2 transition-colors sm:grid-cols-[1fr_3rem_3rem_3rem] sm:gap-2">
+                {/* Nombre */}
+                <div class="flex min-w-0 items-center gap-1">
+                  <span
+                    class="tooltip tooltip-right truncate text-xs font-bold sm:text-sm"
+                    data-tip={p.nickname}
+                  >
+                    {p.nickname}
                   </span>
-                )}
-              </label>
-            ))
-          }
-        </div>
+                  {p.is_guest && (
+                    <span class="badge badge-ghost badge-xs border-base-300 shrink-0 opacity-60">
+                      INV
+                    </span>
+                  )}
+                </div>
+
+                {/* No juega */}
+                <div class="flex justify-center">
+                  <input
+                    type="radio"
+                    name={`player_${p.id}`}
+                    value="none"
+                    class="radio radio-xs sm:radio-sm radio-error"
+                    checked={isNone}
+                  />
+                </div>
+
+                {/* Claro */}
+                <div class="flex justify-center rounded">
+                  <input
+                    type="radio"
+                    name={`player_${p.id}`}
+                    value="light"
+                    class="radio radio-xs sm:radio-sm radio-warning"
+                    checked={isLight}
+                  />
+                </div>
+
+                {/* Oscuro */}
+                <div class="flex justify-center rounded">
+                  <input
+                    type="radio"
+                    name={`player_${p.id}`}
+                    value="dark"
+                    class="radio radio-xs sm:radio-sm radio-neutral"
+                    checked={isDark}
+                  />
+                </div>
+              </div>
+            );
+          })
+        }
       </div>
     </div>
 
