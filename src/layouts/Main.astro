@@ -1,5 +1,6 @@
 ---
 import "@styles/global.css";
+import Analytics from "@vercel/analytics/astro";
 import Footer from "@/components/shared/Footer.astro";
 import Header from "@/components/shared/Header.astro";
 
@@ -65,7 +66,9 @@ const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen r
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={socialImageURL} />
+    <meta name="twitter:image" content={socialImageURL} />~
+
+    <Analytics />
   </head>
 
   <body class="bg-base-300 flex min-h-dvh flex-col">
