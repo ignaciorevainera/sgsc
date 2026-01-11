@@ -46,7 +46,7 @@ const hasPlayers = !hasError && players && players.length > 0;
 
   {
     hasPlayers && (
-      <div class="animate-fade-in grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {players.map((player) => (
           <PlayerCard player={player} />
         ))}

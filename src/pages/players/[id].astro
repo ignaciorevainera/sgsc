@@ -292,7 +292,7 @@ const getOutcomeConfig = (outcome: string) => {
             >
             </div>
             <div
-              class={`h-full transition-all duration-1000 ${win_pct >= clubAverageWinPct ? "bg-success" : "bg-warning"}`}
+              class={`h-full ${win_pct >= clubAverageWinPct ? "bg-success" : "bg-warning"}`}
               style={`width: ${win_pct}%`}
             >
             </div>
@@ -443,7 +443,7 @@ const getOutcomeConfig = (outcome: string) => {
             recentMatches?.map((match) => {
               const config = getOutcomeConfig(match.outcome);
               return (
-                <div class="hover:bg-base-100 flex items-center gap-3 p-3 transition-colors">
+                <div class="flex items-center gap-3 p-3">
                   <div
                     class={`flex h-10 w-10 items-center justify-center rounded-full ${config.bg} ${config.color} shrink-0`}
                   >

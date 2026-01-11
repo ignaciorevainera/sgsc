@@ -60,7 +60,7 @@ if (Astro.request.method === "POST") {
           errorMessage && (
             <div
               role="alert"
-              class="alert alert-error animate-fade-in mb-4 rounded-xl py-2 text-xs shadow-md sm:text-sm"
+              class="alert alert-error mb-4 rounded-xl py-2 text-xs shadow-md sm:text-sm"
             >
               <Icon name="material-symbols:error" class="shrink-0" size={16} />
               <span>{errorMessage}</span>
@@ -71,9 +71,7 @@ if (Astro.request.method === "POST") {
         <form method="POST" class="space-y-3 sm:space-y-4">
           <div class="form-control">
             <label class="label sr-only">Email</label>
-            <label
-              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 rounded-xl transition-colors"
-            >
+            <label class="input validator rounded-xl">
               <Icon name="material-symbols:mail" class="opacity-50" size={18} />
               <input
                 type="email"
@@ -83,13 +81,12 @@ if (Astro.request.method === "POST") {
                 required
               />
             </label>
+            <div class="validator-hint hidden">Enter valid email address</div>
           </div>
 
           <div class="form-control">
             <label class="label sr-only">Contraseña</label>
-            <label
-              class="input input-bordered input-sm bg-base-200/50 focus-within:bg-base-100 focus-within:border-primary sm:input-md flex items-center gap-2 rounded-xl transition-colors"
-            >
+            <label class="input validator rounded-xl">
               <Icon name="material-symbols:key" class="opacity-50" size={18} />
               <input
                 type="password"
@@ -102,9 +99,7 @@ if (Astro.request.method === "POST") {
           </div>
 
           <div class="form-control mt-6 sm:mt-8">
-            <button
-              class="btn btn-primary btn-sm btn-block hover:shadow-primary/30 sm:btn-md rounded-xl text-white shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
+            <button class="btn btn-primary btn-sm sm:btn-md w-full rounded-xl">
               Ingresar
               <Icon name="material-symbols:login" size={18} />
             </button>

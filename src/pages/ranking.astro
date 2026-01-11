@@ -216,7 +216,7 @@ const sortedPlayers = [...players].sort((a, b) => {
   {/* Tabla de clasificación */}
   {
     hasPlayersStats && (
-      <div class="animate-fade-in space-y-6">
+      <div class="space-y-6">
         <StandingsTable
           players={sortedPlayers}
           showDetails={mode === "detailed"}

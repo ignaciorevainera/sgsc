@@ -130,7 +130,7 @@ const { data: matches } = await supabase
                   href={match.video_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-success hover:text-success/80 transition-colors"
+                  class="text-success hover:text-success-content transition-colors"
                   title="Ver video del partido"
                 >
                   <Icon name="material-symbols:play-circle" size={20} />
@@ -146,7 +146,7 @@ const { data: matches } = await supabase
             <div class="flex justify-center">
               <a
                 href={`/admin/matches/edit/${match.id}`}
-                class="text-info hover:text-info/80 transition-colors"
+                class="text-info hover:text-info-content transition-colors"
                 title="Editar partido"
               >
                 <Icon name="material-symbols:edit" size={20} />
