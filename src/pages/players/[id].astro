@@ -165,7 +165,7 @@ const getOutcomeConfig = (outcome: string) => {
             </h1>
           </div>
           <p
-            class="text-base-content/60 font-mono text-[10px] tracking-widest uppercase sm:text-xs"
+            class="text-base-content/60 font-mono text-xs tracking-widest uppercase sm:text-xs"
           >
             ID: {id.split("-")[0]} • Debut: {
               yearlyStats?.[yearlyStats.length - 1]?.year || "-"
@@ -207,7 +207,7 @@ const getOutcomeConfig = (outcome: string) => {
           >
             <div class="stat place-items-center px-6 py-3 sm:px-8">
               <div
-                class="stat-title text-[10px] font-bold tracking-wider uppercase sm:text-xs"
+                class="stat-title text-xs font-bold tracking-wider uppercase sm:text-xs"
               >
                 Puntos Históricos
               </div>
@@ -228,7 +228,7 @@ const getOutcomeConfig = (outcome: string) => {
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
           <span class="text-2xl font-black">{totalMatches}</span>
-          <span class="text-base-content/60 text-[10px] font-bold uppercase"
+          <span class="text-base-content/60 text-xs font-bold uppercase"
             >Partidos</span
           >
         </div>
@@ -236,7 +236,7 @@ const getOutcomeConfig = (outcome: string) => {
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
           <span class="text-success text-2xl font-black">{player.wins}</span>
-          <span class="text-success/70 text-[10px] font-bold uppercase"
+          <span class="text-success/70 text-xs font-bold uppercase"
             >Victorias ({win_pct}%)</span
           >
         </div>
@@ -244,7 +244,7 @@ const getOutcomeConfig = (outcome: string) => {
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
           <span class="text-warning text-2xl font-black">{player.draws}</span>
-          <span class="text-warning/70 text-[10px] font-bold uppercase"
+          <span class="text-warning/70 text-xs font-bold uppercase"
             >Empates ({draw_pct}%)</span
           >
         </div>
@@ -252,7 +252,7 @@ const getOutcomeConfig = (outcome: string) => {
           class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
         >
           <span class="text-error text-2xl font-black">{player.losses}</span>
-          <span class="text-error/70 text-[10px] font-bold uppercase"
+          <span class="text-error/70 text-xs font-bold uppercase"
             >Derrotas ({loss_pct}%)</span
           >
         </div>
@@ -264,7 +264,7 @@ const getOutcomeConfig = (outcome: string) => {
         <div class="mb-2 flex items-end justify-between">
           <div>
             <SectionTitle>Efectividad</SectionTitle>
-            <p class="text-primary/60 text-[10px] font-bold uppercase">
+            <p class="text-primary/60 text-xs font-bold uppercase">
               Vs Promedio del Club
             </p>
           </div>
@@ -298,7 +298,7 @@ const getOutcomeConfig = (outcome: string) => {
             </div>
           </div>
         </div>
-        <p class="text-base-content/50 mt-3 text-[10px] italic">
+        <p class="text-base-content/50 mt-3 text-xs italic">
           La efectividad representa el porcentaje de partidos ganados sobre el
           total jugado.
         </p>
@@ -355,7 +355,7 @@ const getOutcomeConfig = (outcome: string) => {
           </div>
           <div class="overflow-hidden">
             <h4
-              class="text-base-content/60 text-[10px] font-bold tracking-wider uppercase lg:text-xs"
+              class="text-base-content/60 text-xs font-bold tracking-wider uppercase lg:text-xs"
             >
               Cancha Favorita
             </h4>
@@ -374,7 +374,7 @@ const getOutcomeConfig = (outcome: string) => {
         >
           <SectionTitle>Rendimiento Anual</SectionTitle>
           <div
-            class="text-base-content/60 flex items-center gap-2 text-[10px] font-bold uppercase"
+            class="text-base-content/60 flex items-center gap-2 text-xs font-bold uppercase"
           >
             <Icon name="material-symbols:table-chart" size={16} />
             Historial
@@ -453,12 +453,12 @@ const getOutcomeConfig = (outcome: string) => {
                     <span class="text-xs font-bold opacity-80">
                       {formatDate(match.date, "medium")}
                     </span>
-                    <span class="text-base-content/60 truncate text-[10px] font-bold uppercase">
+                    <span class="text-base-content/60 truncate text-xs font-bold uppercase">
                       {match.fieldName}
                     </span>
                   </div>
                   <div
-                    class={`badge ${config.bg} ${config.color} border-none text-[10px] font-black uppercase`}
+                    class={`badge ${config.bg} ${config.color} border-none text-xs font-black uppercase`}
                   >
                     {config.label}
                   </div>
