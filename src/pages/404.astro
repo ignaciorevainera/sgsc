@@ -7,7 +7,7 @@ import Main from "@/layouts/Main.astro";
 
 <Main title="¡Orsai! | Página no encontrada">
   <div class="flex grow flex-col items-center justify-center gap-4 text-center">
-    <div class="flex justify-center" style="rotate: -30deg;">
+    <div class="flex justify-center" style="rotate: -30deg;" aria-hidden="true">
       <div class="relative inline-block">
         <Icon name="material-symbols:flag" class="text-error" size={72} />
         <div
@@ -18,7 +18,7 @@ import Main from "@/layouts/Main.astro";
     </div>
 
     <h1 class="text-error text-3xl font-black tracking-widest uppercase">
-      Error 404
+      Error 404 - Página no encontrada
     </h1>
 
     <p
@@ -37,7 +37,7 @@ import Main from "@/layouts/Main.astro";
         class="btn btn-sm btn-ghost md:btn-md gap-2 rounded-xl"
       >
         Ver historial
-        <Icon name="material-symbols:arrow-forward" />
+        <Icon name="material-symbols:arrow-forward" aria-hidden="true" />
       </a>
     </div>
   </div>

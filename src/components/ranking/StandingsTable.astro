@@ -36,37 +36,56 @@ const getPodiumClass = (index: number) => {
 ---
 
 <TableWrapper class="w-full">
-  <table class="table-zebra table-xs sm:table-sm lg:table-md table min-w-max">
+  <table
+    class="table-zebra table-xs sm:table-sm lg:table-md table min-w-max"
+    aria-label="Tabla de clasificación de jugadores"
+  >
+    <caption class="sr-only"
+      >Clasificación de jugadores con puntos, partidos jugados, victorias,
+      empates y derrotas</caption
+    >
     <thead
       class="bg-base-200 text-base-content sticky top-0 z-10 text-center text-xs font-bold uppercase sm:text-sm"
     >
       <tr>
-        <th>#</th>
-        <th class="text-left">Jugador</th>
+        <th scope="col" abbr="Posición">#</th>
+        <th scope="col" class="text-left">Jugador</th>
 
         <th
+          scope="col"
           class="bg-primary/10 text-primary text-sm font-black sm:text-base"
-          title="Puntos Totales">PTS</th
+          abbr="Puntos">PTS</th
         >
 
-        <th title="Partidos Jugados">PJ</th>
-        <th class={`text-secondary ${responsiveClass}`} title="% Asistencia"
-          >%Asist</th
+        <th scope="col" abbr="Partidos Jugados">PJ</th>
+        <th
+          scope="col"
+          class={`text-secondary ${responsiveClass}`}
+          abbr="Porcentaje de Asistencia">%Asist</th
         >
 
-        <th class="text-success" title="Ganados">G</th>
-        <th class={`text-success ${responsiveClass}`} title="% Victorias"
-          >%Vic</th
+        <th scope="col" class="text-success" abbr="Ganados">G</th>
+        <th
+          scope="col"
+          class={`text-success ${responsiveClass}`}
+          abbr="Porcentaje de Victorias">%Vic</th
         >
 
-        <th class="text-warning" title="Empatados">E</th>
-        <th class={`text-warning ${responsiveClass}`} title="% Empates">%Emp</th
+        <th scope="col" class="text-warning" abbr="Empatados">E</th>
+        <th
+          scope="col"
+          class={`text-warning ${responsiveClass}`}
+          abbr="Porcentaje de Empates">%Emp</th
         >
 
-        <th class="text-error" title="Perdidos">P</th>
-        <th class={`text-error ${responsiveClass}`} title="% Derrotas">%Der</th>
+        <th scope="col" class="text-error" abbr="Perdidos">P</th>
+        <th
+          scope="col"
+          class={`text-error ${responsiveClass}`}
+          abbr="Porcentaje de Derrotas">%Der</th
+        >
 
-        <th class={`${responsiveClass}`}>Forma</th>
+        <th scope="col" class={`${responsiveClass}`}>Forma</th>
       </tr>
     </thead>
 
@@ -88,7 +107,7 @@ const getPodiumClass = (index: number) => {
               form_array: any[];
               points: unknown;
             },
-            index: number
+            index: number,
           ) => (
             <tr
               class={`hover text-center text-xs transition-colors sm:text-sm ${getPodiumClass(index)}`}
@@ -146,7 +165,7 @@ const getPodiumClass = (index: number) => {
                 </div>
               </td>
             </tr>
-          )
+          ),
         )
       }
     </tbody>

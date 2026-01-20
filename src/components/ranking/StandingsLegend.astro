@@ -1,32 +1,52 @@
-<div
+<aside
   class="text-base-content/60 border-base-200 flex flex-wrap justify-center gap-6 border-t pt-4 text-xs"
+  aria-label="Leyenda de abreviaturas de la tabla"
 >
   <div class="flex items-center gap-2">
-    <span class="bg-base-200 rounded-xl px-2 py-1 font-bold">PJ</span> Partidos Jugados
+    <abbr
+      title="Partidos Jugados"
+      class="bg-base-200 rounded-xl px-2 py-1 font-bold no-underline">PJ</abbr
+    >
+    <span>Partidos Jugados</span>
   </div>
   <div class="flex items-center gap-2">
-    <span class="bg-success/10 text-success rounded-xl px-2 py-1 font-bold"
-      >G</span
-    > Ganados
+    <abbr
+      title="Partidos Ganados"
+      class="bg-success/10 text-success rounded-xl px-2 py-1 font-bold no-underline"
+      >G</abbr
+    >
+    <span>Partidos Ganados</span>
   </div>
   <div class="flex items-center gap-2">
-    <span class="bg-warning/10 text-warning rounded-xl px-2 py-1 font-bold"
-      >E</span
-    > Empatados
+    <abbr
+      title="Partidos Empatados"
+      class="bg-warning/10 text-warning rounded-xl px-2 py-1 font-bold no-underline"
+      >E</abbr
+    >
+    <span>Partidos Empatados</span>
   </div>
   <div class="flex items-center gap-2">
-    <span class="bg-error/10 text-error rounded-xl px-2 py-1 font-bold">P</span> Perdidos
+    <abbr
+      title="Partidos Perdidos"
+      class="bg-error/10 text-error rounded-xl px-2 py-1 font-bold no-underline"
+      >P</abbr
+    >
+    <span>Partidos Perdidos</span>
   </div>
   <div class="flex items-center gap-2">
-    <span class="bg-base-200 rounded-xl px-2 py-1 font-bold">% Efic.</span> Porcentaje
-    de Puntos (Win Rate)
+    <abbr
+      title="Porcentaje de Puntos obtenidos sobre el máximo posible"
+      class="bg-base-200 rounded-xl px-2 py-1 font-bold no-underline"
+      >% Efic.</abbr
+    >
+    <span>Porcentaje de Eficiencia</span>
   </div>
   <div class="flex items-center gap-2">
-    <div class="flex gap-0.5">
+    <div class="flex gap-0.5" aria-hidden="true">
       <div class="bg-success h-2 w-2 rounded-full"></div>
       <div class="bg-success h-2 w-2 rounded-full"></div>
       <div class="bg-error h-2 w-2 rounded-full"></div>
     </div>
-    Racha (Últimos 5 partidos)
+    <span>Racha (Últimos 5 partidos)</span>
   </div>
-</div>
+</aside>

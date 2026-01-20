@@ -13,6 +13,7 @@ const initials = player.nickname
 <a
   href={`/players/${player.player_id}`}
   class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
+  aria-label={`Ver perfil de ${player.nickname}`}
 >
   <div class="card-body">
     <div class="mb-4 flex items-center gap-4">
@@ -60,7 +61,7 @@ const initials = player.nickname
       <span class="flex items-center gap-1 text-xs font-semibold">
         Ver perfil
       </span>
-      <Icon name="material-symbols:arrow-forward" />
+      <Icon name="material-symbols:arrow-forward" aria-hidden="true" />
     </div>
   </div>
 </a>

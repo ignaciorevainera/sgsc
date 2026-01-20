@@ -1,11 +1,12 @@
 ---
 interface Props {
   class?: string;
+  as?: "h2" | "h3" | "h4";
 }
 
-const { class: className = "" } = Astro.props;
+const { class: className = "", as: Tag = "h2" } = Astro.props;
 ---
 
-<h3 class={`text-sm font-black uppercase italic ${className}`}>
+<Tag class={`text-sm font-black uppercase italic ${className}`}>
   <slot />
-</h3>
+</Tag>

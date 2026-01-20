@@ -47,7 +47,7 @@ const { data: allStats } = await supabase
 
 const clubAverageWinPct = allStats
   ? Math.round(
-      allStats.reduce((acc, s) => acc + s.win_pct, 0) / allStats.length
+      allStats.reduce((acc, s) => acc + s.win_pct, 0) / allStats.length,
     )
   : 0;
 
@@ -62,7 +62,7 @@ const { data: allHistory } = await supabase
       result,
       fields (name)
     )
-  `
+  `,
   )
   .eq("player_id", id)
   .order("matches(date)", { ascending: false });
@@ -171,30 +171,45 @@ const getOutcomeConfig = (outcome: string) => {
               yearlyStats?.[yearlyStats.length - 1]?.year || "-"
             }
           </p>
+          {/* Info Badges */}
           <div
             class="flex flex-wrap items-center justify-center gap-2 sm:justify-start"
           >
             {
               player.birth_date && (
                 <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
-                  <Icon name="material-symbols:calendar-today" size={12} />
-                  {calculateAge(player.birth_date)} años
+                  <Icon
+                    name="material-symbols:calendar-today"
+                    size={12}
+                    aria-hidden="true"
+                  />
+                  <span>{calculateAge(player.birth_date)} años</span>
                 </div>
               )
             }
             {
               player.birth_date && (
                 <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
-                  <Icon name="material-symbols:cake" size={12} />
-                  {formatDate(player.birth_date)}
+                  <Icon
+                    name="material-symbols:cake"
+                    size={12}
+                    aria-hidden="true"
+                  />
+                  <time datetime={player.birth_date}>
+                    {formatDate(player.birth_date)}
+                  </time>
                 </div>
               )
             }
             {
               player.preferred_foot && dominantFootLabel && (
                 <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
-                  <Icon name="material-symbols:footprint" size={12} />
-                  {dominantFootLabel}
+                  <Icon
+                    name="material-symbols:footprint"
+                    size={12}
+                    aria-hidden="true"
+                  />
+                  <span>{dominantFootLabel}</span>
                 </div>
               )
             }
@@ -315,24 +330,34 @@ const getOutcomeConfig = (outcome: string) => {
             <div class="text-center">
               <span
                 class="block text-3xl font-black text-slate-700 dark:text-slate-300"
+                aria-label={`${light_apps} partidos con equipo claro`}
                 >{light_apps}</span
               >
               <span
                 class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400"
               >
-                <Icon name="material-symbols:wb-sunny" size={16} /> Claro
+                <Icon
+                  name="material-symbols:wb-sunny"
+                  size={16}
+                  aria-hidden="true"
+                /> Claro
               </span>
             </div>
-            <div class="divider divider-horizontal mx-2"></div>
+            <div class="divider divider-horizontal mx-2" role="separator"></div>
             <div class="text-center">
               <span
                 class="block text-3xl font-black text-slate-700 dark:text-slate-300"
+                aria-label={`${dark_apps} partidos con equipo oscuro`}
                 >{dark_apps}</span
               >
               <span
                 class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400"
               >
-                <Icon name="material-symbols:dark-mode" size={16} /> Oscuro
+                <Icon
+                  name="material-symbols:dark-mode"
+                  size={16}
+                  aria-hidden="true"
+                /> Oscuro
               </span>
             </div>
           </div>
@@ -341,7 +366,10 @@ const getOutcomeConfig = (outcome: string) => {
         <div
           class="card bg-base-100 border-base-200 flex flex-row items-center justify-center gap-4 rounded-xl border p-4 shadow-md lg:gap-5 lg:p-6"
         >
-          <div class="bg-primary/10 text-primary rounded-full p-3 lg:p-4">
+          <div
+            class="bg-primary/10 text-primary rounded-full p-3 lg:p-4"
+            aria-hidden="true"
+          >
             <Icon
               name="material-symbols:stadium-rounded"
               size={24}
@@ -375,6 +403,7 @@ const getOutcomeConfig = (outcome: string) => {
           <SectionTitle>Rendimiento Anual</SectionTitle>
           <div
             class="text-base-content/60 flex items-center gap-2 text-xs font-bold uppercase"
+            aria-hidden="true"
           >
             <Icon name="material-symbols:table-chart" size={16} />
             Historial
@@ -382,18 +411,25 @@ const getOutcomeConfig = (outcome: string) => {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="table-zebra table-sm table w-full text-center">
+          <table
+            class="table-zebra table-sm table w-full text-center"
+            aria-label="Rendimiento anual del jugador"
+          >
             <thead>
               <tr
                 class="bg-base-200 text-base-content text-xs font-bold uppercase"
               >
-                <th class="pl-6 text-left">Año</th>
-                <th class="bg-primary/10 text-primary font-black">PTS</th>
-                <th>PJ</th>
-                <th class="text-success">G</th>
-                <th class="text-warning">E</th>
-                <th class="text-error">P</th>
-                <th>Efec.</th>
+                <th scope="col" class="pl-6 text-left">Año</th>
+                <th
+                  scope="col"
+                  class="bg-primary/10 text-primary font-black"
+                  abbr="Puntos">PTS</th
+                >
+                <th scope="col" abbr="Partidos Jugados">PJ</th>
+                <th scope="col" class="text-success" abbr="Ganados">G</th>
+                <th scope="col" class="text-warning" abbr="Empates">E</th>
+                <th scope="col" class="text-error" abbr="Perdidos">P</th>
+                <th scope="col" abbr="Efectividad">Efec.</th>
               </tr>
             </thead>
             <tbody>
@@ -446,19 +482,24 @@ const getOutcomeConfig = (outcome: string) => {
                 <div class="flex items-center gap-3 p-3">
                   <div
                     class={`flex h-10 w-10 items-center justify-center rounded-full ${config.bg} ${config.color} shrink-0`}
+                    aria-hidden="true"
                   >
                     <Icon name={config.icon} size={20} />
                   </div>
                   <div class="flex min-w-0 flex-1 flex-col justify-center">
-                    <span class="text-xs font-bold opacity-80">
+                    <time
+                      datetime={match.date}
+                      class="text-xs font-bold opacity-80"
+                    >
                       {formatDate(match.date, "medium")}
-                    </span>
+                    </time>
                     <span class="text-base-content/60 truncate text-xs font-bold uppercase">
                       {match.fieldName}
                     </span>
                   </div>
                   <div
                     class={`badge ${config.bg} ${config.color} border-none text-xs font-black uppercase`}
+                    role="status"
                   >
                     {config.label}
                   </div>

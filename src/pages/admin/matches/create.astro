@@ -77,7 +77,11 @@ if (Astro.request.method === "POST") {
   {
     successMessage && (
       <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
-        <Icon name="material-symbols:check-circle" size={24} />
+        <Icon
+          name="material-symbols:check-circle"
+          size={24}
+          aria-hidden="true"
+        />
         <span class="flex-1 text-sm sm:text-base">{successMessage}</span>
       </div>
     )
@@ -86,7 +90,7 @@ if (Astro.request.method === "POST") {
   {
     errorMessage && (
       <div role="alert" class="alert alert-error mb-6 rounded-xl shadow-md">
-        <Icon name="material-symbols:error" size={24} />
+        <Icon name="material-symbols:error" size={24} aria-hidden="true" />
         <span class="text-sm sm:text-base">{errorMessage}</span>
       </div>
     )
@@ -145,18 +149,20 @@ if (Astro.request.method === "POST") {
                   name="material-symbols:wb-sunny"
                   size={28}
                   class="text-slate-600"
+                  aria-hidden="true"
                 />
                 <span
                   class="text-xs font-bold text-slate-700 sm:text-sm lg:text-base"
-                  >Claro</span
+                  >Ganó Claro</span
                 >
               </div>
               <input
                 type="radio"
                 name="result"
                 value="light"
-                class="hidden"
+                class="sr-only"
                 required
+                aria-label="Ganó equipo Claro"
               />
             </label>
 
@@ -169,13 +175,20 @@ if (Astro.request.method === "POST") {
                   name="material-symbols:balance"
                   size={28}
                   class="text-yellow-600"
+                  aria-hidden="true"
                 />
                 <span
                   class="text-xs font-bold text-yellow-700 sm:text-sm lg:text-base"
                   >Empate</span
                 >
               </div>
-              <input type="radio" name="result" value="draw" class="hidden" />
+              <input
+                type="radio"
+                name="result"
+                value="draw"
+                class="sr-only"
+                aria-label="Resultado Empate"
+              />
             </label>
 
             {/* Opción: Ganó Oscuro */}
@@ -187,13 +200,20 @@ if (Astro.request.method === "POST") {
                   name="material-symbols:dark-mode"
                   size={28}
                   class="text-slate-300"
+                  aria-hidden="true"
                 />
                 <span
                   class="text-xs font-bold text-slate-200 sm:text-sm lg:text-base"
-                  >Oscuro</span
+                  >Ganó Oscuro</span
                 >
               </div>
-              <input type="radio" name="result" value="dark" class="hidden" />
+              <input
+                type="radio"
+                name="result"
+                value="dark"
+                class="sr-only"
+                aria-label="Ganó equipo Oscuro"
+              />
             </label>
           </div>
         </fieldset>
@@ -462,7 +482,7 @@ if (Astro.request.method === "POST") {
 
     // 3. Llenar el Modal
     document.getElementById("previewDate").innerText = new Date(
-      date
+      date,
     ).toLocaleDateString("es-AR");
     document.getElementById("previewField").innerText = fieldName;
 
@@ -483,13 +503,13 @@ if (Astro.request.method === "POST") {
       "ring-2",
       "ring-emerald-400",
       "ring-offset-2",
-      "border-yellow-400"
+      "border-yellow-400",
     );
     darkTeam.classList.remove(
       "ring-2",
       "ring-emerald-400",
       "ring-offset-2",
-      "border-yellow-400"
+      "border-yellow-400",
     );
     lightTeam.classList.add("border-slate-300");
     darkTeam.classList.add("border-slate-700");
@@ -499,7 +519,7 @@ if (Astro.request.method === "POST") {
         "border-2",
         "border-slate-300",
         "bg-slate-100",
-        "text-slate-700"
+        "text-slate-700",
       );
       badge.innerText = "Ganó Equipo Claro";
       // Ring al ganador
@@ -509,7 +529,7 @@ if (Astro.request.method === "POST") {
         "border-2",
         "border-slate-700",
         "bg-slate-800",
-        "text-slate-100"
+        "text-slate-100",
       );
       badge.innerText = "Ganó Equipo Oscuro";
       // Ring al ganador
@@ -519,7 +539,7 @@ if (Astro.request.method === "POST") {
         "border-2",
         "border-yellow-400",
         "bg-yellow-100",
-        "text-yellow-700"
+        "text-yellow-700",
       );
       badge.innerText = "Empate";
       // Ambos con borde amarillo para empate
@@ -536,13 +556,13 @@ if (Astro.request.method === "POST") {
     listLight.innerHTML = lightPlayers
       .map(
         (p) =>
-          `<span class="badge badge-sm h-fit rounded-lg border border-slate-300 bg-slate-200 py-1 font-medium text-slate-800">${p}</span>`
+          `<span class="badge badge-sm h-fit rounded-lg border border-slate-300 bg-slate-200 py-1 font-medium text-slate-800">${p}</span>`,
       )
       .join("");
     listDark.innerHTML = darkPlayers
       .map(
         (p) =>
-          `<span class="badge badge-sm h-fit rounded-lg border border-slate-600 bg-slate-700 py-1 font-medium text-slate-100">${p}</span>`
+          `<span class="badge badge-sm h-fit rounded-lg border border-slate-600 bg-slate-700 py-1 font-medium text-slate-100">${p}</span>`,
       )
       .join("");
 

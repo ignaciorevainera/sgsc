@@ -14,7 +14,7 @@ const { data: yearsData } = await supabase
   .select("year");
 // Filtramos años únicos y ordenamos descendente (2025, 2024...)
 const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
-  (a, b) => b - a
+  (a, b) => b - a,
 );
 const currentYear = new Date().getFullYear().toString();
 // Si no hay datos, usamos el año actual como fallback
@@ -129,7 +129,7 @@ const sortedPlayers = [...players].sort((a, b) => {
     >
       {/* Selector de Temporada */}
       <div class="form-control w-full">
-        <label class="label py-1">
+        <label for="season" class="label py-1">
           <span
             class="label-text text-base-content/60 text-xs font-bold uppercase"
             >Temporada</span
@@ -137,7 +137,9 @@ const sortedPlayers = [...players].sort((a, b) => {
         </label>
         <select
           id="season"
+          name="season"
           class="select select-bordered select-sm md:select-md w-full rounded-xl"
+          aria-label="Seleccionar temporada"
         >
           {
             seasons.map((s) => (
@@ -151,7 +153,7 @@ const sortedPlayers = [...players].sort((a, b) => {
 
       {/* Selector de Orden */}
       <div class="form-control w-full">
-        <label class="label py-1">
+        <label for="sort" class="label py-1">
           <span
             class="label-text text-base-content/60 text-xs font-bold uppercase"
             >Ordenar por</span
@@ -159,7 +161,9 @@ const sortedPlayers = [...players].sort((a, b) => {
         </label>
         <select
           id="sort"
+          name="sort"
           class="select select-bordered select-sm md:select-md w-full rounded-xl"
+          aria-label="Seleccionar criterio de ordenamiento"
         >
           {
             sortOptions.map((o) => (
@@ -176,7 +180,10 @@ const sortedPlayers = [...players].sort((a, b) => {
 
     {/* Toggle Vista Detallada (Móvil) */}
     <div class="form-control w-full sm:hidden">
-      <label class="label cursor-pointer justify-start gap-3 p-0">
+      <label
+        for="mode-toggle"
+        class="label cursor-pointer justify-start gap-3 p-0"
+      >
         <span class="text-base-content/60 text-xs font-bold uppercase"
           >Vista Detallada</span
         >
@@ -185,6 +192,8 @@ const sortedPlayers = [...players].sort((a, b) => {
           type="checkbox"
           class="toggle toggle-primary toggle-sm"
           checked={mode === "detailed"}
+          role="switch"
+          aria-checked={mode === "detailed" ? "true" : "false"}
         />
       </label>
     </div>

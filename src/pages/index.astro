@@ -34,7 +34,7 @@ const { data: lastMatchData } = await supabase
       team,
       players (nickname)
     )
-  `
+  `,
   )
   .order("date", { ascending: false })
   .limit(1);
@@ -106,7 +106,11 @@ const features = [
             href="/ranking"
             class="btn btn-primary rounded-xl border-none shadow-md"
           >
-            <Icon name="material-symbols:leaderboard" size={20} />
+            <Icon
+              name="material-symbols:leaderboard"
+              size={20}
+              aria-hidden="true"
+            />
             Ver Tabla
           </a>
           <a
@@ -136,7 +140,12 @@ const features = [
       <!-- Líderes: 5 columnas en desktop -->
       <div class="lg:col-span-3">
         <div class="mb-4 flex items-center gap-2">
-          <Icon name="material-symbols:trophy" class="text-warning" size={24} />
+          <Icon
+            name="material-symbols:trophy"
+            class="text-warning"
+            size={24}
+            aria-hidden="true"
+          />
           <h2 class="text-primary text-xl font-black uppercase italic">
             Líderes {lastMatchYear}
           </h2>
@@ -153,6 +162,7 @@ const features = [
                     <a
                       href={`/players/${player.player_id}`}
                       class="hover:bg-base-200 group flex items-center justify-between p-4 transition-colors"
+                      aria-label={`Ver perfil de ${player.nickname}, ${player.points} puntos`}
                     >
                       <div class="flex items-center gap-4">
                         <div
@@ -207,6 +217,7 @@ const features = [
             name="material-symbols:history"
             class="text-primary"
             size={24}
+            aria-hidden="true"
           />
           <h2 class="text-primary text-xl font-black uppercase italic">
             Último Resultado
@@ -237,10 +248,12 @@ const features = [
           <a
             href={feature.href}
             class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3"
+            aria-label={`${feature.title}: ${feature.description}`}
           >
             <div class="card-body">
               <div
                 class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
+                aria-hidden="true"
               >
                 <Icon name={feature.icon} size={30} />
               </div>
@@ -256,17 +269,19 @@ const features = [
       <!-- Info Alert: 9 columnas -->
       <div
         class="alert bg-primary/5 border-base-200 text-base-content rounded-xl border shadow-md lg:col-span-9"
+        role="note"
       >
         <Icon
           name="material-symbols:info-outline"
           class="text-primary"
           size={24}
+          aria-hidden="true"
         />
         <div>
           <h3 class="text-primary font-bold">¿Cuándo se juega?</h3>
-          <div class="text-base-content/60 text-xs">
+          <p class="text-base-content/60 text-xs">
             Organiza el próximo partido desde el grupo de WhatsApp oficial.
-          </div>
+          </p>
         </div>
       </div>
     </div>

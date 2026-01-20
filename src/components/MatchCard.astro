@@ -29,12 +29,12 @@ const darkTeam =
 const sortedLightTeam = [...lightTeam].sort((a: any, b: any) =>
   (a.players?.nickname || "")
     .toLowerCase()
-    .localeCompare((b.players?.nickname || "").toLowerCase())
+    .localeCompare((b.players?.nickname || "").toLowerCase()),
 );
 const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
   (a.players?.nickname || "")
     .toLowerCase()
-    .localeCompare((b.players?.nickname || "").toLowerCase())
+    .localeCompare((b.players?.nickname || "").toLowerCase()),
 );
 ---
 
@@ -47,14 +47,18 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
           name="material-symbols:calendar-today"
           size={16}
           class="text-primary shrink-0"
+          aria-hidden="true"
         />
-        <span class="font-medium">{formatDate(match.date, "long")}</span>
+        <time datetime={match.date} class="font-medium"
+          >{formatDate(match.date, "long")}</time
+        >
       </div>
       <div class="flex flex-row-reverse items-center gap-1.5 overflow-hidden">
         <Icon
           name="material-symbols:location-on"
           size={16}
           class="text-secondary shrink-0"
+          aria-hidden="true"
         />
         <span class="truncate font-medium">
           {match.fields?.name || "Cancha Desconocida"}
@@ -103,6 +107,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
         <Icon
           name="material-symbols:wb-sunny"
           class="pointer-events-none absolute -right-4 -bottom-4 h-20 w-20 rotate-12 text-slate-300/40"
+          aria-hidden="true"
         />
       </div>
 
@@ -124,6 +129,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
         <Icon
           name="material-symbols:dark-mode"
           class="pointer-events-none absolute -right-4 -bottom-4 h-20 w-20 -rotate-12 text-slate-700/50"
+          aria-hidden="true"
         />
       </div>
     </div>
@@ -137,11 +143,13 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
             target="_blank"
             rel="noopener noreferrer"
             class="btn btn-primary btn-sm rounded-xl font-bold uppercase"
+            aria-label="Ver video del partido (se abre en nueva pestaña)"
           >
             <Icon
               name="material-symbols:play-circle"
               size={18}
               class="shrink-0 animate-pulse"
+              aria-hidden="true"
             />
             <span>Ver Video</span>
           </a>

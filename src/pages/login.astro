@@ -70,32 +70,49 @@ if (Astro.request.method === "POST") {
 
         <form method="POST" class="space-y-3 sm:space-y-4">
           <div class="form-control">
-            <label class="label sr-only">Email</label>
-            <label class="input validator rounded-xl">
-              <Icon name="material-symbols:mail" class="opacity-50" size={18} />
+            <label for="email" class="label sr-only">Correo electrónico</label>
+            <div class="input validator rounded-xl">
+              <Icon
+                name="material-symbols:mail"
+                class="opacity-50"
+                size={18}
+                aria-hidden="true"
+              />
               <input
                 type="email"
                 name="email"
+                id="email"
                 class="grow text-sm sm:text-base"
                 placeholder="admin@sgsc.com"
                 required
+                autocomplete="email"
+                aria-describedby="email-hint"
               />
-            </label>
-            <div class="validator-hint hidden">Enter valid email address</div>
+            </div>
+            <div id="email-hint" class="validator-hint hidden">
+              Ingrese un correo electrónico válido
+            </div>
           </div>
 
           <div class="form-control">
-            <label class="label sr-only">Contraseña</label>
-            <label class="input validator rounded-xl">
-              <Icon name="material-symbols:key" class="opacity-50" size={18} />
+            <label for="password" class="label sr-only">Contraseña</label>
+            <div class="input validator rounded-xl">
+              <Icon
+                name="material-symbols:key"
+                class="opacity-50"
+                size={18}
+                aria-hidden="true"
+              />
               <input
                 type="password"
                 name="password"
+                id="password"
                 class="grow text-sm sm:text-base"
                 placeholder="Contraseña"
                 required
+                autocomplete="current-password"
               />
-            </label>
+            </div>
           </div>
 
           <div class="form-control mt-6 sm:mt-8">

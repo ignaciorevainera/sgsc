@@ -11,3 +11,7 @@
 @theme {
   --font-sans: "Sora Variable", sans-serif;
 }
+
+[role="button"] {
+  cursor: pointer;
+}
