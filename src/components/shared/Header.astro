@@ -29,15 +29,22 @@ const currentPath = Astro.url.pathname;
   <div class="navbar-start">
     <div class="dropdown">
       <button
+        tabindex="0"
         type="button"
         aria-label="Abrir menú de navegación"
         aria-expanded="false"
         aria-controls="mobile-menu"
         class="btn btn-ghost lg:hidden"
+        role="button"
       >
-        <Icon name="material-symbols:menu-rounded" size={24} aria-hidden="true" />
+        <Icon
+          name="material-symbols:menu-rounded"
+          size={24}
+          aria-hidden="true"
+        />
       </button>
       <ul
+        tabindex="-1"
         id="mobile-menu"
         class="menu dropdown-content bg-base-100 z-10 mt-4 w-52 rounded-xl p-2 shadow-md"
         role="menu"
@@ -91,6 +98,8 @@ const currentPath = Astro.url.pathname;
         // OPCIÓN A: USUARIO LOGUEADO (Dropdown con Avatar)
         <div class="dropdown dropdown-end">
           <button
+            tabindex="0"
+            role="button"
             type="button"
             aria-label="Menú de usuario administrador"
             aria-expanded="false"
@@ -100,6 +109,7 @@ const currentPath = Astro.url.pathname;
             <Avatar initial="A" size="xs" ring={false} interactive={false} />
           </button>
           <ul
+            tabindex="0"
             class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-50 mt-4 w-56 rounded-xl border p-2 shadow-md"
             role="menu"
             aria-label="Opciones de administrador"
@@ -191,8 +201,13 @@ const currentPath = Astro.url.pathname;
           href="/login"
           class="btn btn-ghost btn-circle"
           aria-label="Acceso a panel de administración"
+          data-tip="Acceso Admin"
         >
-          <Icon name="material-symbols:lock-person" size={24} aria-hidden="true" />
+          <Icon
+            name="material-symbols:lock-person"
+            size={24}
+            aria-hidden="true"
+          />
         </a>
       )
     }
