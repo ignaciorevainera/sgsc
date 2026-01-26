@@ -40,6 +40,7 @@ if (Astro.request.method === "POST") {
     const birth_date = formData.get("birth_date");
     const rawFoot = formData.get("preferred_foot");
     const preferred_foot = rawFoot === "" ? null : rawFoot;
+    const is_guest = formData.has("is_guest");
 
     const { error: updateError } = await supabase
       .from("players")
@@ -49,6 +50,7 @@ if (Astro.request.method === "POST") {
         last_name: last_name || null, // CAMBIO
         birth_date: birth_date || null,
         preferred_foot: preferred_foot || null,
+        is_guest,
       })
       .eq("id", id);
     error = updateError;
@@ -154,7 +156,29 @@ if (Astro.request.method === "POST") {
             </select>
           </fieldset>
         </div>
+        
+        <div class="form-control col-span-4">
+          <label
+            for="is_guest"
+            class="mt-2 flex cursor-pointer flex-row items-center justify-start gap-3"
+          >
+            <input
+              type="checkbox"
+              name="is_guest"
+              id="is_guest"
+              class="checkbox checkbox-sm"
+              checked={player.is_guest}
+            />
+            <div class="flex flex-col items-start">
+              <span class="font-bold">Marcar como Invitado</span>
+              <span class="text-base-content/60 text-xs">
+                Los invitados aparecen al final de las listas de convocatoria.
+              </span>
+            </div>
+          </label>
+        </div>
       </div>
+
       <button type="submit" class="btn btn-primary rounded-xl shadow-md"
         >Actualizar Datos</button
       >
