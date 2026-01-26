@@ -38,7 +38,8 @@ if (Astro.request.method === "POST") {
     const first_name = formData.get("first_name");
     const last_name = formData.get("last_name");
     const birth_date = formData.get("birth_date");
-    const preferred_foot = formData.get("preferred_foot");
+    const rawFoot = formData.get("preferred_foot");
+    const preferred_foot = rawFoot === "" ? null : rawFoot;
 
     const { error: updateError } = await supabase
       .from("players")
@@ -138,6 +139,9 @@ if (Astro.request.method === "POST") {
               name="preferred_foot"
               class="select select-bordered w-full rounded-xl"
             >
+              <option value="" selected={player.preferred_foot === null}
+                >No especificado</option
+              >
               <option value="right" selected={player.preferred_foot === "right"}
                 >Diestro</option
               >
@@ -151,11 +155,10 @@ if (Astro.request.method === "POST") {
           </fieldset>
         </div>
       </div>
+      <button type="submit" class="btn btn-primary rounded-xl shadow-md"
+        >Actualizar Datos</button
+      >
     </form>
-
-    <button type="submit" class="btn btn-primary rounded-xl shadow-md"
-      >Actualizar Datos</button
-    >
 
     <div class="card bg-base-200 border-base-200 rounded-xl border p-4 sm:p-6">
       <h3 class="text-base-content/60 mb-2 text-xs font-bold uppercase">
