@@ -1,0 +1,415 @@
+---
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import ComparisonRow from "@/components/compare/ComparisonRow.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+
+// 1. Obtener lista de jugadores para el selector
+const { data: players } = await supabase
+  .from("players")
+  .select("id, nickname")
+  .eq("is_active", true)
+  .eq("is_guest", false)
+  .order("nickname");
+
+// 2. Parámetros URL
+const p1Id = Astro.url.searchParams.get("p1");
+const p2Id = Astro.url.searchParams.get("p2");
+
+let p1Stats = null;
+let p2Stats = null;
+
+// Inicializamos H2H en cero
+let h2h = {
+  played_against: 0,
+  p1_wins: 0,
+  p2_wins: 0,
+  draws_against: 0,
+  played_together: 0,
+  wins_together: 0,
+};
+
+// 3. Lógica Principal
+if (p1Id && p2Id && p1Id !== p2Id) {
+  // A. Obtener Nombres (Básico)
+  const { data: basicInfo } = await supabase
+    .from("players")
+    .select("id, nickname")
+    .in("id", [p1Id, p2Id]);
+
+  const p1Basic = basicInfo?.find((p) => String(p.id) === p1Id);
+  const p2Basic = basicInfo?.find((p) => String(p.id) === p2Id);
+
+  // B. Obtener TODOS los partidos de ambos jugadores (Historial Crudo)
+  const { data: history } = await supabase
+    .from("match_players")
+    .select(
+      `
+      player_id, 
+      team, 
+      match:matches!inner (id, result)
+    `,
+    )
+    .in("player_id", [p1Id, p2Id]);
+
+  // --- FUNCIÓN DE CÁLCULO MANUAL (Para evitar ceros de la vista) ---
+  const calculateStats = (
+    playerId: string,
+    matches: { player_id: any; team: any; match: { id: any; result: any }[] }[],
+  ) => {
+    // Filtramos solo los partidos de ESTE jugador
+    const myMatches =
+      matches?.filter(
+        (m: { player_id: any }) => String(m.player_id) === String(playerId),
+      ) || [];
+
+    const played = myMatches.length;
+    let won = 0;
+    let drawn = 0;
+
+    myMatches.forEach((m) => {
+      // @ts-ignore
+      const res = m.match.result;
+      if (res === m.team) won++;
+      else if (res === "draw") drawn++;
+    });
+
+    const points = won * 3 + drawn * 1;
+
+    // Evitamos división por cero
+    const winRate = played > 0 ? ((won / played) * 100).toFixed(0) : 0;
+    const effectiveness =
+      played > 0 ? ((points / (played * 3)) * 100).toFixed(0) : 0;
+
+    return {
+      matches_played: played,
+      matches_won: won,
+      points: points,
+      win_rate: winRate,
+      effectiveness: effectiveness,
+    };
+  };
+
+  // C. Asignamos los datos calculados
+  if (p1Basic && history) {
+    p1Stats = { ...p1Basic, ...calculateStats(p1Id, history) };
+  }
+  if (p2Basic && history) {
+    p2Stats = { ...p2Basic, ...calculateStats(p2Id, history) };
+  }
+
+  // D. Calcular Historial H2H (Cara a Cara)
+  const matchesMap = new Map();
+  history?.forEach((entry) => {
+    // @ts-ignore
+    const matchId = entry.match.id;
+    if (!matchesMap.has(matchId)) matchesMap.set(matchId, []);
+    matchesMap.get(matchId).push(entry);
+  });
+
+  matchesMap.forEach((entries) => {
+    if (entries.length === 2) {
+      const p1Entry = entries.find(
+        (e: any) => String(e.player_id) === String(p1Id),
+      );
+      const p2Entry = entries.find(
+        (e: any) => String(e.player_id) === String(p2Id),
+      );
+
+      if (p1Entry && p2Entry) {
+        // @ts-ignore
+        const result = p1Entry.match.result;
+
+        if (p1Entry.team !== p2Entry.team) {
+          // Rivales
+          h2h.played_against++;
+          if (result === "draw") h2h.draws_against++;
+          else if (result === p1Entry.team) h2h.p1_wins++;
+          else h2h.p2_wins++;
+        } else {
+          // Compañeros
+          h2h.played_together++;
+          if (result === p1Entry.team) h2h.wins_together++;
+        }
+      }
+    }
+  });
+}
+---
+
+<Main title="Comparador de Jugadores">
+  <Title title="Versus" subtitle="Comparativa Histórica" />
+
+  <div
+    class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md"
+  >
+    <div class="p-4 sm:p-6">
+      {/* Layout VS estilo enfrentamiento */}
+      <div class="flex flex-col items-center gap-4 sm:gap-6">
+        {/* Contenedor de selectores con VS central */}
+        <div class="flex w-full flex-col items-center gap-2 sm:flex-row">
+          {/* Jugador 1 */}
+          <div class="form-control w-full flex-1 sm:pr-4 sm:text-right">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend text-primary">Jugador 1</legend>
+              <select class="select w-full rounded-xl" id="p1-select" name="p1">
+                <option value="" disabled selected={!p1Id}
+                  >Elegir jugador...</option
+                >
+                {
+                  players?.map((p) => (
+                    <option value={p.id} selected={String(p.id) === p1Id}>
+                      {p.nickname}
+                    </option>
+                  ))
+                }
+              </select>
+            </fieldset>
+          </div>
+
+          {/* VS Badge central */}
+          <div
+            class="relative z-10 flex hidden shrink-0 items-center justify-center sm:block"
+          >
+            <div
+              class="bg-base-100 border-base-300 text-base-content/40 flex h-14 w-14 items-center justify-center rounded-full border-4 text-xl font-black shadow-lg sm:h-16 sm:w-16 sm:text-2xl"
+            >
+              VS
+            </div>
+          </div>
+
+          {/* Jugador 2 */}
+          <div class="form-control w-full flex-1 sm:pl-4 sm:text-left">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend text-secondary">Jugador 2</legend>
+              <select class="select w-full rounded-xl" id="p2-select" name="p2">
+                <option value="" disabled selected={!p2Id}
+                  >Elegir jugador...</option
+                >
+                {
+                  players?.map((p) => (
+                    <option value={p.id} selected={String(p.id) === p2Id}>
+                      {p.nickname}
+                    </option>
+                  ))
+                }
+              </select>
+            </fieldset>
+          </div>
+        </div>
+
+        {/* Botón Comparar */}
+        <button
+          id="btn-compare"
+          type="button"
+          class="btn btn-primary md:btn-md btn-sm w-full rounded-xl shadow-md"
+          disabled={!p1Id || !p2Id || p1Id === p2Id}
+        >
+          <Icon
+            name="material-symbols:compare-arrows"
+            size={24}
+            aria-hidden="true"
+          />
+          Comparar Jugadores
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {
+    p1Stats && p2Stats ? (
+      <div class="space-y-8">
+        <div class="card bg-base-100 border-base-200 relative overflow-hidden rounded-xl border shadow-md">
+          <div class="card-body p-4 text-center sm:p-8">
+            <h3 class="text-base-content/40 mb-6 text-xs font-black tracking-widest uppercase md:text-lg">
+              Historial
+            </h3>
+            <div class="mx-auto flex w-full max-w-lg items-end justify-between gap-4">
+              <div class="flex flex-1 flex-col items-center">
+                <div
+                  class="text-primary mb-2 text-5xl font-black sm:text-7xl"
+                  aria-label={`${h2h.p1_wins} victorias de ${p1Stats.nickname}`}
+                >
+                  {h2h.p1_wins}
+                </div>
+                <span class="text-primary/80 w-full truncate text-xs font-bold uppercase">
+                  {p1Stats.nickname}
+                </span>
+              </div>
+              <div class="flex flex-col items-center pb-4">
+                <span class="text-base-content/30 text-4xl font-bold">
+                  {h2h.draws_against}
+                </span>
+                <span class="text-base-content/50 text-sm font-bold uppercase">
+                  Empates
+                </span>
+              </div>
+              <div class="flex flex-1 flex-col items-center">
+                <div
+                  class="text-secondary mb-2 text-5xl font-black sm:text-7xl"
+                  aria-label={`${h2h.p2_wins} victorias de ${p2Stats.nickname}`}
+                >
+                  {h2h.p2_wins}
+                </div>
+                <span class="text-secondary/80 w-full truncate text-xs font-bold uppercase">
+                  {p2Stats.nickname}
+                </span>
+              </div>
+            </div>
+            <div class="badge badge-ghost badge-sm md:badge-lg mt-6 gap-2 self-center rounded-xl py-3 font-bold uppercase">
+              <Icon name="material-symbols:swords" aria-hidden="true" />
+              {h2h.played_against} Partidos disputados
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 border-base-200 flex flex-row items-center justify-between gap-4 rounded-xl border p-4 shadow-md">
+          <div class="flex shrink-0 items-center gap-3">
+            <div
+              class="bg-base-200 text-base-content/60 rounded-full p-2"
+              aria-hidden="true"
+            >
+              <Icon name="material-symbols:handshake" size={24} />
+            </div>
+            <div class="text-left">
+              <div class="font-bold">Química</div>
+              <div class="text-base-content/60 text-xs">Jugando juntos</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-black">
+              {h2h.wins_together}{" "}
+              <span class="text-base-content/50 text-sm font-normal">
+                / {h2h.played_together}
+              </span>
+            </div>
+            <div class="text-success text-xs font-bold uppercase">
+              {h2h.played_together > 0
+                ? Math.round((h2h.wins_together / h2h.played_together) * 100)
+                : 0}
+              % Win Rate
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+          role="table"
+          aria-label="Comparativa de estadísticas entre jugadores"
+        >
+          {/* Header */}
+          <div
+            class="bg-base-200 grid grid-cols-3 items-center py-3"
+            role="row"
+          >
+            <div
+              class="text-primary text-center font-black"
+              role="columnheader"
+            >
+              {p1Stats.nickname}
+            </div>
+            <div
+              class="text-base-content/60 text-center text-xs font-bold uppercase sm:text-sm md:text-lg"
+              role="columnheader"
+            >
+              Estadística
+            </div>
+            <div
+              class="text-secondary text-center font-black"
+              role="columnheader"
+            >
+              {p2Stats.nickname}
+            </div>
+          </div>
+
+          {/* Body */}
+          <div class="divide-base-200 divide-y" role="rowgroup">
+            <ComparisonRow
+              label="Puntos Históricos"
+              val1={p1Stats.points}
+              val2={p2Stats.points}
+            />
+            <ComparisonRow
+              label="Efectividad"
+              val1={p1Stats.effectiveness + "%"}
+              val2={p2Stats.effectiveness + "%"}
+              num1={Number(p1Stats.effectiveness)}
+              num2={Number(p2Stats.effectiveness)}
+            />
+            <ComparisonRow
+              label="Partidos Jugados"
+              val1={p1Stats.matches_played}
+              val2={p2Stats.matches_played}
+            />
+            <ComparisonRow
+              label="Victorias"
+              val1={p1Stats.matches_won}
+              val2={p2Stats.matches_won}
+            />
+            <ComparisonRow
+              label="% Victorias"
+              val1={p1Stats.win_rate + "%"}
+              val2={p2Stats.win_rate + "%"}
+              num1={Number(p1Stats.win_rate)}
+              num2={Number(p2Stats.win_rate)}
+            />
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="card bg-base-100 rounded-xl p-12 text-center shadow-md">
+        <Icon
+          name="material-symbols:compare-arrows"
+          size={64}
+          class="text-base-content/20 mx-auto mb-4"
+          aria-hidden="true"
+        />
+        <p class="text-base-content/60 font-bold">
+          Selecciona dos jugadores y pulsa "Comparar"
+        </p>
+      </div>
+    )
+  }
+</Main>
+
+<script is:inline>
+  // Script robusto en JS puro
+  const s1 = document.getElementById("p1-select");
+  const s2 = document.getElementById("p2-select");
+  const btn = document.getElementById("btn-compare");
+
+  function checkValidity() {
+    if (!s1 || !s2 || !btn) return;
+    const v1 = s1.value;
+    const v2 = s2.value;
+
+    // Habilitar si tienen valor y son distintos
+    if (v1 && v2 && v1 !== v2) {
+      btn.removeAttribute("disabled");
+      btn.classList.remove("btn-disabled");
+    } else {
+      btn.setAttribute("disabled", "true");
+      btn.classList.add("btn-disabled");
+    }
+  }
+
+  if (s1) s1.addEventListener("change", checkValidity);
+  if (s2) s2.addEventListener("change", checkValidity);
+
+  if (btn) {
+    btn.addEventListener("click", function () {
+      if (s1 && s2 && s1.value && s2.value) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("p1", s1.value);
+        url.searchParams.set("p2", s2.value);
+        window.location.href = url.toString();
+      }
+    });
+  }
+
+  // Chequeo inicial
+  checkValidity();
+</script>

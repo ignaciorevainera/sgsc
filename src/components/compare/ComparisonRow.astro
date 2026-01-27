@@ -1,0 +1,91 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  label: string;
+  val1: string | number;
+  val2: string | number;
+  num1?: number; // Opcional: valor numérico real para comparar
+  num2?: number; // Opcional
+  best?: "high" | "low"; // 'high': mejor es más alto (ej: goles). 'low': mejor es más bajo (ej: goles recibidos)
+}
+
+const { label, val1, val2, num1, num2, best = "high" } = Astro.props;
+
+// Lógica de comparación
+// Si no pasan num1/num2 explícitos, intentamos usar val1/val2
+const v1 =
+  num1 !== undefined
+    ? num1
+    : typeof val1 === "number"
+      ? val1
+      : parseFloat(val1 as string);
+const v2 =
+  num2 !== undefined
+    ? num2
+    : typeof val2 === "number"
+      ? val2
+      : parseFloat(val2 as string);
+
+// Evitamos comparar si son NaNs (por ejemplo si val es "-")
+const isValidComparison = !isNaN(v1) && !isNaN(v2);
+
+const is1Better = isValidComparison && (best === "high" ? v1 > v2 : v1 < v2);
+const is2Better = isValidComparison && (best === "high" ? v2 > v1 : v2 < v1);
+---
+
+<div
+  class="hover:bg-base-200/50 grid grid-cols-3 items-center py-3 transition-colors"
+  role="row"
+>
+  <div class="flex items-center justify-center gap-1" role="cell">
+    <span
+      class:list={[
+        "text-sm font-bold md:text-lg",
+        { "text-primary": is1Better },
+      ]}
+    >
+      {val1}
+    </span>
+    {
+      is1Better && (
+        <Icon
+          name="material-symbols:check-circle"
+          size={18}
+          class="text-primary shrink-0"
+          aria-hidden="true"
+        />
+      )
+    }
+    {is1Better && <span class="sr-only">(mejor)</span>}
+  </div>
+
+  <div
+    class="text-base-content/60 text-center text-xs tracking-widest uppercase md:text-sm"
+    role="cell"
+  >
+    {label}
+  </div>
+
+  <div class="flex items-center justify-center gap-1" role="cell">
+    {
+      is2Better && (
+        <Icon
+          name="material-symbols:check-circle"
+          size={18}
+          class="text-secondary shrink-0"
+          aria-hidden="true"
+        />
+      )
+    }
+    {is2Better && <span class="sr-only">(mejor)</span>}
+    <span
+      class:list={[
+        "text-sm font-bold md:text-lg",
+        { "text-secondary": is2Better },
+      ]}
+    >
+      {val2}
+    </span>
+  </div>
+</div>
