@@ -131,6 +131,84 @@ const getOutcomeConfig = (outcome: string) => {
   };
   return configs[outcome] || configs.L;
 };
+
+// 1. Obtener todos los partidos donde participó este jugador
+const { data: allMatchEntries } = await supabase
+  .from("match_players")
+  .select(
+    `
+    match_id,
+    team,
+    match:matches!inner (result)
+  `,
+  )
+  .eq("player_id", id);
+
+const myMatchIds = allMatchEntries?.map((m) => m.match_id) || [];
+
+// 2. Obtener a TODOS los demás jugadores que participaron en ESOS mismos partidos
+const { data: teammatesAndRivals } = await supabase
+  .from("match_players")
+  .select(
+    `
+    player_id,
+    team,
+    match_id,
+    player:players (nickname)
+  `,
+  )
+  .in("match_id", myMatchIds)
+  .neq("player_id", id); // Excluimos al jugador actual
+
+// 3. Procesar estadísticas de Socios y Némesis
+const partnerStats = new Map(); // Para "Mejor Socio" (Mismo equipo)
+const rivalStats = new Map(); // Para "Némesis" (Equipo contrario)
+
+teammatesAndRivals?.forEach((entry) => {
+  const myEntry = allMatchEntries?.find((m) => m.match_id === entry.match_id);
+  if (!myEntry) return;
+
+  const isTeammate = entry.team === myEntry.team;
+  const matchResult = myEntry.match[0]?.result;
+  const iWon = myEntry.team === matchResult;
+  const iLost = matchResult !== "draw" && myEntry.team !== matchResult;
+
+  const statsMap = isTeammate ? partnerStats : rivalStats;
+
+  if (!statsMap.has(entry.player_id)) {
+    statsMap.set(entry.player_id, {
+      id: entry.player_id,
+      nickname: entry.player[0]?.nickname,
+      matches: 0,
+      wins: 0,
+    });
+  }
+
+  const current = statsMap.get(entry.player_id);
+  current.matches++;
+  if (isTeammate) {
+    // Para socios: contamos victorias jugando juntos
+    if (iWon) current.wins++;
+  } else {
+    // Para rivales: contamos las veces que nos ganó (mis derrotas contra él)
+    if (iLost) current.wins++;
+  }
+});
+
+// 4. Calcular los ganadores (mínimo 3 partidos para que sea relevante)
+const minMatches = 2;
+
+const bestPartner = [...partnerStats.values()]
+  .filter((p) => p.matches >= minMatches)
+  .sort(
+    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
+  )[0];
+
+const nemesis = [...rivalStats.values()]
+  .filter((r) => r.matches >= minMatches)
+  .sort(
+    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
+  )[0];
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
@@ -138,10 +216,10 @@ const getOutcomeConfig = (outcome: string) => {
     class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md"
   >
     <div
-      class="from-primary/20 via-base-100 to-secondary/10 relative h-28 bg-gradient-to-r sm:h-32"
+      class="from-primary/20 via-base-100 to-secondary/10 relative h-28 bg-linear-to-r sm:h-32"
     >
       <div
-        class="from-base-content absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] to-transparent opacity-10"
+        class="from-base-content absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] to-transparent opacity-10"
       >
       </div>
     </div>
@@ -154,7 +232,7 @@ const getOutcomeConfig = (outcome: string) => {
           <Avatar initial={player.nickname.charAt(0).toUpperCase()} size="lg" />
         </div>
 
-        <div class="flex-grow space-y-2 text-center sm:mt-2 sm:text-left">
+        <div class="grow space-y-2 text-center sm:mt-2 sm:text-left">
           <div
             class="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3"
           >
@@ -236,278 +314,441 @@ const getOutcomeConfig = (outcome: string) => {
     </div>
   </div>
 
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    <div class="space-y-6 lg:col-span-2">
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div
-          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
-        >
-          <span class="text-2xl font-black">{totalMatches}</span>
-          <span class="text-base-content/60 text-xs font-bold uppercase"
-            >Partidos</span
-          >
-        </div>
-        <div
-          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
-        >
-          <span class="text-success text-2xl font-black">{player.wins}</span>
-          <span class="text-success/70 text-xs font-bold uppercase"
-            >Victorias ({win_pct}%)</span
-          >
-        </div>
-        <div
-          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
-        >
-          <span class="text-warning text-2xl font-black">{player.draws}</span>
-          <span class="text-warning/70 text-xs font-bold uppercase"
-            >Empates ({draw_pct}%)</span
-          >
-        </div>
-        <div
-          class="card bg-base-100 border-base-200 rounded-xl border p-4 text-center shadow-md"
-        >
-          <span class="text-error text-2xl font-black">{player.losses}</span>
-          <span class="text-error/70 text-xs font-bold uppercase"
-            >Derrotas ({loss_pct}%)</span
-          >
-        </div>
-      </div>
-
+  <!-- Bento Grid de Estadísticas -->
+  <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-4">
+    <!-- Efectividad - Card Grande -->
+    <div class="col-span-2 row-span-2 md:col-span-2 lg:col-span-2">
       <div
-        class="card bg-base-100 border-base-200 rounded-xl border p-5 shadow-md"
+        class="card bg-base-100 border-base-200 h-full rounded-2xl border p-5 shadow-md"
       >
-        <div class="mb-2 flex items-end justify-between">
+        <div class="flex h-full flex-col justify-between">
           <div>
-            <SectionTitle>Efectividad</SectionTitle>
-            <p class="text-primary/60 text-xs font-bold uppercase">
-              Vs Promedio del Club
+            <div class="mb-4 flex items-center gap-2">
+              <div class="bg-primary/10 text-primary rounded-lg p-2">
+                <Icon name="material-symbols:speed" size={20} />
+              </div>
+              <span
+                class="text-xs font-bold tracking-wider uppercase opacity-60"
+                >Efectividad</span
+              >
+            </div>
+            <div class="flex items-baseline gap-1">
+              <span class="text-5xl font-black">{win_pct}</span>
+              <span class="text-2xl font-bold opacity-40">%</span>
+            </div>
+            <p class="mt-1 text-xs opacity-50">
+              vs Media del club: {clubAverageWinPct}%
             </p>
           </div>
-          <div class="text-right">
-            <span class="text-2xl font-black">{win_pct}%</span>
-          </div>
-        </div>
-        <div class="relative pt-5">
-          <div
-            class="absolute top-0 z-10"
-            style={`left: ${clubAverageWinPct}%`}
-          >
-            <span
-              class={`text-[9px] font-bold uppercase text-base-content/60 whitespace-nowrap ${clubAverageWinPct > 75 ? "-translate-x-full pr-1" : "pl-1"}`}
-            >
-              Media ({clubAverageWinPct}%)
-            </span>
-          </div>
-          <div
-            class="bg-base-200 border-base-300 relative h-4 overflow-hidden rounded-full border"
-          >
-            <div
-              class="border-base-content/40 absolute top-0 bottom-0 z-10 h-full border-r-2 border-dashed"
-              style={`left: ${clubAverageWinPct}%`}
-            >
+
+          <div class="mt-4">
+            <div class="bg-base-200 relative h-3 overflow-hidden rounded-full">
+              <div
+                class="border-base-content/30 absolute top-0 bottom-0 z-10 border-r-2 border-dashed"
+                style={`left: ${clubAverageWinPct}%`}
+              >
+              </div>
+              <div
+                class={`h-full ${win_pct >= clubAverageWinPct ? "bg-gradient-to-r from-success to-success/70" : "bg-gradient-to-r from-warning to-warning/70"}`}
+                style={`width: ${win_pct}%`}
+              >
+              </div>
             </div>
             <div
-              class={`h-full ${win_pct >= clubAverageWinPct ? "bg-success" : "bg-warning"}`}
-              style={`width: ${win_pct}%`}
+              class="mt-2 flex justify-between text-[10px] font-bold uppercase opacity-40"
             >
+              <span>0%</span>
+              <span>100%</span>
             </div>
           </div>
-        </div>
-        <p class="text-base-content/50 mt-3 text-xs italic">
-          La efectividad representa el porcentaje de partidos ganados sobre el
-          total jugado.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div
-          class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
-        >
-          <div class="bg-base-200 border-base-200 border-b p-3 text-center">
-            <h3 class="text-xs font-bold uppercase">Preferencia de Camiseta</h3>
-          </div>
-          <div class="flex items-center justify-around p-5">
-            <div class="text-center">
-              <span
-                class="block text-3xl font-black text-slate-700 dark:text-slate-300"
-                aria-label={`${light_apps} partidos con equipo claro`}
-                >{light_apps}</span
-              >
-              <span
-                class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400"
-              >
-                <Icon
-                  name="material-symbols:wb-sunny"
-                  size={16}
-                  aria-hidden="true"
-                /> Claro
-              </span>
-            </div>
-            <div class="divider divider-horizontal mx-2" role="separator"></div>
-            <div class="text-center">
-              <span
-                class="block text-3xl font-black text-slate-700 dark:text-slate-300"
-                aria-label={`${dark_apps} partidos con equipo oscuro`}
-                >{dark_apps}</span
-              >
-              <span
-                class="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400"
-              >
-                <Icon
-                  name="material-symbols:dark-mode"
-                  size={16}
-                  aria-hidden="true"
-                /> Oscuro
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="card bg-base-100 border-base-200 flex flex-row items-center justify-center gap-4 rounded-xl border p-4 shadow-md lg:gap-5 lg:p-6"
-        >
-          <div
-            class="bg-primary/10 text-primary rounded-full p-3 lg:p-4"
-            aria-hidden="true"
-          >
-            <Icon
-              name="material-symbols:stadium-rounded"
-              size={24}
-              class="lg:hidden"
-            />
-            <Icon
-              name="material-symbols:stadium-rounded"
-              size={32}
-              class="hidden lg:block"
-            />
-          </div>
-          <div class="overflow-hidden">
-            <h4
-              class="text-base-content/60 text-xs font-bold tracking-wider uppercase lg:text-xs"
-            >
-              Cancha Favorita
-            </h4>
-            <p class="truncate text-sm font-black uppercase lg:text-base">
-              {topField}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="card bg-base-100 border-base-200 mt-6 overflow-hidden rounded-xl border shadow-md"
-      >
-        <div
-          class="bg-base-200/50 border-base-200 flex items-center justify-between border-b p-4"
-        >
-          <SectionTitle>Rendimiento Anual</SectionTitle>
-          <div
-            class="text-base-content/60 flex items-center gap-2 text-xs font-bold uppercase"
-            aria-hidden="true"
-          >
-            <Icon name="material-symbols:table-chart" size={16} />
-            Historial
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table
-            class="table-zebra table-sm table w-full text-center"
-            aria-label="Rendimiento anual del jugador"
-          >
-            <thead>
-              <tr
-                class="bg-base-200 text-base-content text-xs font-bold uppercase"
-              >
-                <th scope="col" class="pl-6 text-left">Año</th>
-                <th
-                  scope="col"
-                  class="bg-primary/10 text-primary font-black"
-                  abbr="Puntos">PTS</th
-                >
-                <th scope="col" abbr="Partidos Jugados">PJ</th>
-                <th scope="col" class="text-success" abbr="Ganados">G</th>
-                <th scope="col" class="text-warning" abbr="Empates">E</th>
-                <th scope="col" class="text-error" abbr="Perdidos">P</th>
-                <th scope="col" abbr="Efectividad">Efec.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {
-                yearlyStats?.map((s) => (
-                  <tr class="hover text-sm">
-                    <td class="pl-6 text-left font-bold">{s.year}</td>
-                    <td class="bg-primary/5 text-primary text-base font-black">
-                      {s.points}
-                    </td>
-                    <td class="font-semibold">{s.matches_played}</td>
-                    <td class="font-medium">{s.wins}</td>
-                    <td class="text-base-content/70 font-medium">{s.draws}</td>
-                    <td class="text-base-content/70 font-medium">{s.losses}</td>
-                    <td class="font-semibold">{Math.round(s.win_pct)}%</td>
-                  </tr>
-                ))
-              }
-
-              {
-                (!yearlyStats || yearlyStats.length === 0) && (
-                  <tr>
-                    <td
-                      colspan="7"
-                      class="text-base-content/50 py-8 text-center text-sm italic"
-                    >
-                      No hay registros históricos disponibles.
-                    </td>
-                  </tr>
-                )
-              }
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
 
-    <div class="space-y-6">
+    <!-- Partidos Jugados -->
+    <div class="col-span-1">
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+        class="card bg-base-100 border-base-content/50 h-full rounded-2xl border p-4 shadow-md"
       >
-        <div class="bg-base-200/50 border-base-200 border-b p-4">
-          <SectionTitle>Forma Reciente</SectionTitle>
+        <div
+          class="flex h-full flex-col items-center justify-center text-center"
+        >
+          <Icon
+            name="material-symbols:sports-soccer"
+            size={24}
+            class="mb-2 opacity-30"
+          />
+          <span class="text-3xl font-black">{totalMatches}</span>
+          <span
+            class="text-[10px] font-bold tracking-wider uppercase opacity-50"
+            >Partidos</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Victorias -->
+    <div class="col-span-1">
+      <div
+        class="card bg-base-100 border-success/50 h-full rounded-2xl border p-4 shadow-md"
+      >
+        <div
+          class="flex h-full flex-col items-center justify-center text-center"
+        >
+          <Icon
+            name="material-symbols:trophy"
+            size={24}
+            class="text-success mb-2"
+          />
+          <span class="text-success text-3xl font-black">{player.wins}</span>
+          <span
+            class="text-success text-[10px] font-bold tracking-wider uppercase"
+            >Victorias</span
+          >
+          <span class="text-success mt-1 text-xs font-bold">{win_pct}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empates -->
+    <div class="col-span-1">
+      <div
+        class="card bg-base-100 border-warning/50 h-full rounded-2xl border p-4 shadow-md"
+      >
+        <div
+          class="flex h-full flex-col items-center justify-center text-center"
+        >
+          <Icon
+            name="material-symbols:equal"
+            size={24}
+            class="text-warning mb-2"
+          />
+          <span class="text-warning text-3xl font-black">{player.draws}</span>
+          <span
+            class="text-warning text-[10px] font-bold tracking-wider uppercase"
+            >Empates</span
+          >
+          <span class="text-warning mt-1 text-xs font-bold">{draw_pct}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Derrotas -->
+    <div class="col-span-1">
+      <div
+        class="card bg-base-100 border-error/50 h-full rounded-2xl border p-4 shadow-md"
+      >
+        <div
+          class="flex h-full flex-col items-center justify-center text-center"
+        >
+          <Icon
+            name="material-symbols:close"
+            size={24}
+            class="text-error mb-2"
+          />
+          <span class="text-error text-3xl font-black">{player.losses}</span>
+          <span
+            class="text-error text-[10px] font-bold tracking-wider uppercase"
+            >Derrotas</span
+          >
+          <span class="text-error mt-1 text-xs font-bold">{loss_pct}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mejor Socio -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-2">
+      <div
+        class="card bg-base-100 border-success/50 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
+      >
+        <div class="flex items-center gap-3">
+          <div class="bg-success/15 text-success shrink-0 rounded-xl p-3">
+            <Icon name="material-symbols:handshake" size={28} />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p
+              class="text-[10px] font-black tracking-widest uppercase opacity-50"
+            >
+              Mejor Socio
+            </p>
+            {
+              bestPartner ? (
+                <div>
+                  <p class="truncate text-lg font-black">
+                    {bestPartner.nickname}
+                  </p>
+                  <p class="text-success text-xs font-bold">
+                    {Math.round((bestPartner.wins / bestPartner.matches) * 100)}
+                    % química
+                    <span class="opacity-60">
+                      {" "}
+                      • {bestPartner.matches} ganados
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p class="text-sm opacity-50">Sin datos suficientes</p>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Némesis -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-2">
+      <div
+        class="card bg-base-100 border-error/50 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
+      >
+        <div class="flex items-center gap-3">
+          <div class="bg-error/15 text-error shrink-0 rounded-xl p-3">
+            <Icon name="material-symbols:swords" size={28} />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p
+              class="text-[10px] font-black tracking-widest uppercase opacity-50"
+            >
+              Némesis
+            </p>
+            {
+              nemesis ? (
+                <div>
+                  <p class="truncate text-lg font-black">{nemesis.nickname}</p>
+                  <p class="text-error text-xs font-bold">
+                    {Math.round((nemesis.wins / nemesis.matches) * 100)}%
+                    derrotas
+                    <span class="opacity-60">
+                      {" "}
+                      • {nemesis.matches} perdidos
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <p class="text-sm opacity-50">Sin datos suficientes</p>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cancha Favorita -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-3">
+      <div
+        class="card from-primary/5 to-secondary/5 border-base-200 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
+      >
+        <div class="flex h-full items-center gap-3">
+          <div class="bg-primary/10 text-primary shrink-0 rounded-xl p-3">
+            <Icon name="material-symbols:stadium-rounded" size={28} />
+          </div>
+          <div class="min-w-0">
+            <p
+              class="text-[10px] font-black tracking-widest uppercase opacity-50"
+            >
+              Cancha Favorita
+            </p>
+            <p class="truncate text-base font-black">{topField}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preferencia de Camiseta -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-3">
+      <div
+        class="card bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-md"
+      >
+        <div class="flex h-full items-center gap-3">
+          <div class="bg-base-200 shrink-0 rounded-xl p-3">
+            <Icon
+              name="material-symbols:apparel"
+              size={28}
+              class="opacity-50"
+            />
+          </div>
+          <div class="flex flex-1 items-center justify-center gap-4">
+            <div class="flex flex-col items-center text-center">
+              <div class="flex items-center justify-center gap-1">
+                <Icon
+                  name="material-symbols:wb-sunny"
+                  size={16}
+                  class="text-amber-400"
+                />
+                <span class="text-xl font-black">{light_apps}</span>
+              </div>
+              <span class="text-[10px] font-bold uppercase opacity-40"
+                >Claro</span
+              >
+            </div>
+            <div class="divider divider-horizontal"></div>
+            <div class="flex flex-col items-center text-center">
+              <div class="flex items-center justify-center gap-1">
+                <Icon
+                  name="material-symbols:dark-mode"
+                  size={16}
+                  class="text-slate-500"
+                />
+                <span class="text-xl font-black">{dark_apps}</span>
+              </div>
+              <span class="text-[10px] font-bold uppercase opacity-40"
+                >Oscuro</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rendimiento Anual -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-4">
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-md"
+      >
+        <div
+          class="bg-base-200/50 border-base-200 flex items-center justify-between border-b px-4 py-3"
+        >
+          <div class="flex items-center gap-2">
+            <Icon
+              name="material-symbols:calendar-month"
+              size={18}
+              class="opacity-50"
+            />
+            <span class="text-xs font-bold tracking-wider uppercase"
+              >Por Temporada</span
+            >
+          </div>
+          <Icon
+            name="material-symbols:table-chart"
+            size={16}
+            class="opacity-30"
+          />
+        </div>
+        <div class="grid grid-cols-7 text-[10px] font-bold uppercase">
+          <!-- Header -->
+          <div class="bg-base-200/50 sticky top-0 py-2 pl-4">Año</div>
+          <div
+            class="bg-base-200/50 text-primary sticky top-0 py-2 text-center"
+          >
+            PTS
+          </div>
+          <div class="bg-base-200/50 sticky top-0 py-2 text-center">PJ</div>
+          <div
+            class="bg-base-200/50 text-success sticky top-0 py-2 text-center"
+          >
+            G
+          </div>
+          <div
+            class="bg-base-200/50 text-warning sticky top-0 py-2 text-center"
+          >
+            E
+          </div>
+          <div class="bg-base-200/50 text-error sticky top-0 py-2 text-center">
+            P
+          </div>
+          <div class="bg-base-200/50 sticky top-0 py-2 pr-4 text-center">%</div>
+
+          <!-- Body -->
+          {
+            yearlyStats?.map((s) => (
+              <>
+                <div class="hover:bg-base-200/30 py-2 pl-4 text-xs font-bold normal-case">
+                  {s.year}
+                </div>
+                <div class="text-primary hover:bg-base-200/30 py-2 text-center text-xs font-black normal-case">
+                  {s.points}
+                </div>
+                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
+                  {s.matches_played}
+                </div>
+                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
+                  {s.wins}
+                </div>
+                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
+                  {s.draws}
+                </div>
+                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
+                  {s.losses}
+                </div>
+                <div class="hover:bg-base-200/30 py-2 pr-4 text-center text-xs font-semibold normal-case">
+                  {Math.round(s.win_pct)}%
+                </div>
+              </>
+            ))
+          }
+          {
+            (!yearlyStats || yearlyStats.length === 0) && (
+              <div class="col-span-7 py-6 text-center text-xs normal-case italic opacity-50">
+                Sin registros históricos
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Forma Reciente -->
+    <div class="col-span-2 md:col-span-2 lg:col-span-2">
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-md"
+      >
+        <div
+          class="bg-base-200/50 border-base-200 flex items-center justify-between border-b px-4 py-3"
+        >
+          <div class="flex items-center gap-2">
+            <Icon
+              name="material-symbols:trending-up"
+              size={18}
+              class="opacity-50"
+            />
+            <span class="text-xs font-bold tracking-wider uppercase"
+              >Forma Reciente</span
+            >
+          </div>
+          <div class="flex gap-1">
+            {
+              recentMatches
+                ?.slice(0, 5)
+                .map((match) => (
+                  <div
+                    class={`h-2 w-2 rounded-full ${match.outcome === "W" ? "bg-success" : match.outcome === "D" ? "bg-warning" : "bg-error"}`}
+                  />
+                ))
+            }
+          </div>
         </div>
         <div class="divide-base-200 divide-y">
           {
             recentMatches?.map((match) => {
               const config = getOutcomeConfig(match.outcome);
               return (
-                <div class="flex items-center gap-3 p-3">
+                <div class="hover:bg-base-200/30 flex items-center gap-3 px-4 py-2.5">
                   <div
-                    class={`flex h-10 w-10 items-center justify-center rounded-full ${config.bg} ${config.color} shrink-0`}
-                    aria-hidden="true"
+                    class={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bg} ${config.color} shrink-0`}
                   >
-                    <Icon name={config.icon} size={20} />
+                    <Icon name={config.icon} size={16} />
                   </div>
-                  <div class="flex min-w-0 flex-1 flex-col justify-center">
-                    <time
-                      datetime={match.date}
-                      class="text-xs font-bold opacity-80"
+                  <div class="flex min-w-0 flex-1 items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <time
+                        datetime={match.date}
+                        class="block text-xs font-bold opacity-80"
+                      >
+                        {formatDate(match.date, "medium")}
+                      </time>
+                      <span class="block truncate text-[10px] font-bold uppercase opacity-40">
+                        {match.fieldName}
+                      </span>
+                    </div>
+                    <div
+                      class={`badge badge-sm ${config.bg} ${config.color} border-none font-black uppercase`}
                     >
-                      {formatDate(match.date, "medium")}
-                    </time>
-                    <span class="text-base-content/60 truncate text-xs font-bold uppercase">
-                      {match.fieldName}
-                    </span>
-                  </div>
-                  <div
-                    class={`badge ${config.bg} ${config.color} border-none text-xs font-black uppercase`}
-                    role="status"
-                  >
-                    {config.label}
+                      {config.label}
+                    </div>
                   </div>
                 </div>
               );
             })
           }
-
           {
             (!recentMatches || recentMatches.length === 0) && (
               <div class="text-base-content/60 p-4 text-center text-xs">
