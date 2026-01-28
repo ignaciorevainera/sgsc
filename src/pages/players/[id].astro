@@ -169,29 +169,43 @@ teammatesAndRivals?.forEach((entry) => {
   if (!myEntry) return;
 
   const isTeammate = entry.team === myEntry.team;
-  const matchResult = myEntry.match[0]?.result;
+
+  // SOLUCIÓN 1: Acceder al primer elemento si viene como array [0]
+  const match = myEntry.match as { result: string } | { result: string }[] | null;
+  const matchResult = Array.isArray(match)
+    ? match[0]?.result
+    : match?.result;
+
   const iWon = myEntry.team === matchResult;
   const iLost = matchResult !== "draw" && myEntry.team !== matchResult;
 
   const statsMap = isTeammate ? partnerStats : rivalStats;
 
   if (!statsMap.has(entry.player_id)) {
+    // SOLUCIÓN 2: Acceder al nickname del objeto player
+    const playerData = entry.player as { nickname: string } | { nickname: string }[] | null;
+    const playerNickname = Array.isArray(playerData)
+      ? playerData[0]?.nickname
+      : playerData?.nickname;
+
     statsMap.set(entry.player_id, {
       id: entry.player_id,
-      nickname: entry.player[0]?.nickname,
+      nickname: playerNickname || "Desconocido",
       matches: 0,
       wins: 0,
+      losses: 0,
     });
   }
 
   const current = statsMap.get(entry.player_id);
-  current.matches++;
-  if (isTeammate) {
-    // Para socios: contamos victorias jugando juntos
-    if (iWon) current.wins++;
-  } else {
-    // Para rivales: contamos las veces que nos ganó (mis derrotas contra él)
-    if (iLost) current.wins++;
+  if (current) {
+    current.matches++;
+    if (isTeammate) {
+      if (iWon) current.wins++;
+    } else {
+      // Si era rival, sumamos victoria para el oponente si nosotros perdimos
+      if (iLost) current.wins++;
+    }
   }
 });
 
