@@ -147,6 +147,8 @@ const { data: allMatchEntries } = await supabase
 const myMatchIds = allMatchEntries?.map((m) => m.match_id) || [];
 
 // 2. Obtener a TODOS los demás jugadores que participaron en ESOS mismos partidos
+// Agregamos el filtro !inner para que Supabase filtre la consulta principal
+// basándose en una condición de la tabla relacionada (players)
 const { data: teammatesAndRivals } = await supabase
   .from("match_players")
   .select(
@@ -154,11 +156,15 @@ const { data: teammatesAndRivals } = await supabase
     player_id,
     team,
     match_id,
-    player:players (nickname)
+    player:players!inner (
+      nickname,
+      is_guest
+    )
   `,
   )
   .in("match_id", myMatchIds)
-  .neq("player_id", id); // Excluimos al jugador actual
+  .neq("player_id", id)
+  .eq("player.is_guest", false); // <--- FILTRO CLAVE: Solo socios
 
 // 3. Procesar estadísticas de Socios y Némesis
 const partnerStats = new Map(); // Para "Mejor Socio" (Mismo equipo)
@@ -171,10 +177,11 @@ teammatesAndRivals?.forEach((entry) => {
   const isTeammate = entry.team === myEntry.team;
 
   // SOLUCIÓN 1: Acceder al primer elemento si viene como array [0]
-  const match = myEntry.match as { result: string } | { result: string }[] | null;
-  const matchResult = Array.isArray(match)
-    ? match[0]?.result
-    : match?.result;
+  const match = myEntry.match as
+    | { result: string }
+    | { result: string }[]
+    | null;
+  const matchResult = Array.isArray(match) ? match[0]?.result : match?.result;
 
   const iWon = myEntry.team === matchResult;
   const iLost = matchResult !== "draw" && myEntry.team !== matchResult;
@@ -183,7 +190,10 @@ teammatesAndRivals?.forEach((entry) => {
 
   if (!statsMap.has(entry.player_id)) {
     // SOLUCIÓN 2: Acceder al nickname del objeto player
-    const playerData = entry.player as { nickname: string } | { nickname: string }[] | null;
+    const playerData = entry.player as
+      | { nickname: string }
+      | { nickname: string }[]
+      | null;
     const playerNickname = Array.isArray(playerData)
       ? playerData[0]?.nickname
       : playerData?.nickname;
