@@ -27,19 +27,19 @@ const getTop5 = (filterFn: any, sortFn: any) => {
 // A. Puntos (Leyendas)
 const topPoints = getTop5(
   () => true,
-  (a: any, b: any) => b.points - a.points || b.win_pct - a.win_pct
+  (a: any, b: any) => b.points - a.points || b.win_pct - a.win_pct,
 );
 
 // B. Efectividad (Min 5 PJ)
 const topWinRate = getTop5(
   (p: any) => p.matches_played >= 5,
-  (a: any, b: any) => b.win_pct - a.win_pct || b.points - a.points
+  (a: any, b: any) => b.win_pct - a.win_pct || b.points - a.points,
 );
 
 // C. Victorias
 const topWins = getTop5(
   () => true,
-  (a: any, b: any) => b.wins - a.wins || b.win_pct - a.win_pct
+  (a: any, b: any) => b.wins - a.wins || b.win_pct - a.win_pct,
 );
 
 // D. Presencia (% Asistencia sobre total de partidos) - NUEVA SOLICITADA
@@ -47,42 +47,138 @@ const topWins = getTop5(
 const topAttendancePct = getTop5(
   () => true,
   (a: any, b: any) =>
-    b.attendance_pct - a.attendance_pct || b.matches_played - a.matches_played
+    b.attendance_pct - a.attendance_pct || b.matches_played - a.matches_played,
 );
 
 // E. Cantidad de Partidos (El Histórico)
 const topMatches = getTop5(
   () => true,
-  (a: any, b: any) => b.matches_played - a.matches_played
+  (a: any, b: any) => b.matches_played - a.matches_played,
 );
 
 // F. Empates (El Diplomático)
 const topDraws = getTop5(
   () => true,
-  (a: any, b: any) => b.draws - a.draws || b.matches_played - a.matches_played
+  (a: any, b: any) => b.draws - a.draws || b.matches_played - a.matches_played,
 );
 
 // G. Derrotas (El Resiliente - Quien más perdió pero sigue jugando)
 const topLosses = getTop5(
   () => true,
-  (a: any, b: any) => b.losses - a.losses || b.matches_played - a.matches_played
+  (a: any, b: any) =>
+    b.losses - a.losses || b.matches_played - a.matches_played,
 );
 
 // H. Muro Defensivo (Menos derrotas con Min 10 PJ)
 const topUndefeated = getTop5(
   (p: any) => p.matches_played >= 10,
-  (a: any, b: any) => a.losses - b.losses || b.matches_played - a.matches_played
+  (a: any, b: any) =>
+    a.losses - b.losses || b.matches_played - a.matches_played,
 );
 
-// Configuración de Categorías
+const currentYear = new Date().getFullYear();
+const lastSeason = currentYear - 1;
+
+// 1. Buscamos los datos de la temporada pasada
+const { data: championsData } = await supabase
+  .from("view_player_stats_yearly")
+  .select("player_id, nickname, points, win_rate")
+  .eq("year", lastSeason)
+  .eq("is_guest", false) // Solo socios pueden ser campeones
+  .order("points", { ascending: false })
+  .order("win_rate", { ascending: false });
+
+// 2. Manejamos posibles empates en el primer puesto
+const topPointsChampions = championsData?.[0]?.points;
+const champions =
+  championsData?.filter((p) => p.points === topPointsChampions) || [];
+
+// 1. Obtener todos los registros de jugadores en partidos
+const { data: allMatchPlayers } = await supabase.from("match_players").select(`
+    match_id,
+    player_id,
+    team,
+    player:players(nickname, is_guest),
+    match:matches(result)
+  `);
+
+// 2. Agrupar por partido y equipo para encontrar parejas
+const teamsByMatch = new Map();
+
+allMatchPlayers?.forEach((entry) => {
+  // Solo socios (no invitados)
+  const player = Array.isArray(entry.player) ? entry.player[0] : entry.player;
+  const match = Array.isArray(entry.match) ? entry.match[0] : entry.match;
+  if (player?.is_guest) return;
+
+  const key = `${entry.match_id}-${entry.team}`;
+  if (!teamsByMatch.has(key)) {
+    teamsByMatch.set(key, {
+      players: [],
+      result: match?.result,
+      team: entry.team,
+    });
+  }
+  teamsByMatch
+    .get(key)
+    .players.push({ id: entry.player_id, nickname: player?.nickname });
+});
+
+// 3. Contar victorias por cada par único de jugadores
+const duoStats = new Map();
+
+teamsByMatch.forEach((val) => {
+  if (val.players.length >= 2) {
+    // Generamos todas las combinaciones de pares en el equipo (por si juegan más de 2)
+    for (let i = 0; i < val.players.length; i++) {
+      for (let j = i + 1; j < val.players.length; j++) {
+        const pair = [val.players[i], val.players[j]].sort(
+          (a, b) => a.id - b.id,
+        );
+        const pairKey = `${pair[0].id}-${pair[1].id}`;
+
+        if (!duoStats.has(pairKey)) {
+          duoStats.set(pairKey, {
+            player1: { id: pair[0].id, nickname: pair[0].nickname },
+            player2: { id: pair[1].id, nickname: pair[1].nickname },
+            matches: 0,
+            wins: 0,
+          });
+        }
+
+        const stats = duoStats.get(pairKey);
+        stats.matches++;
+        if (val.result === val.team) stats.wins++;
+      }
+    }
+  }
+});
+
+// 4. Obtener las 5 mejores duplas (mínimo 3 partidos juntos)
+const topDuos = [...duoStats.values()]
+  .filter((d) => d.matches >= 3)
+  .sort(
+    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
+  )
+  .slice(0, 5)
+  .map((d) => ({
+    player1: d.player1,
+    player2: d.player2,
+    nickname: `${d.player1.nickname} & ${d.player2.nickname}`,
+    winPct: Math.round((d.wins / d.matches) * 100),
+    wins: d.wins,
+    matches: d.matches,
+  }));
+
+// Configuración de Categorías con colores DaisyUI estándar
 const categories = [
   {
     title: "Leyenda Absoluta",
     subtitle: "Mayor cantidad de Puntos",
     icon: "material-symbols:trophy",
-    color: "text-amber-500",
-    bg: "bg-amber-500",
-    gradient: "from-amber-500/20 to-transparent",
+    color: "text-warning",
+    bg: "bg-warning",
+    gradient: "from-warning/10 to-transparent",
     data: topPoints,
     valueKey: "points",
     suffix: "PTS",
@@ -91,9 +187,9 @@ const categories = [
     title: "El Talismán",
     subtitle: "Mayor % Efectividad (Min 5 PJ)",
     icon: "material-symbols:trending-up",
-    color: "text-emerald-500",
-    bg: "bg-emerald-500",
-    gradient: "from-emerald-500/20 to-transparent",
+    color: "text-success",
+    bg: "bg-success",
+    gradient: "from-success/10 to-transparent",
     data: topWinRate,
     valueKey: "win_pct",
     suffix: "%",
@@ -102,9 +198,9 @@ const categories = [
     title: "Asistencia Perfecta",
     subtitle: "Mayor % de Presencia en Partidos",
     icon: "material-symbols:event-available",
-    color: "text-indigo-500",
-    bg: "bg-indigo-500",
-    gradient: "from-indigo-500/20 to-transparent",
+    color: "text-info",
+    bg: "bg-info",
+    gradient: "from-info/10 to-transparent",
     data: topAttendancePct,
     valueKey: "attendance_pct",
     suffix: "%",
@@ -113,9 +209,9 @@ const categories = [
     title: "El Ganador",
     subtitle: "Más partidos ganados",
     icon: "material-symbols:verified",
-    color: "text-blue-500",
-    bg: "bg-blue-500",
-    gradient: "from-blue-500/20 to-transparent",
+    color: "text-primary",
+    bg: "bg-primary",
+    gradient: "from-primary/10 to-transparent",
     data: topWins,
     valueKey: "wins",
     suffix: "Triunfos",
@@ -124,9 +220,9 @@ const categories = [
     title: "El Histórico",
     subtitle: "Más partidos jugados",
     icon: "material-symbols:calendar-month",
-    color: "text-purple-500",
-    bg: "bg-purple-500",
-    gradient: "from-purple-500/20 to-transparent",
+    color: "text-accent",
+    bg: "bg-accent",
+    gradient: "from-accent/10 to-transparent",
     data: topMatches,
     valueKey: "matches_played",
     suffix: "Partidos",
@@ -146,9 +242,9 @@ const categories = [
     title: "Muro Defensivo",
     subtitle: "Menos Derrotas (Min 10 PJ)",
     icon: "material-symbols:shield",
-    color: "text-teal-500",
-    bg: "bg-teal-500",
-    gradient: "from-teal-500/20 to-transparent",
+    color: "text-secondary",
+    bg: "bg-secondary",
+    gradient: "from-secondary/10 to-transparent",
     data: topUndefeated,
     valueKey: "losses",
     suffix: "Derrotas",
@@ -157,9 +253,9 @@ const categories = [
     title: "El Resiliente",
     subtitle: "Más derrotas sufridas",
     icon: "material-symbols:sentiment-very-dissatisfied",
-    color: "text-red-500",
-    bg: "bg-red-500",
-    gradient: "from-red-500/20 to-transparent",
+    color: "text-error",
+    bg: "bg-error",
+    gradient: "from-error/10 to-transparent",
     data: topLosses,
     valueKey: "losses",
     suffix: "Caídas",
@@ -168,13 +264,13 @@ const categories = [
 ---
 
 <Main title="Salón de la Fama | SGSC">
-  <div class="text-center">
+  <div class="mb-8 text-center">
     <div
-      class="bg-base-200 mb-2 inline-flex items-center justify-center rounded-full p-4 shadow-md"
+      class="bg-warning/10 mb-4 inline-flex items-center justify-center rounded-full p-4 shadow-md"
     >
       <Icon
         name="material-symbols:workspace-premium"
-        class="text-warning h-10 w-10"
+        class="text-warning size-10 sm:size-12"
       />
     </div>
 
@@ -205,61 +301,102 @@ const categories = [
   }
 
   {
+    champions.length > 0 && (
+      <div class="card border-warning/30 from-warning/10 via-base-100 to-base-100 mb-8 border-2 bg-linear-to-br shadow-lg">
+        <div class="card-body flex flex-col items-center py-10 text-center">
+          <div class="bg-warning shadow-warning/20 mb-6 flex h-20 w-20 items-center justify-center rounded-full shadow-lg">
+            <Icon
+              name="material-symbols:trophy"
+              size={48}
+              class="text-base-100"
+            />
+          </div>
+
+          <h2 class="text-warning text-sm font-black tracking-widest text-balance uppercase">
+            Campeón Temporada {lastSeason}
+          </h2>
+
+          <div class="mt-6 flex flex-col items-center gap-8 sm:flex-row sm:flex-wrap sm:justify-center">
+            {champions.map((champ) => (
+              <div class="flex flex-col items-center">
+                <span class="text-4xl font-black italic sm:text-5xl">
+                  {champ.nickname.toUpperCase()}
+                </span>
+                <div class="text-base-content/60 mt-3 flex items-center gap-2 text-xs font-bold uppercase sm:text-sm">
+                  <span>{champ.points} pts</span>
+                  <span class="h-1 w-1 rounded-full bg-current" />
+                  <span>{Math.round(champ.win_rate)}% w-rate</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {
     !hasError && safePlayers.length > 0 && (
       <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => {
           const leader = cat.data[0];
           const followers = cat.data.slice(1);
 
-          if (!leader) return null; // Si no hay datos, no renderizar
+          if (!leader) return null;
 
           return (
-            <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg">
+            <div class="card border-base-200 bg-base-100 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
               <div
-                class={`relative bg-linear-to-b px-4 pt-8 pb-6 ${cat.gradient} border-base-200/50 flex flex-col items-center border-b text-center`}
+                class={`border-base-200/50 relative flex flex-col items-center border-b bg-linear-to-b ${cat.gradient} grow px-6 py-8 text-center`}
               >
-                <div class="absolute top-3 right-3">
+                <div class="absolute top-4 right-4 opacity-20">
                   <Icon
                     name={cat.icon}
-                    class={`h-12 w-12 ${cat.color} opacity-20`}
+                    class={`size-10 sm:size-12 ${cat.color}`}
                   />
                 </div>
 
-                <div class="mb-3 animate-bounce text-3xl">👑</div>
+                <div class="mb-4 animate-bounce text-3xl sm:text-4xl">👑</div>
 
-                <Avatar initial={leader.nickname.charAt(0).toUpperCase()} />
+                <a href={`/players/${leader.player_id}`}>
+                  <Avatar
+                    initial={leader.nickname.charAt(0).toUpperCase()}
+                    ring={true}
+                  />
 
-                <h2 class="text-base-content mt-4 text-2xl font-black tracking-tight">
-                  {leader.nickname}
-                </h2>
+                  <h2 class="text-base-content mt-4 text-xl font-black tracking-tight sm:text-2xl">
+                    {leader.nickname}
+                  </h2>
+                </a>
 
                 <div
-                  class={`badge badge-lg mt-1 rounded-xl border-none font-bold text-white ${cat.bg}`}
+                  class={`badge badge-lg text-base-100 mt-3 rounded-xl border-none font-bold ${cat.bg}`}
                 >
                   {leader[cat.valueKey]} {cat.suffix}
                 </div>
 
                 <p
-                  class={`mt-4 text-xs font-bold tracking-widest uppercase ${cat.color}`}
+                  class={`mt-4 text-xs font-bold tracking-widest text-balance uppercase ${cat.color}`}
                 >
                   {cat.subtitle}
                 </p>
               </div>
 
-              <div class="bg-base-100 grow">
+              <div class="bg-base-100">
                 {followers.map((player, index) => (
                   <a
                     href={`/players/${player.player_id}`}
-                    class="border-base-200 hover:bg-base-200 group flex items-center justify-between border-b p-3 transition-colors last:border-0"
+                    class="group border-base-200/50 hover:bg-base-200 flex items-center justify-between border-b px-4 py-3 transition-colors last:border-0"
                   >
                     <div class="flex items-center gap-3">
-                      <span class="text-base-content/60 w-6 text-center text-sm font-bold">
+                      <span class="text-base-content/50 w-6 text-center text-xs font-bold uppercase">
                         #{index + 2}
                       </span>
 
                       <Avatar
                         initial={player.nickname.charAt(0).toUpperCase()}
                         size="sm"
+                        interactive={true}
                       />
 
                       <span class="group-hover:text-primary text-sm font-semibold transition-colors">
@@ -267,12 +404,15 @@ const categories = [
                       </span>
                     </div>
 
-                    <div class="text-sm font-bold">
-                      {player[cat.valueKey]}{" "}
+                    <div class="text-right text-sm font-bold">
+                      <span>{player[cat.valueKey]}</span>
                       <span class="text-base-content/60 text-xs font-normal">
                         {cat.suffix
                           .replace("Triunfos", "G")
-                          .replace("Partidos", "PJ")}
+                          .replace("Partidos", "PJ")
+                          .replace("Empates", "E")
+                          .replace("Derrotas", "D")
+                          .replace("Caídas", "D")}
                       </span>
                     </div>
                   </a>
@@ -281,6 +421,99 @@ const categories = [
             </div>
           );
         })}
+
+        {/* Card de Mejor Dupla - Color verde (success) */}
+        <div class="card border-base-200 bg-base-100 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
+          <div class="border-base-200/50 from-success/10 relative flex flex-col items-center border-b bg-linear-to-b to-transparent px-6 py-8 text-center">
+            <div class="absolute top-4 right-4 opacity-20">
+              <Icon
+                name="material-symbols:group-add"
+                class="text-success size-10 sm:size-12"
+              />
+            </div>
+
+            <div class="mb-4 animate-bounce text-3xl sm:text-4xl">🤝</div>
+
+            {topDuos.length > 0 ? (
+              <>
+                <div class="flex -space-x-3">
+                  <a href={`/players/${topDuos[0].player1.id}`}>
+                    <Avatar
+                      initial={topDuos[0].player1.nickname
+                        .charAt(0)
+                        .toUpperCase()}
+                      ring={true}
+                    />
+                  </a>
+                  <a href={`/players/${topDuos[0].player2.id}`}>
+                    <Avatar
+                      initial={topDuos[0].player2.nickname
+                        .charAt(0)
+                        .toUpperCase()}
+                      ring={true}
+                    />
+                  </a>
+                </div>
+
+                <h2 class="text-base-content mt-4 text-xl font-black tracking-tight sm:text-2xl">
+                  {topDuos[0].nickname}
+                </h2>
+
+                <div class="badge badge-lg text-base-100 bg-success mt-3 rounded-xl border-none font-bold">
+                  {topDuos[0].winPct}% Efectividad
+                </div>
+
+                <p class="text-success mt-4 text-xs font-bold tracking-widest text-balance uppercase">
+                  Mejor Dupla (Min 3 PJ)
+                </p>
+              </>
+            ) : (
+              <p class="text-base-content/50 text-sm">
+                No hay duplas con suficientes partidos
+              </p>
+            )}
+          </div>
+
+          <div class="bg-base-100 flex grow flex-col">
+            {topDuos.slice(1).map((duo, index) => (
+              <div class="group border-base-200/50 hover:bg-base-200 flex flex-1 items-center justify-between border-b px-4 py-3 transition-colors last:border-0">
+                <div class="flex items-center gap-3">
+                  <span class="text-base-content/50 w-6 text-center text-xs font-bold uppercase">
+                    #{index + 2}
+                  </span>
+
+                  <div class="flex -space-x-2">
+                    <a href={`/players/${duo.player1.id}`}>
+                      <Avatar
+                        initial={duo.player1.nickname.charAt(0).toUpperCase()}
+                        size="xs"
+                        interactive={true}
+                      />
+                    </a>
+                    <a href={`/players/${duo.player2.id}`}>
+                      <Avatar
+                        initial={duo.player2.nickname.charAt(0).toUpperCase()}
+                        size="xs"
+                        interactive={true}
+                      />
+                    </a>
+                  </div>
+
+                  <span class="group-hover:text-success text-sm font-semibold transition-colors">
+                    {duo.nickname}
+                  </span>
+                </div>
+
+                <div class="text-right text-sm font-bold">
+                  <span>{duo.winPct}</span>
+                  <span class="text-base-content/60 text-xs font-normal">
+                    %
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
