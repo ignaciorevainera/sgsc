@@ -1,6 +1,4 @@
 ---
-Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
-
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
 import Alert from "@/components/shared/Alert.astro";
@@ -93,7 +91,6 @@ const topPointsChampions = championsData?.[0]?.points;
 const champions =
   championsData?.filter((p) => p.points === topPointsChampions) || [];
 
-// 1. Obtener todos los registros de jugadores en partidos
 const { data: allMatchPlayers } = await supabase.from("match_players").select(`
     match_id,
     player_id,
@@ -102,73 +99,85 @@ const { data: allMatchPlayers } = await supabase.from("match_players").select(`
     match:matches(result)
   `);
 
-// 2. Agrupar por partido y equipo para encontrar parejas
 const teamsByMatch = new Map();
+const duoStats = new Map();
 
+// 1. Agrupamos por partido y por equipo
 allMatchPlayers?.forEach((entry) => {
-  // Solo socios (no invitados)
+  // Verificación de arrays por si Supabase devuelve listas
+  // @ts-ignore
   const player = Array.isArray(entry.player) ? entry.player[0] : entry.player;
+  // @ts-ignore
   const match = Array.isArray(entry.match) ? entry.match[0] : entry.match;
+
   if (player?.is_guest) return;
 
   const key = `${entry.match_id}-${entry.team}`;
   if (!teamsByMatch.has(key)) {
     teamsByMatch.set(key, {
       players: [],
-      result: match?.result,
-      team: entry.team,
+      // Normalizamos texto para evitar errores de mayúsculas/espacios
+      result: match?.result ? match.result.toLowerCase().trim() : "",
+      team: entry.team ? entry.team.toLowerCase().trim() : "",
     });
   }
-  teamsByMatch
-    .get(key)
-    .players.push({ id: entry.player_id, nickname: player?.nickname });
+
+  teamsByMatch.get(key).players.push({
+    id: entry.player_id,
+    nickname: player?.nickname || "Desconocido",
+  });
 });
 
-// 3. Contar victorias por cada par único de jugadores
-const duoStats = new Map();
-
+// 2. Calculamos estadísticas de cada par
 teamsByMatch.forEach((val) => {
   if (val.players.length >= 2) {
-    // Generamos todas las combinaciones de pares en el equipo (por si juegan más de 2)
+    // Recorremos todas las combinaciones posibles de compañeros
     for (let i = 0; i < val.players.length; i++) {
       for (let j = i + 1; j < val.players.length; j++) {
-        const pair = [val.players[i], val.players[j]].sort(
-          (a, b) => a.id - b.id,
-        );
-        const pairKey = `${pair[0].id}-${pair[1].id}`;
+        const p1 = val.players[i];
+        const p2 = val.players[j];
+
+        // Llave única ordenada por ID (para que A-B sea igual a B-A)
+        const pairKey = [p1.id, p2.id].sort().join("-");
 
         if (!duoStats.has(pairKey)) {
           duoStats.set(pairKey, {
-            player1: { id: pair[0].id, nickname: pair[0].nickname },
-            player2: { id: pair[1].id, nickname: pair[1].nickname },
+            names: `${p1.nickname} & ${p2.nickname}`,
             matches: 0,
             wins: 0,
+            player1: p1, // Guardamos referencia para los avatares
+            player2: p2,
           });
         }
 
         const stats = duoStats.get(pairKey);
         stats.matches++;
-        if (val.result === val.team) stats.wins++;
+
+        // Sumamos victoria SOLO si ganaron y no fue empate
+        if (val.result === val.team && val.result !== "draw") {
+          stats.wins++;
+        }
       }
     }
   }
 });
 
-// 4. Obtener las 5 mejores duplas (mínimo 3 partidos juntos)
-const topDuos = [...duoStats.values()]
+// 3. Generar terna final con porcentaje real
+const topDuosData = [...duoStats.values()]
   .filter((d) => d.matches >= 3)
-  .sort(
-    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
-  )
-  .slice(0, 5)
   .map((d) => ({
+    nickname: d.names,
+    // Usamos win_rate como llave numérica para el sort
+    win_rate: Math.round((d.wins / d.matches) * 100),
+    matches_played: d.matches,
+    is_duo: true,
     player1: d.player1,
     player2: d.player2,
-    nickname: `${d.player1.nickname} & ${d.player2.nickname}`,
-    winPct: Math.round((d.wins / d.matches) * 100),
-    wins: d.wins,
-    matches: d.matches,
-  }));
+  }))
+  .sort(
+    (a, b) => b.win_rate - a.win_rate || b.matches_played - a.matches_played,
+  )
+  .slice(0, 5);
 
 // Configuración de Categorías con colores DaisyUI estándar
 const categories = [
@@ -434,20 +443,20 @@ const categories = [
 
             <div class="mb-4 animate-bounce text-3xl sm:text-4xl">🤝</div>
 
-            {topDuos.length > 0 ? (
+            {topDuosData.length > 0 ? (
               <>
                 <div class="flex -space-x-3">
-                  <a href={`/players/${topDuos[0].player1.id}`}>
+                  <a href={`/players/${topDuosData[0].player1.id}`}>
                     <Avatar
-                      initial={topDuos[0].player1.nickname
+                      initial={topDuosData[0].player1.nickname
                         .charAt(0)
                         .toUpperCase()}
                       ring={true}
                     />
                   </a>
-                  <a href={`/players/${topDuos[0].player2.id}`}>
+                  <a href={`/players/${topDuosData[0].player2.id}`}>
                     <Avatar
-                      initial={topDuos[0].player2.nickname
+                      initial={topDuosData[0].player2.nickname
                         .charAt(0)
                         .toUpperCase()}
                       ring={true}
@@ -456,11 +465,11 @@ const categories = [
                 </div>
 
                 <h2 class="text-base-content mt-4 text-xl font-black tracking-tight sm:text-2xl">
-                  {topDuos[0].nickname}
+                  {topDuosData[0].nickname}
                 </h2>
 
                 <div class="badge badge-lg text-base-100 bg-success mt-3 rounded-xl border-none font-bold">
-                  {topDuos[0].winPct}% Efectividad
+                  {topDuosData[0].win_rate}% Efectividad
                 </div>
 
                 <p class="text-success mt-4 text-xs font-bold tracking-widest text-balance uppercase">
@@ -475,7 +484,7 @@ const categories = [
           </div>
 
           <div class="bg-base-100 flex grow flex-col">
-            {topDuos.slice(1).map((duo, index) => (
+            {topDuosData.slice(1).map((duo, index) => (
               <div class="group border-base-200/50 hover:bg-base-200 flex flex-1 items-center justify-between border-b px-4 py-3 transition-colors last:border-0">
                 <div class="flex items-center gap-3">
                   <span class="text-base-content/50 w-6 text-center text-xs font-bold uppercase">
@@ -505,7 +514,7 @@ const categories = [
                 </div>
 
                 <div class="text-right text-sm font-bold">
-                  <span>{duo.winPct}</span>
+                  <span>{duo.win_rate}</span>
                   <span class="text-base-content/60 text-xs font-normal">
                     %
                   </span>
