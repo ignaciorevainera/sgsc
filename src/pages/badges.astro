@@ -1,0 +1,258 @@
+---
+import { Icon } from "astro-icon/components";
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+
+// Definición de tipos para las medallas
+type TierKey = "bronze" | "silver" | "gold" | "platinum" | "sapphire" | "ruby" | "emerald" | "diamond";
+
+interface Tier {
+  name: string;
+  style: string;
+  threshold: number;
+}
+
+interface BadgeCategory {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  metric: string;
+  tiers: Record<TierKey, Tier>;
+}
+
+interface SpecialBadge {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  howToGet: string;
+  style: string;
+}
+
+// Estilos base de cada rango
+const tierStyles: Record<TierKey, { name: string; style: string }> = {
+  bronze: { name: "Bronce", style: "bg-orange-50 text-orange-900 border-orange-300" },
+  silver: { name: "Plata", style: "bg-slate-50 text-slate-700 border-slate-300" },
+  gold: { name: "Oro", style: "bg-yellow-50 text-yellow-800 border-yellow-400" },
+  platinum: { name: "Platino", style: "bg-cyan-50 text-cyan-800 border-cyan-300" },
+  sapphire: { name: "Zafiro", style: "bg-blue-50 text-blue-800 border-blue-400" },
+  ruby: { name: "Rubí", style: "bg-rose-50 text-rose-800 border-rose-400" },
+  emerald: { name: "Esmeralda", style: "bg-emerald-50 text-emerald-800 border-emerald-400" },
+  diamond: { name: "Diamante", style: "bg-sky-50 text-sky-800 border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]" },
+};
+
+// Orden de rangos (de menor a mayor)
+const tierOrder: TierKey[] = ["bronze", "silver", "gold", "platinum", "sapphire", "ruby", "emerald", "diamond"];
+
+// Medallas con rangos progresivos
+const progressiveBadges: BadgeCategory[] = [
+  {
+    id: "trayectoria",
+    name: "Trayectoria",
+    icon: "material-symbols:footprint",
+    description: "Reconoce la participación constante en partidos del club.",
+    metric: "Partidos jugados",
+    tiers: {
+      bronze: { ...tierStyles.bronze, threshold: 5 },
+      silver: { ...tierStyles.silver, threshold: 10 },
+      gold: { ...tierStyles.gold, threshold: 15 },
+      platinum: { ...tierStyles.platinum, threshold: 20 },
+      sapphire: { ...tierStyles.sapphire, threshold: 25 },
+      ruby: { ...tierStyles.ruby, threshold: 30 },
+      emerald: { ...tierStyles.emerald, threshold: 35 },
+      diamond: { ...tierStyles.diamond, threshold: 40 },
+    },
+  },
+  {
+    id: "ganador",
+    name: "Ganador",
+    icon: "material-symbols:trophy",
+    description: "Premia la acumulación de victorias a lo largo del tiempo.",
+    metric: "Victorias totales",
+    tiers: {
+      bronze: { ...tierStyles.bronze, threshold: 3 },
+      silver: { ...tierStyles.silver, threshold: 5 },
+      gold: { ...tierStyles.gold, threshold: 7 },
+      platinum: { ...tierStyles.platinum, threshold: 10 },
+      sapphire: { ...tierStyles.sapphire, threshold: 15 },
+      ruby: { ...tierStyles.ruby, threshold: 17 },
+      emerald: { ...tierStyles.emerald, threshold: 20 },
+      diamond: { ...tierStyles.diamond, threshold: 25 },
+    },
+  },
+  {
+    id: "leyenda",
+    name: "Leyenda",
+    icon: "material-symbols:workspace-premium",
+    description: "Celebra la acumulación de puntos en la historia del club.",
+    metric: "Puntos totales",
+    tiers: {
+      bronze: { ...tierStyles.bronze, threshold: 10 },
+      silver: { ...tierStyles.silver, threshold: 15 },
+      gold: { ...tierStyles.gold, threshold: 20 },
+      platinum: { ...tierStyles.platinum, threshold: 25 },
+      sapphire: { ...tierStyles.sapphire, threshold: 30 },
+      ruby: { ...tierStyles.ruby, threshold: 35 },
+      emerald: { ...tierStyles.emerald, threshold: 40 },
+      diamond: { ...tierStyles.diamond, threshold: 50 },
+    },
+  },
+];
+
+// Medallas especiales (sin rangos)
+const specialBadges: SpecialBadge[] = [
+  {
+    id: "presentismo",
+    name: "Presentismo Perfecto",
+    icon: "material-symbols:calendar-month",
+    description: "Participación en todas las temporadas del club.",
+    howToGet: "Jugar al menos 3 partidos en cada temporada desde la fundación del club.",
+    style: "bg-purple-50 text-purple-800 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]",
+  },
+  {
+    id: "especialista-claro",
+    name: "Especialista Claro",
+    icon: "material-symbols:sunny",
+    description: "Mayor rendimiento con la camiseta clara.",
+    howToGet: "Tener más victorias jugando de claro que de oscuro.",
+    style: "bg-orange-50 text-orange-800 border-orange-300",
+  },
+  {
+    id: "especialista-oscuro",
+    name: "Especialista Oscuro",
+    icon: "material-symbols:dark-mode",
+    description: "Mayor rendimiento con la camiseta oscura.",
+    howToGet: "Tener más victorias jugando de oscuro que de claro.",
+    style: "bg-indigo-50 text-indigo-800 border-indigo-300",
+  },
+  {
+    id: "racha",
+    name: "En Racha",
+    icon: "material-symbols:local-fire-department",
+    description: "Racha ganadora activa.",
+    howToGet: "Ganar los últimos 3 partidos consecutivos.",
+    style: "bg-red-50 text-red-700 border-red-400",
+  },
+];
+---
+
+<Main title="Medallas | SGSC">
+  <Title title="Medallas" subtitle="Sistema de Reconocimientos" />
+
+  <!-- Introducción -->
+  <div class="card bg-base-100 border-base-200 mb-8 rounded-xl border p-6 shadow-md">
+    <div class="flex items-start gap-4">
+      <div class="bg-primary/10 text-primary shrink-0 rounded-xl p-3">
+        <Icon name="material-symbols:info" size={28} />
+      </div>
+      <div>
+        <h2 class="mb-2 text-lg font-black">¿Cómo funcionan las medallas?</h2>
+        <p class="text-base-content/70 text-sm leading-relaxed">
+          Las medallas reconocen los logros de los jugadores del club. Existen dos tipos:
+          <strong>medallas progresivas</strong> que se obtienen al alcanzar ciertos umbrales 
+          (partidos, victorias, puntos) y <strong>medallas especiales</strong> que se desbloquean 
+          al cumplir condiciones específicas. Las medallas se muestran en tu perfil de jugador.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medallas Progresivas -->
+  <section class="mb-10">
+    <div class="mb-6 flex items-center gap-2">
+      <Icon name="material-symbols:trending-up" size={24} class="text-primary" />
+      <h2 class="text-xl font-black uppercase">Medallas Progresivas</h2>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {progressiveBadges.map((badge) => (
+        <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
+          <!-- Header -->
+          <div class="bg-base-200/50 flex items-center gap-3 px-4 py-3">
+            <div class="bg-primary/10 text-primary rounded-lg p-2">
+              <Icon name={badge.icon} size={24} />
+            </div>
+            <div>
+              <h3 class="font-black uppercase">{badge.name}</h3>
+              <p class="text-[10px] font-bold uppercase opacity-50">{badge.metric}</p>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="border-base-200 border-b px-4 py-3">
+            <p class="text-base-content/70 text-sm">{badge.description}</p>
+          </div>
+
+          <!-- Rangos -->
+          <div class="divide-base-200 divide-y">
+            {tierOrder.map((tierKey) => {
+              const tier = badge.tiers[tierKey];
+              return (
+                <div class="flex items-center justify-between px-4 py-2.5">
+                  <div class="flex items-center gap-2">
+                    <div class={`flex items-center gap-1.5 rounded-lg border px-2 py-1 ${tier.style}`}>
+                      <Icon name={badge.icon} size={12} />
+                      <span class="text-xs font-black uppercase">{tier.name}</span>
+                    </div>
+                  </div>
+                  <span class="text-base-content/60 text-xs font-bold">
+                    ≥ {tier.threshold}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Medallas Especiales -->
+  <section>
+    <div class="mb-6 flex items-center gap-2">
+      <Icon name="material-symbols:star" size={24} class="text-warning" />
+      <h2 class="text-xl font-black uppercase">Medallas Especiales</h2>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      {specialBadges.map((badge) => (
+        <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+          <div class="flex items-start gap-4">
+            <div class={`shrink-0 rounded-lg border p-2.5 ${badge.style}`}>
+              <Icon name={badge.icon} size={24} />
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 class="font-black">{badge.name}</h3>
+              <p class="text-base-content/70 mt-1 text-sm">{badge.description}</p>
+              <div class="mt-3 flex items-start gap-2">
+                <Icon name="material-symbols:lightbulb" size={16} class="text-warning mt-0.5 shrink-0" />
+                <p class="text-xs font-medium opacity-70">
+                  <span class="font-bold">Cómo obtenerla:</span> {badge.howToGet}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Leyenda de Rangos -->
+  <section class="mt-10">
+    <div class="card bg-base-200/50 rounded-xl p-6">
+      <h3 class="mb-4 text-center text-sm font-black uppercase opacity-60">
+        Escala de Rangos
+      </h3>
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        {tierOrder.map((tierKey) => (
+          <div class={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 ${tierStyles[tierKey].style}`}>
+            <Icon name="material-symbols:diamond" size={14} />
+            <span class="text-xs font-black uppercase">{tierStyles[tierKey].name}</span>
+          </div>
+        ))}
+      </div>
+      
+    </div>
+  </section>
+</Main>

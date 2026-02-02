@@ -1,0 +1,68 @@
+---
+/**
+ * InfoCard - Card para mostrar información con icono y texto
+ * Usado para Mejor Socio, Némesis, Cancha Favorita, etc.
+ */
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  label: string;
+  icon: string;
+  /** Color semántico: success, warning, error, primary, neutral */
+  color?: "success" | "warning" | "error" | "primary" | "neutral";
+  class?: string;
+}
+
+const { label, icon, color = "neutral", class: className = "" } = Astro.props;
+
+// Mapeo de colores para bordes, fondos e iconos
+const colorMap = {
+  success: {
+    border: "border-success/50",
+    bg: "bg-success/15",
+    text: "text-success",
+  },
+  warning: {
+    border: "border-warning/50",
+    bg: "bg-warning/15",
+    text: "text-warning",
+  },
+  error: {
+    border: "border-error/50",
+    bg: "bg-error/15",
+    text: "text-error",
+  },
+  primary: {
+    border: "border-primary/50",
+    bg: "bg-primary/10",
+    text: "text-primary",
+  },
+  neutral: {
+    border: "border-base-200",
+    bg: "bg-base-200",
+    text: "opacity-50",
+  },
+};
+
+const colors = colorMap[color];
+---
+
+<div
+  class:list={[
+    "card bg-base-100 h-full rounded-xl border p-4 shadow-md",
+    colors.border,
+    className,
+  ]}
+>
+  <div class="flex h-full items-center gap-3">
+    <div class:list={["shrink-0 rounded-xl p-3", colors.bg, colors.text]}>
+      <Icon name={icon} size={28} />
+    </div>
+    <div class="min-w-0 flex-1">
+      <p class="text-[10px] font-black tracking-widest uppercase opacity-50">
+        {label}
+      </p>
+      <slot />
+    </div>
+  </div>
+</div>

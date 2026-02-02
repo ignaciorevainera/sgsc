@@ -1,0 +1,86 @@
+---
+/**
+ * StatCard - Card para mostrar estadísticas numéricas
+ * Usado en el perfil de jugador para métricas como partidos, victorias, etc.
+ */
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  value: number | string;
+  label: string;
+  icon: string;
+  /** Color semántico: success, warning, error, primary, neutral */
+  color?: "success" | "warning" | "error" | "primary" | "neutral";
+  /** Porcentaje opcional a mostrar debajo del valor */
+  percentage?: number;
+  class?: string;
+}
+
+const {
+  value,
+  label,
+  icon,
+  color = "neutral",
+  percentage,
+  class: className = "",
+} = Astro.props;
+
+// Mapeo de colores para bordes e iconos
+const colorMap = {
+  success: {
+    border: "border-success/50",
+    text: "text-success",
+    icon: "text-success",
+  },
+  warning: {
+    border: "border-warning/50",
+    text: "text-warning",
+    icon: "text-warning",
+  },
+  error: {
+    border: "border-error/50",
+    text: "text-error",
+    icon: "text-error",
+  },
+  primary: {
+    border: "border-primary/50",
+    text: "text-primary",
+    icon: "text-primary",
+  },
+  neutral: {
+    border: "border-base-200",
+    text: "",
+    icon: "opacity-30",
+  },
+};
+
+const colors = colorMap[color];
+---
+
+<div
+  class:list={[
+    "card bg-base-100 h-full rounded-xl border p-3 shadow-md sm:p-4",
+    colors.border,
+    className,
+  ]}
+>
+  <div class="flex h-full flex-col items-center justify-center text-center">
+    <Icon name={icon} size={24} class:list={["mb-2", colors.icon]} />
+    <span class:list={["text-3xl font-black", colors.text]}>{value}</span>
+    <span
+      class:list={[
+        "text-[10px] font-bold tracking-wider uppercase",
+        color === "neutral" ? "opacity-50" : colors.text,
+      ]}
+    >
+      {label}
+    </span>
+    {
+      percentage !== undefined && (
+        <span class:list={["mt-1 text-xs font-bold", colors.text]}>
+          {percentage}%
+        </span>
+      )
+    }
+  </div>
+</div>

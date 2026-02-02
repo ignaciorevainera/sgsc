@@ -6,7 +6,9 @@ import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
-import SectionTitle from "@/components/shared/SectionTitle.astro";
+import StatCard from "@/components/players/StatCard.astro";
+import InfoCard from "@/components/players/InfoCard.astro";
+import BadgeItem from "@/components/players/BadgeItem.astro";
 
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
@@ -68,6 +70,16 @@ const { data: allHistory } = await supabase
   .order("matches(date)", { ascending: false });
 
 // --- CÁLCULOS ---
+// Tipo para datos de partido extraídos de Supabase
+type MatchData = { date: string; result: string; fields?: { name: string } };
+
+// Helper para extraer datos de match de forma segura (puede venir como array u objeto)
+const getMatchData = (matches: unknown): MatchData | null => {
+  if (!matches) return null;
+  const m = Array.isArray(matches) ? matches[0] : matches;
+  return m && typeof m === "object" && "date" in m ? (m as MatchData) : null;
+};
+
 const totalMatches = player.matches_played || 0;
 const win_pct = Math.round(player.win_pct || 0);
 const draw_pct =
@@ -75,62 +87,81 @@ const draw_pct =
 const loss_pct =
   totalMatches > 0 ? Math.round((player.losses / totalMatches) * 100) : 0;
 
-const light_apps =
-  allHistory?.filter((m: any) => m.team === "light").length || 0;
-const dark_apps = allHistory?.filter((m: any) => m.team === "dark").length || 0;
+const light_apps = allHistory?.filter((m) => m.team === "light").length || 0;
+const dark_apps = allHistory?.filter((m) => m.team === "dark").length || 0;
 
-// Sede
+// Sede más frecuente
 const fieldCounts: Record<string, number> = {};
-allHistory?.forEach((m: any) => {
-  const name = m.matches?.fields?.name;
-  if (name) fieldCounts[name] = (fieldCounts[name] || 0) + 1;
+allHistory?.forEach((m) => {
+  const match = getMatchData(m.matches);
+  if (match?.fields?.name) {
+    fieldCounts[match.fields.name] = (fieldCounts[match.fields.name] || 0) + 1;
+  }
 });
 const topField =
   Object.entries(fieldCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
 
-// --- TRADUCCIÓN PIERNA DOMINANTE (Nueva Lógica) ---
+// Traducción pierna dominante
 const footMap: Record<string, string> = {
   right: "Diestro",
   left: "Zurdo",
   both: "Ambidiestro",
 };
-// Esto nos da directamente el texto en español listo para usar en la vista
 const dominantFootLabel = player.preferred_foot
   ? footMap[player.preferred_foot]
   : null;
 
 // Últimos 5 partidos
-const recentMatches = allHistory?.slice(0, 5).map((mp: any) => {
-  const m = mp.matches;
-  let outcome = "L";
-  if (m.result === "draw") outcome = "D";
-  else if (m.result === mp.team) outcome = "W";
-  return { date: m.date, fieldName: m.fields?.name, outcome };
-});
+type MatchOutcome = "W" | "L" | "D";
+interface RecentMatch {
+  date: string;
+  fieldName: string;
+  outcome: MatchOutcome;
+}
 
-const getOutcomeConfig = (outcome: string) => {
-  const configs: any = {
-    W: {
-      label: "Victoria",
-      color: "text-success",
-      bg: "bg-success/10",
-      icon: "material-symbols:trophy",
-    },
-    L: {
-      label: "Derrota",
-      color: "text-error",
-      bg: "bg-error/10",
-      icon: "material-symbols:close",
-    },
-    D: {
-      label: "Empate",
-      color: "text-warning",
-      bg: "bg-warning/10",
-      icon: "material-symbols:equal",
-    },
-  };
-  return configs[outcome] || configs.L;
+const recentMatches: RecentMatch[] =
+  allHistory?.slice(0, 5).map((mp): RecentMatch => {
+    const m = getMatchData(mp.matches);
+    if (!m)
+      return { date: new Date().toISOString(), fieldName: "-", outcome: "L" };
+
+    let outcome: MatchOutcome = "L";
+    if (m.result === "draw") outcome = "D";
+    else if (m.result === mp.team) outcome = "W";
+
+    return { date: m.date, fieldName: m.fields?.name || "-", outcome };
+  }) || [];
+
+interface OutcomeConfig {
+  label: string;
+  color: string;
+  bg: string;
+  icon: string;
+}
+
+const outcomeConfigs: Record<MatchOutcome, OutcomeConfig> = {
+  W: {
+    label: "Victoria",
+    color: "text-success",
+    bg: "bg-success/10",
+    icon: "material-symbols:trophy",
+  },
+  L: {
+    label: "Derrota",
+    color: "text-error",
+    bg: "bg-error/10",
+    icon: "material-symbols:close",
+  },
+  D: {
+    label: "Empate",
+    color: "text-warning",
+    bg: "bg-warning/10",
+    icon: "material-symbols:equal",
+  },
 };
+
+const getOutcomeConfig = (outcome: MatchOutcome): OutcomeConfig =>
+  outcomeConfigs[outcome] || outcomeConfigs.L;
 
 // 1. Obtener todos los partidos donde participó este jugador
 const { data: allMatchEntries } = await supabase
@@ -233,117 +264,450 @@ const nemesis = [...rivalStats.values()]
   .sort(
     (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
   )[0];
+
+// --- LÓGICA DE COLOR (CLARO vs OSCURO) ---
+const colorStats = {
+  light: { played: 0, wins: 0, points: 0 },
+  dark: { played: 0, wins: 0, points: 0 },
+};
+
+allMatchEntries?.forEach((entry) => {
+  const matchNode = Array.isArray(entry.match)
+    ? (entry.match as { result: string }[])[0]
+    : (entry.match as { result: string } | null);
+
+  if (!matchNode?.result) return;
+
+  const result = matchNode.result;
+  const myTeam = entry.team?.toLowerCase().trim() as "light" | "dark";
+
+  if (myTeam === "light" || myTeam === "dark") {
+    const stats = colorStats[myTeam];
+    stats.played++;
+
+    if (result === myTeam) {
+      stats.wins++;
+      stats.points += 3;
+    } else if (result === "draw") {
+      stats.points += 1;
+    }
+  }
+});
+
+const getWinRate = (wins: number, played: number): number =>
+  played > 0 ? Math.round((wins / played) * 100) : 0;
+
+const statsClaro = {
+  ...colorStats.light,
+  winRate: getWinRate(colorStats.light.wins, colorStats.light.played),
+};
+
+const statsOscuro = {
+  ...colorStats.dark,
+  winRate: getWinRate(colorStats.dark.wins, colorStats.dark.played),
+};
+
+// 1. Gráfico Anual (Orden cronológico)
+const chartYearlyData = [...(yearlyStats || [])].sort(
+  (a, b) => a.year - b.year,
+);
+const yearsLabels = chartYearlyData.map((d) => d.year);
+const pointsByYear = chartYearlyData.map((d) => d.points);
+
+// 2. Gráfico Mensual (Año más reciente con actividad)
+const lastMatch = getMatchData(allHistory?.[0]?.matches);
+const targetYear = lastMatch?.date
+  ? new Date(lastMatch.date).getFullYear()
+  : new Date().getFullYear();
+
+const monthsLabels = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
+const pointsByMonth = new Array(12).fill(0);
+
+// Filtramos solo los partidos del año objetivo
+allHistory?.forEach((m) => {
+  const matchNode = getMatchData(m.matches);
+  if (!matchNode?.date) return;
+
+  const d = new Date(matchNode.date);
+  if (d.getFullYear() === targetYear) {
+    const month = d.getMonth();
+    if (matchNode.result === m.team) pointsByMonth[month] += 3;
+    else if (matchNode.result === "draw") pointsByMonth[month] += 1;
+  }
+});
+
+// ... (Tus consultas anteriores de playerInfo, playerStats, etc.)
+
+// 4. Obtener años totales de historia del club (Para calcular asistencia perfecta)
+const { data: allSeasonsData } = await supabase
+  .from("view_player_stats_yearly")
+  .select("year");
+
+// Extraemos los años únicos que ha tenido el club (Ej: 2024, 2025, 2026)
+const uniqueClubYears = [...new Set(allSeasonsData?.map((s) => s.year) ?? [])];
+const totalClubSeasons = uniqueClubYears.length;
+
+// --- SISTEMA DE MEDALLAS POR RANGOS (TIERS) ---
+type TierKey =
+  | "bronze"
+  | "silver"
+  | "gold"
+  | "platinum"
+  | "sapphire"
+  | "ruby"
+  | "emerald"
+  | "diamond";
+type TierThreshold = [number, TierKey];
+
+interface Badge {
+  label: string;
+  icon: string;
+  description: string;
+  style: string;
+  subLabel?: string;
+}
+
+const badges: Badge[] = [];
+
+const tiers: Record<TierKey, { name: string; style: string }> = {
+  bronze: {
+    name: "Bronce",
+    style: "bg-orange-50 text-orange-900 border-orange-300",
+  },
+  silver: {
+    name: "Plata",
+    style: "bg-slate-50 text-slate-700 border-slate-300",
+  },
+  gold: {
+    name: "Oro",
+    style: "bg-yellow-50 text-yellow-800 border-yellow-400",
+  },
+  platinum: {
+    name: "Platino",
+    style: "bg-cyan-50 text-cyan-800 border-cyan-300",
+  },
+  sapphire: {
+    name: "Zafiro",
+    style: "bg-blue-50 text-blue-800 border-blue-400",
+  },
+  ruby: { name: "Rubí", style: "bg-rose-50 text-rose-800 border-rose-400" },
+  emerald: {
+    name: "Esmeralda",
+    style: "bg-emerald-50 text-emerald-800 border-emerald-400",
+  },
+  diamond: {
+    name: "Diamante",
+    style:
+      "bg-sky-50 text-sky-800 border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]",
+  },
+};
+
+const getTierBadge = (
+  value: number,
+  thresholds: TierThreshold[],
+  baseLabel: string,
+  icon: string,
+  descriptionFn: (limit: number) => string,
+): Badge | null => {
+  for (const [limit, tierKey] of thresholds) {
+    if (value >= limit) {
+      return {
+        label: baseLabel,
+        icon,
+        description: descriptionFn(limit),
+        style: tiers[tierKey].style,
+      };
+    }
+  }
+  return null;
+};
+
+// 1. TRAYECTORIA
+const matchThresholds: TierThreshold[] = [
+  [40, "diamond"],
+  [35, "emerald"],
+  [30, "ruby"],
+  [25, "sapphire"],
+  [20, "platinum"],
+  [15, "gold"],
+  [10, "silver"],
+  [5, "bronze"],
+];
+const trayectoryBadge = getTierBadge(
+  player.matches_played,
+  matchThresholds,
+  "Trayectoria",
+  "material-symbols:footprint",
+  (limit) => `Superó los ${limit} partidos jugados`,
+);
+if (trayectoryBadge) badges.push(trayectoryBadge);
+
+// 2. GANADOR
+const winThresholds: TierThreshold[] = [
+  [25, "diamond"],
+  [20, "emerald"],
+  [17, "ruby"],
+  [15, "sapphire"],
+  [10, "platinum"],
+  [7, "gold"],
+  [5, "silver"],
+  [3, "bronze"],
+];
+const winnerBadge = getTierBadge(
+  player.matches_won,
+  winThresholds,
+  "Ganador",
+  "material-symbols:trophy",
+  (limit) => `Acumula más de ${limit} victorias`,
+);
+if (winnerBadge) badges.push(winnerBadge);
+
+// 3. LEYENDA
+const pointsThresholds: TierThreshold[] = [
+  [50, "diamond"],
+  [40, "emerald"],
+  [35, "ruby"],
+  [30, "sapphire"],
+  [25, "platinum"],
+  [20, "gold"],
+  [15, "silver"],
+  [10, "bronze"],
+];
+const legendBadge = getTierBadge(
+  player.points,
+  pointsThresholds,
+  "Leyenda",
+  "material-symbols:workspace-premium",
+  (limit) => `Superó la barrera de los ${limit} puntos`,
+);
+if (legendBadge) badges.push(legendBadge);
+
+const validPlayerSeasons =
+  yearlyStats?.filter((y: any) => y.matches_played >= 3).length || 0;
+
+// Si las temporadas válidas del jugador igualan al total de temporadas del club (y hay más de 1 temporada historia)
+if (totalClubSeasons > 1 && validPlayerSeasons === totalClubSeasons) {
+  badges.push({
+    label: "Presentismo",
+    subLabel: "Perfecto",
+    icon: "material-symbols:calendar-month",
+    description: `Jugó todas las temporadas (${totalClubSeasons}) de la historia`,
+    style:
+      "bg-purple-50 text-purple-800 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]", // Estilo místico
+  });
+}
+
+// 4. ESPECIALISTA (Color)
+if (statsClaro.wins > 0 || statsOscuro.wins > 0) {
+  if (statsClaro.wins > statsOscuro.wins) {
+    badges.push({
+      label: "Especialista",
+      // subLabel: "Claro",
+      icon: "material-symbols:sunny",
+      description: `Rinde mejor con camiseta Clara`,
+      style: "bg-orange-50 text-orange-800 border-orange-300",
+    });
+  } else if (statsOscuro.wins > statsClaro.wins) {
+    badges.push({
+      label: "Especialista",
+      // subLabel: "Oscuro",
+      icon: "material-symbols:dark-mode",
+      description: `Rinde mejor con camiseta Oscura`,
+      style: "bg-indigo-50 text-indigo-800 border-indigo-300",
+    });
+  }
+}
+
+const last3 = allHistory?.slice(0, 3) || [];
+const isOnFire =
+  last3.length === 3 &&
+  last3.every((m) => {
+    const matchData = getMatchData(m.matches);
+    return matchData?.result === m.team;
+  });
+
+// 6. ON FIRE
+if (isOnFire) {
+  badges.push({
+    label: "En Racha",
+    subLabel: "En Racha",
+    icon: "material-symbols:local-fire-department",
+    description: "Ganó sus últimos 3 partidos seguidos",
+    style: "bg-red-50 text-red-700 border-red-400 animate-pulse",
+  });
+}
+
+// ... (código existente)
+
+// --- CÁLCULO DE AÑO DE DEBUT ---
+const oldestMatch = allHistory?.[allHistory.length - 1];
+const oldestMatchData = getMatchData(oldestMatch?.matches);
+const debutYear = oldestMatchData?.date
+  ? new Date(oldestMatchData.date).getFullYear()
+  : null;
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
+  <!-- Banner Principal del Jugador -->
   <div
-    class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md"
+    class="card bg-base-100 border-base-200 mb-10 min-h-[200px] rounded-xl border shadow-xl"
   >
     <div
-      class="from-primary/20 via-base-100 to-secondary/10 relative h-28 bg-linear-to-r sm:h-32"
+      class="flex h-full flex-col items-center gap-8 p-6 md:p-10 lg:flex-row lg:items-start"
     >
-      <div
-        class="from-base-content absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] to-transparent opacity-10"
-      >
-      </div>
-    </div>
-
-    <div class="card-body relative px-4 py-5 sm:px-6">
-      <div
-        class="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6"
-      >
-        <div class="-mt-16 sm:-mt-14">
-          <Avatar initial={player.nickname.charAt(0).toUpperCase()} size="lg" />
+      <div class="flex grow flex-col items-center gap-6 md:flex-row">
+        <div class="shrink-0">
+          <div class="text-4xl md:text-5xl">
+            <Avatar
+              initial={player.nickname.charAt(0).toUpperCase()}
+              ring={true}
+              size="xl"
+            />
+          </div>
         </div>
 
-        <div class="grow space-y-2 text-center sm:mt-2 sm:text-left">
+        <div class="text-center md:text-left">
+          <h1
+            class="text-base-content text-3xl leading-none font-black tracking-tighter md:text-5xl"
+          >
+            {player.nickname}
+          </h1>
+
           <div
-            class="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3"
+            class="mt-4 flex flex-wrap justify-center gap-3 md:justify-start"
           >
-            <h1
-              class="text-primary text-2xl font-black sm:text-3xl md:text-4xl"
-            >
-              {player.nickname}
-            </h1>
-          </div>
-          <p
-            class="text-base-content/60 font-mono text-xs tracking-widest uppercase sm:text-xs"
-          >
-            ID: {id.split("-")[0]} • Debut: {
-              yearlyStats?.[yearlyStats.length - 1]?.year || "-"
-            }
-          </p>
-          {/* Info Badges */}
-          <div
-            class="flex flex-wrap items-center justify-center gap-2 sm:justify-start"
-          >
+            {/* Badges de información personal */}
             {
               player.birth_date && (
-                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
-                  <Icon
-                    name="material-symbols:calendar-today"
-                    size={12}
-                    aria-hidden="true"
-                  />
-                  <span>{calculateAge(player.birth_date)} años</span>
-                </div>
-              )
-            }
-            {
-              player.birth_date && (
-                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
+                <span class="badge badge-soft gap-1.5 py-3 text-xs font-bold uppercase">
                   <Icon
                     name="material-symbols:cake"
-                    size={12}
-                    aria-hidden="true"
+                    size={14}
+                    class="opacity-60"
                   />
-                  <time datetime={player.birth_date}>
-                    {formatDate(player.birth_date)}
-                  </time>
-                </div>
+                  {calculateAge(player.birth_date)} años
+                </span>
               )
             }
+
             {
-              player.preferred_foot && dominantFootLabel && (
-                <div class="badge bg-base-content/10 gap-1 rounded-xl border-none text-xs font-semibold">
+              dominantFootLabel && (
+                <span
+                  class={`badge badge-soft gap-1.5 py-3 text-xs font-bold uppercase ${player.preferred_foot === "right" ? "badge-error" : player.preferred_foot === "left" ? "badge-info" : "badge-accent"}`}
+                >
                   <Icon
-                    name="material-symbols:footprint"
-                    size={12}
-                    aria-hidden="true"
+                    name="material-symbols:barefoot"
+                    size={14}
+                    class="opacity-60"
                   />
-                  <span>{dominantFootLabel}</span>
-                </div>
+                  {dominantFootLabel}
+                </span>
+              )
+            }
+
+            {
+              debutYear && (
+                <span class="badge badge-soft gap-1.5 py-3 text-xs font-bold uppercase">
+                  <Icon
+                    name="material-symbols:history-edu"
+                    size={14}
+                    class="opacity-60"
+                  />
+                  Debut: {debutYear}
+                </span>
               )
             }
           </div>
         </div>
+      </div>
 
-        <div class="w-full sm:w-auto">
-          <div
-            class="stats bg-base-200 border-base-200 w-full rounded-xl border shadow-md sm:w-auto"
-          >
-            <div class="stat place-items-center px-6 py-3 sm:px-8">
-              <div
-                class="stat-title text-xs font-bold tracking-wider uppercase sm:text-xs"
-              >
-                Puntos Históricos
+      <div
+        class="border-base-200 mt-2 flex min-w-[200px] flex-col items-center gap-3 border-t pt-6 lg:mt-0 lg:h-auto lg:items-end lg:self-stretch lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
+      >
+        <a
+          href="/badges"
+          class="flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase opacity-40 transition-opacity hover:opacity-70"
+        >
+          <Icon name="material-symbols:rewarded-ads" size={14} />
+          Reconocimientos
+          <Icon
+            name="material-symbols:arrow-forward"
+            size={12}
+            class="hidden sm:inline"
+          />
+        </a>
+
+        <div
+          class="flex flex-wrap content-start justify-center gap-1.5 overflow-visible lg:justify-end"
+        >
+          {
+            badges.length > 0 ? (
+              badges.map((badge) => (
+                <BadgeItem
+                  label={badge.label}
+                  icon={badge.icon}
+                  description={badge.description}
+                  style={badge.style}
+                />
+              ))
+            ) : (
+              <div class="text-base-content/30 flex flex-col items-center py-2">
+                <span class="text-xs font-bold tracking-widest uppercase">
+                  Sin medallas
+                </span>
               </div>
-              <div class="stat-value text-secondary text-2xl sm:text-3xl">
-                {player.points}
-              </div>
-            </div>
-          </div>
+            )
+          }
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bento Grid de Estadísticas -->
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-4">
-    <!-- Efectividad - Card Grande -->
-    <div class="col-span-2 row-span-2 md:col-span-2 lg:col-span-2">
+  <!-- Bento Grid de Estadísticas (Mobile-First) -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+    <!-- Puntos Totales -->
+    <div class="col-span-2 sm:col-span-4 lg:col-span-4">
       <div
-        class="card bg-base-100 border-base-200 h-full rounded-2xl border p-5 shadow-md"
+        class="card bg-base-100 border-warning/50 rounded-xl border p-4 shadow-md"
+      >
+        <div class="flex items-center justify-between">
+          <div>
+            <p
+              class="text-[10px] font-black tracking-widest uppercase opacity-50"
+            >
+              Puntos Totales
+            </p>
+            <div class="flex items-baseline gap-1">
+              <span class="text-warning text-4xl font-black sm:text-5xl"
+                >{player.points}</span
+              >
+              <span class="text-sm font-bold opacity-40">pts</span>
+            </div>
+          </div>
+          <div class="bg-warning/10 text-warning rounded-xl p-3">
+            <Icon name="material-symbols:trophy" size={32} />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Efectividad - Card Grande -->
+    <div class="col-span-2 row-span-2">
+      <div
+        class="card bg-base-100 border-base-200 h-full rounded-xl border p-4 shadow-md sm:p-5"
       >
         <div class="flex h-full flex-col justify-between">
           <div>
@@ -391,196 +755,104 @@ const nemesis = [...rivalStats.values()]
 
     <!-- Partidos Jugados -->
     <div class="col-span-1">
-      <div
-        class="card bg-base-100 border-base-content/50 h-full rounded-2xl border p-4 shadow-md"
-      >
-        <div
-          class="flex h-full flex-col items-center justify-center text-center"
-        >
-          <Icon
-            name="material-symbols:sports-soccer"
-            size={24}
-            class="mb-2 opacity-30"
-          />
-          <span class="text-3xl font-black">{totalMatches}</span>
-          <span
-            class="text-[10px] font-bold tracking-wider uppercase opacity-50"
-            >Partidos</span
-          >
-        </div>
-      </div>
+      <StatCard
+        value={totalMatches}
+        label="Partidos"
+        icon="material-symbols:sports-soccer"
+      />
     </div>
 
     <!-- Victorias -->
     <div class="col-span-1">
-      <div
-        class="card bg-base-100 border-success/50 h-full rounded-2xl border p-4 shadow-md"
-      >
-        <div
-          class="flex h-full flex-col items-center justify-center text-center"
-        >
-          <Icon
-            name="material-symbols:trophy"
-            size={24}
-            class="text-success mb-2"
-          />
-          <span class="text-success text-3xl font-black">{player.wins}</span>
-          <span
-            class="text-success text-[10px] font-bold tracking-wider uppercase"
-            >Victorias</span
-          >
-          <span class="text-success mt-1 text-xs font-bold">{win_pct}%</span>
-        </div>
-      </div>
+      <StatCard
+        value={player.wins}
+        label="Victorias"
+        icon="material-symbols:trophy"
+        color="success"
+        percentage={win_pct}
+      />
     </div>
 
     <!-- Empates -->
     <div class="col-span-1">
-      <div
-        class="card bg-base-100 border-warning/50 h-full rounded-2xl border p-4 shadow-md"
-      >
-        <div
-          class="flex h-full flex-col items-center justify-center text-center"
-        >
-          <Icon
-            name="material-symbols:equal"
-            size={24}
-            class="text-warning mb-2"
-          />
-          <span class="text-warning text-3xl font-black">{player.draws}</span>
-          <span
-            class="text-warning text-[10px] font-bold tracking-wider uppercase"
-            >Empates</span
-          >
-          <span class="text-warning mt-1 text-xs font-bold">{draw_pct}%</span>
-        </div>
-      </div>
+      <StatCard
+        value={player.draws}
+        label="Empates"
+        icon="material-symbols:equal"
+        color="warning"
+        percentage={draw_pct}
+      />
     </div>
 
     <!-- Derrotas -->
     <div class="col-span-1">
-      <div
-        class="card bg-base-100 border-error/50 h-full rounded-2xl border p-4 shadow-md"
-      >
-        <div
-          class="flex h-full flex-col items-center justify-center text-center"
-        >
-          <Icon
-            name="material-symbols:close"
-            size={24}
-            class="text-error mb-2"
-          />
-          <span class="text-error text-3xl font-black">{player.losses}</span>
-          <span
-            class="text-error text-[10px] font-bold tracking-wider uppercase"
-            >Derrotas</span
-          >
-          <span class="text-error mt-1 text-xs font-bold">{loss_pct}%</span>
-        </div>
-      </div>
+      <StatCard
+        value={player.losses}
+        label="Derrotas"
+        icon="material-symbols:close"
+        color="error"
+        percentage={loss_pct}
+      />
     </div>
 
     <!-- Mejor Socio -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-2">
-      <div
-        class="card bg-base-100 border-success/50 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
+    <div class="col-span-2 sm:col-span-2 lg:col-span-3">
+      <InfoCard
+        label="Mejor Socio"
+        icon="material-symbols:handshake"
+        color="success"
       >
-        <div class="flex items-center gap-3">
-          <div class="bg-success/15 text-success shrink-0 rounded-xl p-3">
-            <Icon name="material-symbols:handshake" size={28} />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p
-              class="text-[10px] font-black tracking-widest uppercase opacity-50"
-            >
-              Mejor Socio
-            </p>
-            {
-              bestPartner ? (
-                <div>
-                  <p class="truncate text-lg font-black">
-                    {bestPartner.nickname}
-                  </p>
-                  <p class="text-success text-xs font-bold">
-                    {Math.round((bestPartner.wins / bestPartner.matches) * 100)}
-                    % química
-                    <span class="opacity-60">
-                      {" "}
-                      • {bestPartner.matches} ganados
-                    </span>
-                  </p>
-                </div>
-              ) : (
-                <p class="text-sm opacity-50">Sin datos suficientes</p>
-              )
-            }
-          </div>
-        </div>
-      </div>
+        {
+          bestPartner ? (
+            <div>
+              <p class="truncate text-lg font-black">{bestPartner.nickname}</p>
+              <p class="text-success text-xs font-bold">
+                {Math.round((bestPartner.wins / bestPartner.matches) * 100)}%
+                química
+                <span class="opacity-60"> • {bestPartner.matches} ganados</span>
+              </p>
+            </div>
+          ) : (
+            <p class="text-sm opacity-50">Sin datos suficientes</p>
+          )
+        }
+      </InfoCard>
     </div>
 
     <!-- Némesis -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-2">
-      <div
-        class="card bg-base-100 border-error/50 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
-      >
-        <div class="flex items-center gap-3">
-          <div class="bg-error/15 text-error shrink-0 rounded-xl p-3">
-            <Icon name="material-symbols:swords" size={28} />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p
-              class="text-[10px] font-black tracking-widest uppercase opacity-50"
-            >
-              Némesis
-            </p>
-            {
-              nemesis ? (
-                <div>
-                  <p class="truncate text-lg font-black">{nemesis.nickname}</p>
-                  <p class="text-error text-xs font-bold">
-                    {Math.round((nemesis.wins / nemesis.matches) * 100)}%
-                    derrotas
-                    <span class="opacity-60">
-                      {" "}
-                      • {nemesis.matches} perdidos
-                    </span>
-                  </p>
-                </div>
-              ) : (
-                <p class="text-sm opacity-50">Sin datos suficientes</p>
-              )
-            }
-          </div>
-        </div>
-      </div>
+    <div class="col-span-2 sm:col-span-2 lg:col-span-3">
+      <InfoCard label="Némesis" icon="material-symbols:swords" color="error">
+        {
+          nemesis ? (
+            <div>
+              <p class="truncate text-lg font-black">{nemesis.nickname}</p>
+              <p class="text-error text-xs font-bold">
+                {Math.round((nemesis.wins / nemesis.matches) * 100)}% derrotas
+                <span class="opacity-60"> • {nemesis.matches} perdidos</span>
+              </p>
+            </div>
+          ) : (
+            <p class="text-sm opacity-50">Sin datos suficientes</p>
+          )
+        }
+      </InfoCard>
     </div>
 
     <!-- Cancha Favorita -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-3">
-      <div
-        class="card from-primary/5 to-secondary/5 border-base-200 h-full rounded-2xl border bg-gradient-to-br p-4 shadow-md"
+    <div class="col-span-2 lg:col-span-3">
+      <InfoCard
+        label="Cancha Favorita"
+        icon="material-symbols:stadium-rounded"
+        color="primary"
       >
-        <div class="flex h-full items-center gap-3">
-          <div class="bg-primary/10 text-primary shrink-0 rounded-xl p-3">
-            <Icon name="material-symbols:stadium-rounded" size={28} />
-          </div>
-          <div class="min-w-0">
-            <p
-              class="text-[10px] font-black tracking-widest uppercase opacity-50"
-            >
-              Cancha Favorita
-            </p>
-            <p class="truncate text-base font-black">{topField}</p>
-          </div>
-        </div>
-      </div>
+        <p class="truncate text-base font-black">{topField}</p>
+      </InfoCard>
     </div>
 
     <!-- Preferencia de Camiseta -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-3">
+    <div class="col-span-2 lg:col-span-3">
       <div
-        class="card bg-base-100 border-base-200 h-full rounded-2xl border p-4 shadow-md"
+        class="card bg-base-100 border-base-200 h-full rounded-xl border p-4 shadow-md"
       >
         <div class="flex h-full items-center gap-3">
           <div class="bg-base-200 shrink-0 rounded-xl p-3">
@@ -623,10 +895,130 @@ const nemesis = [...rivalStats.values()]
       </div>
     </div>
 
-    <!-- Rendimiento Anual -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-4">
+    <!-- Comparativa Claro vs Oscuro -->
+    <div class="col-span-2 sm:col-span-4 lg:col-span-6">
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-md"
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+      >
+        <div class="p-6">
+          <div class="mb-4 flex items-end justify-between">
+            <div class="text-left">
+              <span class="text-warning text-2xl font-black"
+                >{statsClaro.winRate}%</span
+              >
+              <div class="text-xs font-bold uppercase opacity-50">
+                Claro ({statsClaro.wins}V - {statsClaro.played}J)
+              </div>
+            </div>
+
+            <div class="px-4 pb-1 text-center">
+              <Icon
+                name="material-symbols:laundry"
+                size={24}
+                class="opacity-20"
+              />
+            </div>
+
+            <div class="text-right">
+              <span class="text-base-content text-2xl font-black"
+                >{statsOscuro.winRate}%</span
+              >
+              <div class="text-xs font-bold uppercase opacity-50">
+                Oscuro ({statsOscuro.wins}V - {statsOscuro.played}J)
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-base-200 flex h-4 w-full overflow-hidden rounded-full">
+            <div
+              class="bg-warning flex items-center justify-start pl-2 transition-all duration-1000"
+              style={`width: ${statsClaro.winRate}%`}
+            >
+            </div>
+
+            <div class="bg-base-300 grow"></div>
+
+            <div
+              class="bg-base-content flex items-center justify-end pr-2 transition-all duration-1000"
+              style={`width: ${statsOscuro.winRate}%`}
+            >
+            </div>
+          </div>
+
+          <div class="mt-4 text-center">
+            {
+              statsClaro.winRate > statsOscuro.winRate + 5 ? (
+                <span class="badge badge-warning gap-2 font-bold">
+                  <Icon name="material-symbols:sunny" />
+                  Rinde mejor de Claro
+                </span>
+              ) : statsOscuro.winRate > statsClaro.winRate + 5 ? (
+                <span class="badge badge-neutral gap-2 font-bold text-white">
+                  <Icon name="material-symbols:dark-mode" />
+                  Rinde mejor de Oscuro
+                </span>
+              ) : (
+                <span class="badge badge-ghost gap-2 font-bold opacity-50">
+                  Rendimiento Equilibrado
+                </span>
+              )
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico Histórico -->
+    <div class="col-span-2 lg:col-span-3">
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+      >
+        <div class="p-4 sm:p-6">
+          <div class="mb-4 flex items-center gap-2">
+            <div class="bg-primary/10 text-primary rounded-lg p-2">
+              <Icon name="material-symbols:bar-chart" size={18} />
+            </div>
+            <div>
+              <p
+                class="text-[10px] font-black tracking-widest uppercase opacity-50"
+              >
+                Histórico
+              </p>
+              <p class="text-sm font-black sm:text-base">Puntos por Año</p>
+            </div>
+          </div>
+          <div id="year-chart" class="h-48 w-full sm:h-64"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Gráfico Mensual -->
+    <div class="col-span-2 lg:col-span-3">
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
+      >
+        <div class="p-4 sm:p-6">
+          <div class="mb-4 flex items-center gap-2">
+            <div class="bg-secondary/10 text-secondary rounded-lg p-2">
+              <Icon name="material-symbols:ssid-chart" size={18} />
+            </div>
+            <div>
+              <p
+                class="text-[10px] font-black tracking-widest uppercase opacity-50"
+              >
+                Temporada {targetYear}
+              </p>
+              <p class="text-sm font-black sm:text-base">Rendimiento Mensual</p>
+            </div>
+          </div>
+          <div id="month-chart" class="h-48 w-full sm:h-64"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rendimiento Anual -->
+    <div class="col-span-2 sm:col-span-4 lg:col-span-4">
+      <div
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
         <div
           class="bg-base-200/50 border-base-200 flex items-center justify-between border-b px-4 py-3"
@@ -647,73 +1039,81 @@ const nemesis = [...rivalStats.values()]
             class="opacity-30"
           />
         </div>
-        <div class="grid grid-cols-7 text-[10px] font-bold uppercase">
-          <!-- Header -->
-          <div class="bg-base-200/50 sticky top-0 py-2 pl-4">Año</div>
+        <div class="overflow-x-auto">
           <div
-            class="bg-base-200/50 text-primary sticky top-0 py-2 text-center"
+            class="grid min-w-[400px] grid-cols-7 text-[10px] font-bold uppercase"
           >
-            PTS
-          </div>
-          <div class="bg-base-200/50 sticky top-0 py-2 text-center">PJ</div>
-          <div
-            class="bg-base-200/50 text-success sticky top-0 py-2 text-center"
-          >
-            G
-          </div>
-          <div
-            class="bg-base-200/50 text-warning sticky top-0 py-2 text-center"
-          >
-            E
-          </div>
-          <div class="bg-base-200/50 text-error sticky top-0 py-2 text-center">
-            P
-          </div>
-          <div class="bg-base-200/50 sticky top-0 py-2 pr-4 text-center">%</div>
+            <!-- Header -->
+            <div class="bg-base-200/50 sticky top-0 py-2 pl-4">Año</div>
+            <div
+              class="bg-base-200/50 text-primary sticky top-0 py-2 text-center"
+            >
+              PTS
+            </div>
+            <div class="bg-base-200/50 sticky top-0 py-2 text-center">PJ</div>
+            <div
+              class="bg-base-200/50 text-success sticky top-0 py-2 text-center"
+            >
+              G
+            </div>
+            <div
+              class="bg-base-200/50 text-warning sticky top-0 py-2 text-center"
+            >
+              E
+            </div>
+            <div
+              class="bg-base-200/50 text-error sticky top-0 py-2 text-center"
+            >
+              P
+            </div>
+            <div class="bg-base-200/50 sticky top-0 py-2 pr-4 text-center">
+              %
+            </div>
 
-          <!-- Body -->
-          {
-            yearlyStats?.map((s) => (
-              <>
-                <div class="hover:bg-base-200/30 py-2 pl-4 text-xs font-bold normal-case">
-                  {s.year}
+            <!-- Body -->
+            {
+              yearlyStats?.map((s) => (
+                <>
+                  <div class="hover:bg-base-200/30 py-2 pl-4 text-xs font-bold normal-case">
+                    {s.year}
+                  </div>
+                  <div class="text-primary hover:bg-base-200/30 py-2 text-center text-xs font-black normal-case">
+                    {s.points}
+                  </div>
+                  <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
+                    {s.matches_played}
+                  </div>
+                  <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
+                    {s.wins}
+                  </div>
+                  <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
+                    {s.draws}
+                  </div>
+                  <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
+                    {s.losses}
+                  </div>
+                  <div class="hover:bg-base-200/30 py-2 pr-4 text-center text-xs font-semibold normal-case">
+                    {Math.round(s.win_pct)}%
+                  </div>
+                </>
+              ))
+            }
+            {
+              (!yearlyStats || yearlyStats.length === 0) && (
+                <div class="col-span-7 py-6 text-center text-xs normal-case italic opacity-50">
+                  Sin registros históricos
                 </div>
-                <div class="text-primary hover:bg-base-200/30 py-2 text-center text-xs font-black normal-case">
-                  {s.points}
-                </div>
-                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
-                  {s.matches_played}
-                </div>
-                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-70">
-                  {s.wins}
-                </div>
-                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
-                  {s.draws}
-                </div>
-                <div class="hover:bg-base-200/30 py-2 text-center text-xs normal-case opacity-50">
-                  {s.losses}
-                </div>
-                <div class="hover:bg-base-200/30 py-2 pr-4 text-center text-xs font-semibold normal-case">
-                  {Math.round(s.win_pct)}%
-                </div>
-              </>
-            ))
-          }
-          {
-            (!yearlyStats || yearlyStats.length === 0) && (
-              <div class="col-span-7 py-6 text-center text-xs normal-case italic opacity-50">
-                Sin registros históricos
-              </div>
-            )
-          }
+              )
+            }
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Forma Reciente -->
-    <div class="col-span-2 md:col-span-2 lg:col-span-2">
+    <div class="col-span-2 sm:col-span-4 lg:col-span-2">
       <div
-        class="card bg-base-100 border-base-200 overflow-hidden rounded-2xl border shadow-md"
+        class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md"
       >
         <div
           class="bg-base-200/50 border-base-200 flex items-center justify-between border-b px-4 py-3"
@@ -785,3 +1185,83 @@ const nemesis = [...rivalStats.values()]
     </div>
   </div>
 </Main>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script
+  is:inline
+  define:vars={{ yearsLabels, pointsByYear, monthsLabels, pointsByMonth }}
+>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Configuración Común
+    const commonOptions = {
+      chart: {
+        toolbar: { show: false },
+        fontFamily: "inherit",
+        animations: { enabled: true },
+      },
+      dataLabels: { enabled: false },
+      grid: {
+        borderColor: "rgba(0,0,0,0.05)",
+        strokeDashArray: 4,
+      },
+      theme: { mode: "light" },
+    };
+
+    // --- GRÁFICO 1: AÑOS (BARRAS) ---
+    const yearOptions = {
+      ...commonOptions,
+      series: [{ name: "Puntos", data: pointsByYear }],
+      chart: {
+        ...commonOptions.chart,
+        type: "bar",
+        height: window.innerWidth < 640 ? 180 : 250,
+        id: "year-chart-el",
+      },
+      colors: ["#F59E0B"], // Warning/Primary
+      plotOptions: {
+        bar: { borderRadius: 4, columnWidth: "50%" },
+      },
+      xaxis: { categories: yearsLabels },
+      yaxis: { stepSize: 10 },
+    };
+
+    // --- GRÁFICO 2: MESES (ÁREA/LÍNEA) ---
+    const monthOptions = {
+      ...commonOptions,
+      series: [{ name: "Puntos", data: pointsByMonth }],
+      chart: {
+        ...commonOptions.chart,
+        type: "area",
+        height: window.innerWidth < 640 ? 180 : 250,
+        id: "month-chart-el",
+      },
+      colors: ["#6366f1"], // Secondary/Indigo
+      fill: {
+        type: "gradient",
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0.05,
+          stops: [0, 100],
+        },
+      },
+      stroke: { curve: "smooth", width: 3 },
+      xaxis: { categories: monthsLabels },
+      yaxis: { stepSize: 3 }, // Escala de a 3 puntos (1 victoria)
+    };
+
+    // Renderizar
+    if (document.querySelector("#year-chart")) {
+      new ApexCharts(
+        document.querySelector("#year-chart"),
+        yearOptions,
+      ).render();
+    }
+    if (document.querySelector("#month-chart")) {
+      new ApexCharts(
+        document.querySelector("#month-chart"),
+        monthOptions,
+      ).render();
+    }
+  });
+</script>

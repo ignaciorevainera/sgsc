@@ -1,0 +1,29 @@
+---
+/**
+ * BadgeItem - Insignia/medalla de reconocimiento para jugadores
+ */
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  label: string;
+  icon: string;
+  description: string;
+  style: string;
+}
+
+const { label, icon, description, style } = Astro.props;
+---
+
+<div class="lg:tooltip lg:tooltip-bottom hover:z-100" data-tip={description}>
+  <div
+    class:list={[
+      "flex cursor-help items-center gap-2 rounded-lg border px-2 py-1.5 transition-all duration-300 select-none hover:-translate-y-0.5 hover:shadow-sm",
+      style,
+    ]}
+  >
+    <Icon name={icon} size={14} />
+    <span class="text-xs leading-none font-black tracking-tight uppercase">
+      {label}
+    </span>
+  </div>
+</div>
