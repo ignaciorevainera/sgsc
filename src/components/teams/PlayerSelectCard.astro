@@ -1,0 +1,77 @@
+---
+interface Props {
+  id: string | number;
+  name: string;
+  rating: number;
+  isGuest?: boolean;
+}
+
+import Avatar from "@/components/Avatar.astro";
+
+const { id, name, rating, isGuest = false } = Astro.props;
+
+const initial = name.charAt(0).toUpperCase();
+---
+
+<div
+  class="player-card group card bg-base-100 border-base-200 hover:border-primary/40 data-selected:border-primary data-selected:ring-primary data-selected:ring-offset-base-100 relative flex min-h-32 cursor-pointer flex-col items-center justify-start gap-2 rounded-xl border p-3 shadow-md transition-transform duration-100 ease-out will-change-transform select-none hover:-translate-y-1 hover:shadow-lg active:scale-95 data-selected:z-10 data-selected:scale-[1.02] data-selected:shadow-xl data-selected:ring-2 data-selected:ring-offset-2 sm:min-h-36 sm:p-4"
+  data-id={id}
+  data-rating={rating}
+  data-name={name}
+  data-guest={isGuest}
+  role="checkbox"
+  aria-checked="false"
+  tabindex="0"
+>
+  {/* Overlay para transición de color instantánea */}
+  <div
+    class="bg-primary pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-75 ease-out group-data-selected:opacity-100"
+    aria-hidden="true"
+  >
+  </div>
+
+  {/* Avatar */}
+  <div
+    class="group-data-selected:ring-offset-primary relative z-10 transition-transform duration-100 ease-out group-hover:scale-105 group-data-selected:rounded-full group-data-selected:ring-2 group-data-selected:ring-white/50 group-data-selected:ring-offset-2"
+  >
+    <Avatar initial={initial} size="md" ring={false} />
+  </div>
+
+  <span
+    class="group-data-selected:text-primary-content relative z-10 line-clamp-2 w-full grow px-0.5 text-center text-xs leading-tight font-bold text-balance uppercase"
+  >
+    {name}
+  </span>
+
+  {/* Info */}
+  <div
+    class="relative z-10 flex w-full flex-col items-center justify-center gap-0.5"
+  >
+    {/* Badge Invitado */}
+    {
+      isGuest && (
+        <span class="badge badge-warning badge-xs group-data-selected:bg-primary-content group-data-selected:text-primary mb-1 rounded-lg font-bold tracking-wider uppercase transition-colors duration-75 group-data-selected:border-transparent">
+          Invitado
+        </span>
+      )
+    }
+
+    {/* Win Rate */}
+    <span
+      class="group-data-selected:text-primary-content text-xs font-bold tracking-wider uppercase opacity-40 transition-opacity duration-75 group-hover:opacity-70 group-data-selected:opacity-80"
+    >
+      {Math.round(rating)}% WR
+    </span>
+  </div>
+</div>
+
+<style>
+  .player-card {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .player-card:active {
+    transition-duration: 50ms;
+  }
+</style>

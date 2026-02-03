@@ -16,11 +16,25 @@ const links = [
   { href: "/players", label: "Jugadores" },
   { href: "/compare", label: "Versus" },
   { href: "/teams", label: "Equipos" },
+  { href: "/teams-builder", label: "Armador de Equipos" },
   { href: "/fields", label: "Canchas" },
   { href: "/badges", label: "Medallas" },
   { href: "/hall-of-fame", label: "Salón de la Fama" },
 ];
 const currentPath = Astro.url.pathname;
+
+const isLinkActive = (href: string) => {
+  if (href === "/teams") {
+    return (
+      currentPath.startsWith("/teams") &&
+      !currentPath.startsWith("/teams-builder")
+    );
+  }
+  if (href === "/teams-builder") {
+    return currentPath.startsWith("/teams-builder");
+  }
+  return currentPath.startsWith(href);
+};
 ---
 
 <header
@@ -36,7 +50,7 @@ const currentPath = Astro.url.pathname;
         aria-label="Abrir menú de navegación"
         aria-expanded="false"
         aria-controls="mobile-menu"
-        class="btn btn-ghost lg:hidden"
+        class="btn btn-ghost xl:hidden"
         role="button"
       >
         <Icon
@@ -57,9 +71,7 @@ const currentPath = Astro.url.pathname;
               <a
                 href={link.href}
                 class={
-                  currentPath.startsWith(link.href)
-                    ? "active text-primary font-bold"
-                    : ""
+                  isLinkActive(link.href) ? "active text-primary font-bold" : ""
                 }
               >
                 {link.label}
@@ -69,10 +81,10 @@ const currentPath = Astro.url.pathname;
         }
       </ul>
     </div>
-    <a href="/" class="btn btn-ghost text-xl font-bold">SGSC</a>
+    <a href="/" class="btn btn-ghost text-xl font-black">SGSC</a>
   </div>
 
-  <nav class="navbar-center hidden lg:flex" aria-label="Navegación principal">
+  <nav class="navbar-center hidden xl:flex" aria-label="Navegación principal">
     <ul class="menu menu-horizontal px-1" role="menubar">
       {
         links.map((link) => (
@@ -80,9 +92,7 @@ const currentPath = Astro.url.pathname;
             <a
               href={link.href}
               class={
-                currentPath.startsWith(link.href)
-                  ? "active text-primary font-bold"
-                  : ""
+                isLinkActive(link.href) ? "active text-primary font-bold" : ""
               }
             >
               {link.label}

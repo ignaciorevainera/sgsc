@@ -1,0 +1,56 @@
+---
+interface Props {
+  class?: string;
+  minPlayers?: number;
+}
+
+import { Icon } from "astro-icon/components";
+
+const { class: className = "", minPlayers = 10 } = Astro.props;
+---
+
+<div
+  id="action-bar"
+  class:list={[
+    "sticky bottom-12 z-40 mx-auto max-w-md",
+    "card bg-base-100/95 border-base-200 rounded-xl border shadow-lg backdrop-blur-md",
+    className,
+  ]}
+  data-min-players={minPlayers}
+>
+  <div class="card-body flex-row items-center justify-between gap-4 p-3 sm:p-4">
+    {/* Contador Total */}
+    <div class="flex items-center gap-3">
+      <div
+        class="bg-base-300 text-base-content flex size-10 items-center justify-center rounded-xl text-lg font-black shadow-sm transition-all duration-200 sm:size-12 sm:text-xl"
+        id="total-counter-badge"
+      >
+        0
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span
+          class="text-base-content/50 text-xs font-bold tracking-widest uppercase"
+        >
+          Seleccionados
+        </span>
+        <div class="flex items-center gap-1">
+          <span id="total-counter" class="text-lg font-black">0</span>
+          <span class="text-base-content/40 text-xs font-bold"
+            >/ {minPlayers} mín</span
+          >
+        </div>
+      </div>
+    </div>
+
+    {/* Botón Generar */}
+    <button
+      id="generate-btn"
+      class="btn btn-primary gap-2 rounded-xl px-4 font-bold tracking-wider uppercase shadow-md transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:px-6"
+      disabled
+    >
+      <Icon name="material-symbols:shuffle" size={20} />
+      <span class="hidden sm:inline">Armar Equipos</span>
+      <span class="sm:hidden">Armar</span>
+    </button>
+  </div>
+</div>
