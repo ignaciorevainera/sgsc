@@ -1,6 +1,7 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
@@ -70,29 +71,19 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<Main title="Cargar Partido | SGSC">
+<Main title="Cargar Partido | SGSC" contentWidth="admin">
   <Title title="Cargar Partido" subtitle="Panel de Administración" />
 
   {/* Alertas */}
   {
     successMessage && (
-      <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
-        <Icon
-          name="material-symbols:check-circle"
-          size={24}
-          aria-hidden="true"
-        />
-        <span class="flex-1 text-sm sm:text-base">{successMessage}</span>
-      </div>
+      <Alert type="success" message={successMessage} class="mb-6" />
     )
   }
 
   {
     errorMessage && (
-      <div role="alert" class="alert alert-error mb-6 rounded-xl shadow-md">
-        <Icon name="material-symbols:error" size={24} aria-hidden="true" />
-        <span class="text-sm sm:text-base">{errorMessage}</span>
-      </div>
+      <Alert type="error" message={errorMessage} class="mb-6" />
     )
   }
 
@@ -444,7 +435,9 @@ if (Astro.request.method === "POST") {
   </dialog>
 </Main>
 
-<script is:inline>
+<script>
+  import { formatDate } from "@/lib/utils/dateUtils";
+
   // LÓGICA CLIENT-SIDE PARA EL PREVIEW
   const btnPreview = document.getElementById("btnPreview");
   const btnConfirm = document.getElementById("btnConfirm");
@@ -481,9 +474,7 @@ if (Astro.request.method === "POST") {
     }
 
     // 3. Llenar el Modal
-    document.getElementById("previewDate").innerText = new Date(
-      date,
-    ).toLocaleDateString("es-AR");
+    document.getElementById("previewDate").innerText = formatDate(date, "short");
     document.getElementById("previewField").innerText = fieldName;
 
     // Estilo del Badge de Resultado

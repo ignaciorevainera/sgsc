@@ -1,15 +1,25 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect("/login");
+}
+
 const { id } = Astro.params;
+let errorMessage = "";
+const showSuccess = Astro.url.searchParams.get("success") === "true";
 
 // 1. Obtener datos para llenar el formulario
 // A. El partido actual
-const { data: match, error } = await supabase
+const { data: match } = await supabase
   .from("matches")
   .select(`*, match_players(player_id, team)`)
   .eq("id", id)
@@ -33,87 +43,170 @@ const { data: players } = await supabase
 // C. Calcular quién jugaba dónde para marcar los checkboxes
 const lightIds = match.match_players
   .filter((mp: any) => mp.team === "light")
-  .map((mp: any) => mp.player_id);
+  .map((mp: any) => String(mp.player_id));
 const darkIds = match.match_players
   .filter((mp: any) => mp.team === "dark")
-  .map((mp: any) => mp.player_id);
+  .map((mp: any) => String(mp.player_id));
 
 // --- LÓGICA DE GUARDADO (POST) ---
 if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
+  try {
+    const formData = await Astro.request.formData();
 
-  // 1. Datos básicos
-  const date = formData.get("date");
-  const field_id = formData.get("field_id");
-  const result = formData.get("result"); // 'light', 'dark', 'draw'
-  const video_url = formData.get("video_url");
+    // 1. Datos básicos y validaciones de entrada
+    const date = formData.get("date")?.toString().trim() ?? "";
+    const field_id = formData.get("field_id")?.toString().trim() ?? "";
+    const result = formData.get("result")?.toString().trim() ?? "";
+    const video_url = formData.get("video_url")?.toString().trim() ?? "";
 
-  // 2. Actualizar tabla MATCHES
-  await supabase
-    .from("matches")
-    .update({
-      date,
-      field_id,
-      result,
-      video_url: video_url || null,
-    })
-    .eq("id", id);
+    if (!date || !field_id || !result) {
+      throw new Error("Faltan datos obligatorios para actualizar el partido.");
+    }
+    if (!["light", "dark", "draw"].includes(result)) {
+      throw new Error("El resultado seleccionado no es válido.");
+    }
+    const selectedField = fields?.find(
+      (field) => String(field.id) === field_id,
+    );
+    if (!selectedField) {
+      throw new Error("La sede seleccionada no es válida.");
+    }
 
-  // 3. Actualizar EQUIPOS (Recolectar de radio buttons)
-  const newLightIds: string[] = [];
-  const newDarkIds: string[] = [];
+    // 2. Recolectar jugadores por equipo
+    const playerIdByKey = new Map<string, string | number>();
+    players?.forEach((player) => {
+      playerIdByKey.set(String(player.id), player.id);
+    });
 
-  // Recorrer todos los jugadores y ver su selección
-  players?.forEach((p) => {
-    const selection = formData.get(`player_${p.id}`);
-    if (selection === "light") newLightIds.push(p.id);
-    if (selection === "dark") newDarkIds.push(p.id);
-  });
+    const newLightKeys: string[] = [];
+    const newDarkKeys: string[] = [];
+    players?.forEach((player) => {
+      const key = String(player.id);
+      const selection = formData.get(`player_${key}`);
+      if (selection === "light") newLightKeys.push(key);
+      if (selection === "dark") newDarkKeys.push(key);
+    });
 
-  // Borramos los viejos
-  await supabase.from("match_players").delete().eq("match_id", id);
+    if (newLightKeys.length === 0 || newDarkKeys.length === 0) {
+      throw new Error("Debes seleccionar al menos un jugador por equipo.");
+    }
 
-  // Preparamos los nuevos registros
-  const newPlayers = [
-    ...newLightIds.map((pid) => ({
-      match_id: id,
-      player_id: pid,
-      team: "light",
-    })),
-    ...newDarkIds.map((pid) => ({
-      match_id: id,
-      player_id: pid,
-      team: "dark",
-    })),
-  ];
+    const overlap = newLightKeys.some((key) => newDarkKeys.includes(key));
+    if (overlap) {
+      throw new Error("Un jugador no puede estar en ambos equipos.");
+    }
 
-  // Insertamos los nuevos
-  if (newPlayers.length > 0) {
-    await supabase.from("match_players").insert(newPlayers);
+    const resolvePlayerId = (key: string) => {
+      const value = playerIdByKey.get(key);
+      if (value === undefined) {
+        throw new Error("No se pudo resolver un jugador seleccionado.");
+      }
+      return value;
+    };
+
+    const newPlayers = [
+      ...newLightKeys.map((key) => ({
+        match_id: id,
+        player_id: resolvePlayerId(key),
+        team: "light",
+      })),
+      ...newDarkKeys.map((key) => ({
+        match_id: id,
+        player_id: resolvePlayerId(key),
+        team: "dark",
+      })),
+    ];
+
+    // 3. Actualizar tabla MATCHES
+    const { error: matchUpdateError } = await supabase
+      .from("matches")
+      .update({
+        date,
+        field_id: selectedField.id,
+        result,
+        video_url: video_url || null,
+      })
+      .eq("id", id);
+
+    if (matchUpdateError) {
+      throw new Error("No se pudo actualizar la información general del partido.");
+    }
+
+    // 4. Actualizar equipos (con rollback de mejor esfuerzo)
+    const originalAssignments =
+      match.match_players?.map((mp: any) => ({
+        match_id: id,
+        player_id: mp.player_id,
+        team: mp.team,
+      })) ?? [];
+
+    const { error: deleteError } = await supabase
+      .from("match_players")
+      .delete()
+      .eq("match_id", id);
+
+    if (deleteError) {
+      throw new Error("No se pudieron limpiar los equipos anteriores del partido.");
+    }
+
+    const { error: insertError } = await supabase
+      .from("match_players")
+      .insert(newPlayers);
+
+    if (insertError) {
+      // rollback: limpiar cualquier inserción parcial e intentar restaurar estado previo
+      const { error: cleanupError } = await supabase
+        .from("match_players")
+        .delete()
+        .eq("match_id", id);
+
+      let rollbackError = null;
+      if (originalAssignments.length > 0) {
+        const { error } = await supabase
+          .from("match_players")
+          .insert(originalAssignments);
+        rollbackError = error;
+      }
+
+      if (cleanupError || rollbackError) {
+        throw new Error(
+          "No se pudieron guardar los equipos y tampoco se pudo restaurar el estado anterior.",
+        );
+      }
+
+      throw new Error(
+        "No se pudieron guardar los equipos del partido. Se restauró el estado anterior.",
+      );
+    }
+
+    return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
+  } catch (error: any) {
+    errorMessage =
+      error?.message ||
+      "No se pudo actualizar el partido. Por favor, intenta más tarde.";
   }
-
-  return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
 }
 ---
 
-<Main title="Editar Partido | SGSC">
+<Main title="Editar Partido | SGSC" contentWidth="admin">
   <Title title="Editar Partido" subtitle="Panel de Administración" />
 
-  {/* Alerta de éxito */}
+  {/* Alertas */}
   {
-    Astro.url.searchParams.get("success") && (
-      <div role="alert" class="alert alert-success mb-6 rounded-xl shadow-md">
-        <Icon name="material-symbols:check-circle" size={22} />
-        <span class="flex-1 text-sm sm:text-base">
-          ¡Partido actualizado correctamente!
-        </span>
-        <a href="/matches" class="btn btn-sm btn-ghost rounded-xl">
+    showSuccess && (
+      <div class="mb-6 flex flex-col gap-2">
+        <Alert type="success" message="¡Partido actualizado correctamente!" />
+        <a
+          href="/admin/matches"
+          class="btn btn-ghost btn-sm w-full rounded-xl sm:w-fit"
+        >
           <Icon name="material-symbols:arrow-back" size={18} />
-          <span class="hidden sm:inline">Volver al historial</span>
+          Volver al historial
         </a>
       </div>
     )
   }
+  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
 
   <form method="POST" class="space-y-6">
     {/* Sección: Información General */}
@@ -141,6 +234,7 @@ if (Astro.request.method === "POST") {
             <legend class="fieldset-legend">Sede</legend>
             <select
               name="field_id"
+              required
               class="select select-bordered w-full rounded-xl"
             >
               {
@@ -160,6 +254,7 @@ if (Astro.request.method === "POST") {
             <legend class="fieldset-legend">Resultado Final </legend>
             <select
               name="result"
+              required
               class="select select-bordered w-full rounded-xl font-bold"
             >
               <option value="light" selected={match.result === "light"}>
@@ -226,8 +321,9 @@ if (Astro.request.method === "POST") {
       <div class="divide-base-200 divide-y">
         {
           players?.map((p) => {
-            const isLight = lightIds.includes(p.id);
-            const isDark = darkIds.includes(p.id);
+            const playerId = String(p.id);
+            const isLight = lightIds.includes(playerId);
+            const isDark = darkIds.includes(playerId);
             const isNone = !isLight && !isDark;
 
             return (

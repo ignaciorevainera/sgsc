@@ -1,6 +1,7 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
@@ -58,13 +59,7 @@ if (Astro.request.method === "POST") {
         {/* Alerta de error */}
         {
           errorMessage && (
-            <div
-              role="alert"
-              class="alert alert-error mb-4 rounded-xl py-2 text-xs shadow-md sm:text-sm"
-            >
-              <Icon name="material-symbols:error" class="shrink-0" size={16} />
-              <span>{errorMessage}</span>
-            </div>
+            <Alert type="error" message={errorMessage} class="mb-4" />
           )
         }
 

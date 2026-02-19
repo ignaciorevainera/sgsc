@@ -1,6 +1,9 @@
 ---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import { Icon } from "astro-icon/components";
 import { supabase } from "../lib/supabase";
+import { getCurrentYear } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
@@ -9,7 +12,9 @@ import Title from "@/components/shared/Title.astro";
 // 1. Datos
 const { data: players, error } = await supabase
   .from("view_player_stats_all_time")
-  .select("*")
+  .select(
+    "player_id, nickname, points, win_pct, wins, matches_played, attendance_pct, draws, losses",
+  )
   .eq("is_guest", false);
 
 const hasError = !!error;
@@ -74,30 +79,31 @@ const topUndefeated = getTop5(
     a.losses - b.losses || b.matches_played - a.matches_played,
 );
 
-const currentYear = new Date().getFullYear();
+const currentYear = getCurrentYear();
 const lastSeason = currentYear - 1;
 
-// 1. Buscamos los datos de la temporada pasada
-const { data: championsData } = await supabase
-  .from("view_player_stats_yearly")
-  .select("player_id, nickname, points, win_rate")
-  .eq("year", lastSeason)
-  .eq("is_guest", false) // Solo socios pueden ser campeones
-  .order("points", { ascending: false })
-  .order("win_rate", { ascending: false });
-
-// 2. Manejamos posibles empates en el primer puesto
-const topPointsChampions = championsData?.[0]?.points;
-const champions =
-  championsData?.filter((p) => p.points === topPointsChampions) || [];
-
-const { data: allMatchPlayers } = await supabase.from("match_players").select(`
+// 1. Buscamos los datos de la temporada pasada + partidos para duplas en paralelo
+const [{ data: championsData }, { data: allMatchPlayers }] = await Promise.all([
+  supabase
+    .from("view_player_stats_yearly")
+    .select("player_id, nickname, points, win_rate")
+    .eq("year", lastSeason)
+    .eq("is_guest", false) // Solo socios pueden ser campeones
+    .order("points", { ascending: false })
+    .order("win_rate", { ascending: false }),
+  supabase.from("match_players").select(`
     match_id,
     player_id,
     team,
     player:players(nickname, is_guest),
     match:matches(result)
-  `);
+  `),
+]);
+
+// 2. Manejamos posibles empates en el primer puesto
+const topPointsChampions = championsData?.[0]?.points;
+const champions =
+  championsData?.filter((p) => p.points === topPointsChampions) || [];
 
 const teamsByMatch = new Map();
 const duoStats = new Map();

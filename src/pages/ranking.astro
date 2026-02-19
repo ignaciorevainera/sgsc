@@ -1,5 +1,8 @@
 ---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import { createAstroSupabase } from "@/lib/supabase";
+import { getCurrentYear } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
@@ -16,7 +19,7 @@ const { data: yearsData } = await supabase
 const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
   (a, b) => b - a,
 );
-const currentYear = new Date().getFullYear().toString();
+const currentYear = String(getCurrentYear());
 // Si no hay datos, usamos el año actual como fallback
 const defaultYear =
   availableYears.length > 0 ? String(availableYears[0]) : currentYear;
@@ -46,11 +49,15 @@ const sortOptions = [
 // 3. Consulta SQL
 let query;
 if (season === "Histórico") {
-  query = supabase.from("view_player_stats_all_time").select("*");
+  query = supabase.from("view_player_stats_all_time").select(
+    "player_id, nickname, points, matches_played, attendance_pct, wins, draws, losses, win_rate, draw_rate, loss_rate, form_array, effectiveness, is_guest",
+  );
 } else {
   query = supabase
     .from("view_player_stats_yearly")
-    .select("*")
+    .select(
+      "player_id, nickname, points, matches_played, attendance_pct, wins, draws, losses, win_rate, draw_rate, loss_rate, form_array, effectiveness, is_guest, year",
+    )
     .eq("year", season);
 }
 

@@ -9,6 +9,7 @@ interface Props {
   description?: string; // Hacemos opcional la descripción
   image?: string; // Hacemos opcional la imagen para compartir
   type?: "website" | "article" | "profile"; // Tipo de contenido
+  contentWidth?: "public" | "admin";
 }
 
 const {
@@ -16,6 +17,7 @@ const {
   description = "Resultados, estadísticas y ranking del grupo Solo Gente Súper Comprometida.", // Valor por defecto
   image = "/images/og-default.jpg", // ¡Debes crear esta imagen! (ver abajo)
   type = "website",
+  contentWidth = "public",
 } = Astro.props;
 
 // Generamos URLs absolutas (necesarias para WhatsApp/FB)
@@ -24,6 +26,8 @@ const canonicalURL = new URL(
   Astro.site || Astro.url.origin
 );
 const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen relativa a absoluta
+const mainWidthClass =
+  contentWidth === "admin" ? "max-w-[80ch] lg:max-w-7xl" : "max-w-[80ch]";
 ---
 
 <html lang="es" data-theme="light">
@@ -75,7 +79,7 @@ const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen r
     <Header />
     <main
       id="main-content"
-      class="mx-auto flex w-full max-w-[80ch] flex-1 flex-col px-4 py-8 sm:py-12"
+      class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
       role="main"
     >
       <slot />

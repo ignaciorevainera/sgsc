@@ -103,6 +103,7 @@ Este documento define los estándares de diseño, colores, componentes y patrone
 
 - Encabezados de páginas principales
 - Debe usarse en TODAS las vistas (excepto perfiles individuales como `[id].astro`)
+- Excepciones explícitas: `src/pages/index.astro` y `src/pages/404.astro`
 
 ### ResultStats (`src/components/ResultStats.astro`)
 
@@ -291,6 +292,7 @@ Todas las vistas de admin DEBEN usar:
 
 - Ancho máximo en desktop: `lg:max-w-7xl` (para admin)
 - Ancho estándar páginas públicas: `max-w-[80ch]`
+- Implementación recomendada: usar `contentWidth="admin"` en `Main.astro` para vistas admin
 
 ## 🎨 Animaciones
 

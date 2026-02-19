@@ -1,11 +1,17 @@
+---
+import { getCurrentYear } from "@/lib/utils/dateUtils";
+
+const currentYear = getCurrentYear();
+---
+
 <footer
   class="footer sm:footer-horizontal footer-center bg-base-100 text-base-content rounded-t-xl p-4"
   role="contentinfo"
 >
   <aside>
     <p>
-      Copyright © <time datetime={new Date().getFullYear().toString()}
-        >{new Date().getFullYear()}</time
+      Copyright © <time datetime={currentYear.toString()}
+        >{currentYear}</time
       > - Ignacio Revainera
     </p>
   </aside>

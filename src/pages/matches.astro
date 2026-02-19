@@ -2,6 +2,7 @@
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { supabase } from "@lib/supabase";
+import { getYearFromDate } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@components/MatchCard.astro";
@@ -28,7 +29,8 @@ const hasMatches = !hasError && matches && matches.length > 0;
 // 2. Lógica para agrupar por AÑO (Temporadas)
 // Transformamos la lista plana en un objeto: { "2025": [...], "2024": [...] }
 const matchesByYear = (matches || []).reduce((acc, match) => {
-  const year = new Date(match.date).getFullYear(); // Extraer año '2025-01-03' -> 2025
+  const year = getYearFromDate(match.date);
+  if (!year) return acc;
   if (!acc[year]) acc[year] = [];
   acc[year].push(match);
   return acc;

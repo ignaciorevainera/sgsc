@@ -8,10 +8,10 @@ import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
 const {
-  data: { session },
-} = await supabase.auth.getSession();
+  data: { user },
+} = await supabase.auth.getUser();
 
-if (!session) return Astro.redirect("/signin");
+if (!user) return Astro.redirect("/login");
 
 // Obtener conteos rápidos para mostrar en el dashboard
 const { count: matchCount } = await supabase
@@ -33,7 +33,7 @@ const { count: guestPlayerCount } = await supabase
   .eq("is_guest", true);
 ---
 
-<Main title="Panel de Administración">
+<Main title="Panel de Administración" contentWidth="admin">
   <Title title="Panel de Control" subtitle="Panel de Administración" />
   <div>
     <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-6">

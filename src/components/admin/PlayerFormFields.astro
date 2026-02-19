@@ -1,0 +1,127 @@
+---
+interface PlayerFormValues {
+  nickname?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  birth_date?: string | null;
+  preferred_foot?: "right" | "left" | "both" | null;
+  is_guest?: boolean;
+}
+
+interface Props {
+  values?: PlayerFormValues;
+  requiredNickname?: boolean;
+  idPrefix?: string;
+}
+
+const {
+  values = {},
+  requiredNickname = true,
+  idPrefix = "player",
+} = Astro.props;
+
+const guestCheckboxId = `${idPrefix}-is-guest`;
+---
+
+<div class="grid grid-cols-4 gap-2">
+  <div class="form-control col-span-4">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">
+        Apodo
+        {
+          requiredNickname && <span class="text-error font-bold"> *</span>
+        }
+      </legend>
+      <input
+        type="text"
+        name="nickname"
+        required={requiredNickname}
+        value={values.nickname || ""}
+        class="input input-bordered w-full rounded-xl"
+        placeholder="Ej: Messi"
+      />
+    </fieldset>
+  </div>
+
+  <div class="form-control col-span-2">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Nombre</legend>
+      <input
+        type="text"
+        name="first_name"
+        value={values.first_name || ""}
+        class="input input-bordered w-full rounded-xl"
+        placeholder="Lionel"
+      />
+    </fieldset>
+  </div>
+
+  <div class="form-control col-span-2">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Apellido</legend>
+      <input
+        type="text"
+        name="last_name"
+        value={values.last_name || ""}
+        class="input input-bordered w-full rounded-xl"
+        placeholder="Messi"
+      />
+    </fieldset>
+  </div>
+
+  <div class="form-control col-span-4 sm:col-span-2">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Fecha Nacimiento</legend>
+      <input
+        type="date"
+        name="birth_date"
+        value={values.birth_date || ""}
+        class="input input-bordered w-full rounded-xl"
+      />
+    </fieldset>
+  </div>
+
+  <div class="form-control col-span-4 sm:col-span-2">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">Pie Habil</legend>
+      <select
+        name="preferred_foot"
+        class="select select-bordered w-full rounded-xl"
+      >
+        <option value="" selected={!values.preferred_foot}>
+          No especificado
+        </option>
+        <option value="right" selected={values.preferred_foot === "right"}>
+          Diestro
+        </option>
+        <option value="left" selected={values.preferred_foot === "left"}>
+          Zurdo
+        </option>
+        <option value="both" selected={values.preferred_foot === "both"}>
+          Ambidiestro
+        </option>
+      </select>
+    </fieldset>
+  </div>
+
+  <div class="form-control col-span-4">
+    <label
+      for={guestCheckboxId}
+      class="mt-2 flex cursor-pointer flex-row items-center justify-start gap-3"
+    >
+      <input
+        type="checkbox"
+        name="is_guest"
+        id={guestCheckboxId}
+        class="checkbox checkbox-sm"
+        checked={values.is_guest || false}
+      />
+      <div class="flex flex-col items-start">
+        <span class="font-bold">Marcar como Invitado</span>
+        <span class="text-base-content/60 text-xs">
+          Los invitados aparecen al final de las listas de convocatoria.
+        </span>
+      </div>
+    </label>
+  </div>
+</div>

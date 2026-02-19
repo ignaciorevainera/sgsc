@@ -53,6 +53,24 @@ export const formatDate = (
 };
 
 /**
+ * Obtiene el año de una fecha "YYYY-MM-DD" de forma segura.
+ */
+export const getYearFromDate = (
+  dateString: string | null | undefined,
+): number | null => {
+  const date = getSafeDate(dateString);
+  if (!date) return null;
+  return date.getUTCFullYear();
+};
+
+/**
+ * Año actual del sistema.
+ */
+export const getCurrentYear = (): number => {
+  return new Date().getFullYear();
+};
+
+/**
  * Calcula la edad exacta basada en la fecha de nacimiento segura
  */
 export const calculateAge = (dateString: string): number => {

@@ -2,7 +2,13 @@
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { createAstroSupabase } from "@/lib/supabase";
-import { formatDate, calculateAge } from "@/lib/utils/dateUtils";
+import {
+  formatDate,
+  calculateAge,
+  getCurrentYear,
+  getSafeDate,
+  getYearFromDate,
+} from "@/lib/utils/dateUtils";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
@@ -24,50 +30,62 @@ const { data: playerInfo, error: playerInfoError } = await supabase
 // Si hay error de conexión o jugador no existe, redirigir
 if (playerInfoError || !playerInfo) return Astro.redirect("/players");
 
-// 2. Estadísticas de carrera (Vista All Time)
-const { data: playerStats } = await supabase
-  .from("view_player_stats_all_time")
-  .select("*")
-  .eq("player_id", id)
-  .single();
+// 2. Consultas principales en paralelo
+const [
+  { data: playerStats },
+  { data: yearlyStats },
+  { data: allStats },
+  { data: allHistory },
+  { data: allMatchEntries },
+  { data: allSeasonsData },
+] = await Promise.all([
+  supabase
+    .from("view_player_stats_all_time")
+    .select("*")
+    .eq("player_id", id)
+    .single(),
+  supabase
+    .from("view_player_stats_yearly")
+    .select("*")
+    .eq("player_id", id)
+    .order("year", { ascending: false }),
+  supabase.from("view_player_stats_all_time").select("win_pct"),
+  supabase
+    .from("match_players")
+    .select(
+      `
+      team,
+      matches!inner (
+        date,
+        result,
+        fields (name)
+      )
+    `,
+    )
+    .eq("player_id", id)
+    .order("matches(date)", { ascending: false }),
+  supabase
+    .from("match_players")
+    .select(
+      `
+      match_id,
+      team,
+      match:matches!inner (result)
+    `,
+    )
+    .eq("player_id", id),
+  supabase.from("view_player_stats_yearly").select("year"),
+]);
 
 if (!playerStats) return Astro.redirect("/players");
 
 const player = { ...playerInfo, ...playerStats };
-
-// 3. Estadísticas por Año
-const { data: yearlyStats } = await supabase
-  .from("view_player_stats_yearly")
-  .select("*")
-  .eq("player_id", id)
-  .order("year", { ascending: false });
-
-// 4. Promedio del club
-const { data: allStats } = await supabase
-  .from("view_player_stats_all_time")
-  .select("win_pct");
 
 const clubAverageWinPct = allStats
   ? Math.round(
       allStats.reduce((acc, s) => acc + s.win_pct, 0) / allStats.length,
     )
   : 0;
-
-// 5. Historial completo
-const { data: allHistory } = await supabase
-  .from("match_players")
-  .select(
-    `
-    team,
-    matches!inner (
-      date,
-      result,
-      fields (name)
-    )
-  `,
-  )
-  .eq("player_id", id)
-  .order("matches(date)", { ascending: false });
 
 // --- CÁLCULOS ---
 // Tipo para datos de partido extraídos de Supabase
@@ -123,7 +141,7 @@ const recentMatches: RecentMatch[] =
   allHistory?.slice(0, 5).map((mp): RecentMatch => {
     const m = getMatchData(mp.matches);
     if (!m)
-      return { date: new Date().toISOString(), fieldName: "-", outcome: "L" };
+      return { date: `${getCurrentYear()}-01-01`, fieldName: "-", outcome: "L" };
 
     let outcome: MatchOutcome = "L";
     if (m.result === "draw") outcome = "D";
@@ -163,46 +181,42 @@ const outcomeConfigs: Record<MatchOutcome, OutcomeConfig> = {
 const getOutcomeConfig = (outcome: MatchOutcome): OutcomeConfig =>
   outcomeConfigs[outcome] || outcomeConfigs.L;
 
-// 1. Obtener todos los partidos donde participó este jugador
-const { data: allMatchEntries } = await supabase
-  .from("match_players")
-  .select(
-    `
-    match_id,
-    team,
-    match:matches!inner (result)
-  `,
-  )
-  .eq("player_id", id);
-
 const myMatchIds = allMatchEntries?.map((m) => m.match_id) || [];
+const myMatchEntriesByMatchId = new Map(
+  (allMatchEntries || []).map((entry) => [entry.match_id, entry]),
+);
 
 // 2. Obtener a TODOS los demás jugadores que participaron en ESOS mismos partidos
 // Agregamos el filtro !inner para que Supabase filtre la consulta principal
 // basándose en una condición de la tabla relacionada (players)
-const { data: teammatesAndRivals } = await supabase
-  .from("match_players")
-  .select(
-    `
-    player_id,
-    team,
-    match_id,
-    player:players!inner (
-      nickname,
-      is_guest
-    )
-  `,
-  )
-  .in("match_id", myMatchIds)
-  .neq("player_id", id)
-  .eq("player.is_guest", false); // <--- FILTRO CLAVE: Solo socios
+const teammatesAndRivals =
+  myMatchIds.length === 0
+    ? []
+    : (
+        await supabase
+          .from("match_players")
+          .select(
+            `
+            player_id,
+            team,
+            match_id,
+            player:players!inner (
+              nickname,
+              is_guest
+            )
+          `,
+          )
+          .in("match_id", myMatchIds)
+          .neq("player_id", id)
+          .eq("player.is_guest", false)
+      ).data || []; // <--- FILTRO CLAVE: Solo socios
 
 // 3. Procesar estadísticas de Socios y Némesis
 const partnerStats = new Map(); // Para "Mejor Socio" (Mismo equipo)
 const rivalStats = new Map(); // Para "Némesis" (Equipo contrario)
 
 teammatesAndRivals?.forEach((entry) => {
-  const myEntry = allMatchEntries?.find((m) => m.match_id === entry.match_id);
+  const myEntry = myMatchEntriesByMatchId.get(entry.match_id);
   if (!myEntry) return;
 
   const isTeammate = entry.team === myEntry.team;
@@ -317,8 +331,8 @@ const pointsByYear = chartYearlyData.map((d) => d.points);
 // 2. Gráfico Mensual (Año más reciente con actividad)
 const lastMatch = getMatchData(allHistory?.[0]?.matches);
 const targetYear = lastMatch?.date
-  ? new Date(lastMatch.date).getFullYear()
-  : new Date().getFullYear();
+  ? getYearFromDate(lastMatch.date) || getCurrentYear()
+  : getCurrentYear();
 
 const monthsLabels = [
   "Ene",
@@ -341,20 +355,15 @@ allHistory?.forEach((m) => {
   const matchNode = getMatchData(m.matches);
   if (!matchNode?.date) return;
 
-  const d = new Date(matchNode.date);
-  if (d.getFullYear() === targetYear) {
-    const month = d.getMonth();
+  const d = getSafeDate(matchNode.date);
+  if (!d) return;
+
+  if (d.getUTCFullYear() === targetYear) {
+    const month = d.getUTCMonth();
     if (matchNode.result === m.team) pointsByMonth[month] += 3;
     else if (matchNode.result === "draw") pointsByMonth[month] += 1;
   }
 });
-
-// ... (Tus consultas anteriores de playerInfo, playerStats, etc.)
-
-// 4. Obtener años totales de historia del club (Para calcular asistencia perfecta)
-const { data: allSeasonsData } = await supabase
-  .from("view_player_stats_yearly")
-  .select("year");
 
 // Extraemos los años únicos que ha tenido el club (Ej: 2024, 2025, 2026)
 const uniqueClubYears = [...new Set(allSeasonsData?.map((s) => s.year) ?? [])];
@@ -556,7 +565,7 @@ if (isOnFire) {
 const oldestMatch = allHistory?.[allHistory.length - 1];
 const oldestMatchData = getMatchData(oldestMatch?.matches);
 const debutYear = oldestMatchData?.date
-  ? new Date(oldestMatchData.date).getFullYear()
+  ? getYearFromDate(oldestMatchData.date)
   : null;
 ---
 

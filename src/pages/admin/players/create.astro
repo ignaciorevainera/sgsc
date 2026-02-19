@@ -1,29 +1,25 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
+import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
+import { parsePlayerFormData } from "@/lib/utils/playerForm";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect("/login");
+}
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
-
-  const nickname = formData.get("nickname");
-  const first_name = formData.get("first_name");
-  const last_name = formData.get("last_name");
-  const birth_date = formData.get("birth_date");
-  const rawFoot = formData.get("preferred_foot");
-  const preferred_foot = rawFoot === "" ? null : rawFoot;
-  const is_guest = formData.get("is_guest") === "on";
+  const playerInput = parsePlayerFormData(formData);
 
   const { error } = await supabase.from("players").insert({
-    nickname,
-    first_name: first_name || null,
-    last_name: last_name || null,
-    birth_date: birth_date || null,
-    preferred_foot: preferred_foot || null,
-    is_guest,
+    ...playerInput,
   });
 
   if (error) {
@@ -34,7 +30,7 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<Main title="Nuevo Jugador">
+<Main title="Nuevo Jugador" contentWidth="admin">
   <Title title="Nuevo Jugador" subtitle="Panel de Administración" />
 
   <div class="flex flex-col gap-6">
@@ -43,92 +39,7 @@ if (Astro.request.method === "POST") {
       method="POST"
       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
     >
-      <div class="grid grid-cols-4 gap-2">
-        <div class="form-control col-span-4">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend"
-              >Apodo <span class="text-error font-bold">*</span></legend
-            >
-            <input
-              type="text"
-              name="nickname"
-              required
-              class="input input-bordered w-full rounded-xl"
-              placeholder="Ej: Messi"
-            />
-          </fieldset>
-        </div>
-
-        <div class="form-control col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Nombre</legend>
-            <input
-              type="text"
-              name="first_name"
-              class="input input-bordered w-full rounded-xl"
-              placeholder="Lionel"
-            />
-          </fieldset>
-        </div>
-
-        <div class="form-control col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Apellido</legend>
-            <input
-              type="text"
-              name="last_name"
-              class="input input-bordered w-full rounded-xl"
-              placeholder="Messi"
-            />
-          </fieldset>
-        </div>
-
-        <div class="form-control col-span-4 sm:col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Fecha Nacimiento</legend>
-            <input
-              type="date"
-              name="birth_date"
-              class="input input-bordered w-full rounded-xl"
-            />
-          </fieldset>
-        </div>
-
-        <div class="form-control col-span-4 sm:col-span-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">Pie Hábil</legend>
-            <select
-              name="preferred_foot"
-              class="select select-bordered w-full rounded-xl"
-            >
-              <option value="">No especificado</option>
-              <option value="right">Diestro</option>
-              <option value="left">Zurdo</option>
-              <option value="both">Ambidiestro</option>
-            </select>
-          </fieldset>
-        </div>
-
-        <div class="form-control col-span-4">
-          <label
-            for="is_guest"
-            class="mt-2 flex cursor-pointer flex-row items-center justify-start gap-3"
-          >
-            <input
-              type="checkbox"
-              name="is_guest"
-              id="is_guest"
-              class="checkbox checkbox-sm"
-            />
-            <div class="flex flex-col items-start">
-              <span class="font-bold">Marcar como Invitado</span>
-              <span class="text-base-content/60 text-xs">
-                Los invitados aparecen al final de las listas de convocatoria.
-              </span>
-            </div>
-          </label>
-        </div>
-      </div>
+      <PlayerFormFields idPrefix="create-player" />
     </form>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">

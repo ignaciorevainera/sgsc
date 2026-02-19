@@ -35,7 +35,7 @@ const fields =
       // Encontrar la fecha más reciente
       // Ordenamos los partidos por fecha descendente (el primero es el último jugado)
       const sortedMatches = matches.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => (b.date || "").localeCompare(a.date || "")
       );
       const lastMatchDate =
         sortedMatches.length > 0 ? sortedMatches[0].date : null;
