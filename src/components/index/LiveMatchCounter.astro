@@ -1,0 +1,194 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  matchDate?: string | null;
+}
+
+const { matchDate = null } = Astro.props;
+
+const parseMatchDateToTimestamp = (
+  rawMatchDate: string | null | undefined,
+): { timestamp: number | null; isDateOnly: boolean } => {
+  if (!rawMatchDate) return { timestamp: null, isDateOnly: false };
+
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rawMatchDate);
+
+  if (isDateOnly) {
+    const [year, month, day] = rawMatchDate.split("-").map(Number);
+    const timestamp = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+
+    return {
+      timestamp: Number.isNaN(timestamp) ? null : timestamp,
+      isDateOnly,
+    };
+  }
+
+  const timestamp = new Date(rawMatchDate).getTime();
+
+  return {
+    timestamp: Number.isNaN(timestamp) ? null : timestamp,
+    isDateOnly,
+  };
+};
+
+const { timestamp: matchTimestamp, isDateOnly } =
+  parseMatchDateToTimestamp(matchDate);
+const baseTimestamp =
+  typeof matchTimestamp === "number" ? String(matchTimestamp) : null;
+const displayDate =
+  typeof matchTimestamp === "number"
+    ? new Intl.DateTimeFormat("es-AR", {
+        dateStyle: "long",
+        ...(isDateOnly ? { timeZone: "UTC" } : {}),
+      }).format(matchTimestamp)
+    : null;
+---
+
+<div class="card bg-base-100 border-base-200 mt-4 rounded-xl border shadow-md">
+  <div class="card-body gap-4">
+    <div class="flex items-center gap-2">
+      <Icon
+        name="material-symbols:timer-outline"
+        class="text-primary"
+        size={22}
+        aria-hidden="true"
+      />
+      <h3 class="text-primary text-lg font-black uppercase italic">
+        Tiempo Sin Jugar
+      </h3>
+    </div>
+
+    {
+      baseTimestamp ? (
+        <>
+          <p class="text-base-content/70 text-sm">
+            Contador en vivo desde el último partido registrado.
+          </p>
+
+          <div
+            id="live-match-counter"
+            class="grid grid-cols-2 gap-3 sm:grid-cols-4"
+            data-base-timestamp={baseTimestamp}
+            aria-hidden="true"
+          >
+            <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
+              <span class="countdown text-primary font-countdown text-3xl font-black">
+                <span data-unit="days" />
+              </span>
+              <span class="text-base-content/60 text-xs font-bold uppercase">
+                Días
+              </span>
+            </div>
+
+            <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
+              <span class="countdown text-primary font-countdown text-3xl font-black">
+                <span data-unit="hours" />
+              </span>
+              <span class="text-base-content/60 text-xs font-bold uppercase">
+                Horas
+              </span>
+            </div>
+
+            <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
+              <span class="countdown text-primary font-countdown text-3xl font-black">
+                <span data-unit="minutes" />
+              </span>
+              <span class="text-base-content/60 text-xs font-bold uppercase">
+                Minutos
+              </span>
+            </div>
+
+            <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
+              <span class="countdown text-primary font-countdown text-3xl font-black">
+                <span data-unit="seconds" />
+              </span>
+              <span class="text-base-content/60 text-xs font-bold uppercase">
+                Segundos
+              </span>
+            </div>
+          </div>
+
+          <p class="text-base-content/60 text-xs">
+            Último partido: {displayDate}
+          </p>
+          <p
+            id="live-match-counter-label"
+            class="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          />
+        </>
+      ) : (
+        <div class="alert alert-soft bg-base-200 border-base-300 text-base-content rounded-xl border">
+          <Icon
+            name="material-symbols:event-busy"
+            class="text-info"
+            size={20}
+            aria-hidden="true"
+          />
+          <span class="text-sm">
+            Todavía no hay un último partido válido para iniciar el contador.
+          </span>
+        </div>
+      )
+    }
+  </div>
+</div>
+
+<script is:inline>
+  const liveCounterRoot = document.getElementById("live-match-counter");
+  const liveCounterLabel = document.getElementById("live-match-counter-label");
+
+  if (liveCounterRoot) {
+    const baseTimestampRaw = liveCounterRoot.getAttribute(
+      "data-base-timestamp",
+    );
+    const baseTimestamp = baseTimestampRaw ? Number(baseTimestampRaw) : NaN;
+    const unitElements = {
+      days: liveCounterRoot.querySelector('[data-unit="days"]'),
+      hours: liveCounterRoot.querySelector('[data-unit="hours"]'),
+      minutes: liveCounterRoot.querySelector('[data-unit="minutes"]'),
+      seconds: liveCounterRoot.querySelector('[data-unit="seconds"]'),
+    };
+
+    if (!Number.isNaN(baseTimestamp)) {
+      let lastAnnouncedMinute = -1;
+
+      const setUnitValue = (unit, value) => {
+        const unitElement = unitElements[unit];
+        if (!(unitElement instanceof HTMLElement)) return;
+
+        const boundedValue = Math.max(0, Math.min(999, value));
+        unitElement.style.setProperty("--value", String(boundedValue));
+      };
+
+      const updateLiveCounter = () => {
+        const now = Date.now();
+        const elapsedSeconds = Math.max(
+          0,
+          Math.floor((now - baseTimestamp) / 1000),
+        );
+
+        const days = Math.floor(elapsedSeconds / 86400);
+        const hours = Math.floor((elapsedSeconds % 86400) / 3600);
+        const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+        const seconds = elapsedSeconds % 60;
+
+        setUnitValue("days", days);
+        setUnitValue("hours", hours);
+        setUnitValue("minutes", minutes);
+        setUnitValue("seconds", seconds);
+
+        if (liveCounterLabel && minutes !== lastAnnouncedMinute) {
+          lastAnnouncedMinute = minutes;
+          liveCounterLabel.textContent = `Han pasado ${days} días, ${hours} horas y ${minutes} minutos desde el último partido.`;
+        }
+      };
+
+      updateLiveCounter();
+      window.setInterval(updateLiveCounter, 1000);
+    }
+  }
+</script>

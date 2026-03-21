@@ -5,6 +5,7 @@ import { Icon } from "astro-icon/components";
 import { supabase } from "@/lib/supabase";
 import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
+import LiveMatchCounter from "@/components/index/LiveMatchCounter.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@/components/MatchCard.astro";
 
@@ -241,6 +242,8 @@ const features = [
             )
           }
         </div>
+
+        <LiveMatchCounter matchDate={lastMatch?.date ?? null} />
       </div>
 
       <!-- Feature Cards: 3 columnas cada una -->

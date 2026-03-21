@@ -1,4 +1,5 @@
 @import '@fontsource-variable/sora';
+@import '@fontsource-variable/roboto-mono';
 
 @import "tailwindcss";
 
@@ -14,4 +15,8 @@
 
 [role="button"] {
   cursor: pointer;
+}
+
+.font-countdown {
+  font-family: "Roboto Mono Variable", monospace;
 }
