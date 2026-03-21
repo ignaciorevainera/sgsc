@@ -14,7 +14,9 @@ if (!user) {
 
 const { data: players } = await supabase
   .from("players")
-  .select("*")
+  .select(
+    "id, nickname, first_name, last_name, preferred_foot, is_active, is_guest",
+  )
   .order("is_guest", { ascending: true })
   .order("nickname", { ascending: true });
 ---

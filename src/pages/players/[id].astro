@@ -21,17 +21,9 @@ const { id } = Astro.params;
 
 if (!id) return Astro.redirect("/players");
 
-const { data: playerInfo, error: playerInfoError } = await supabase
-  .from("players")
-  .select("birth_date, nickname, preferred_foot")
-  .eq("id", id)
-  .single();
-
-// Si hay error de conexión o jugador no existe, redirigir
-if (playerInfoError || !playerInfo) return Astro.redirect("/players");
-
 // 2. Consultas principales en paralelo
 const [
+  { data: playerInfo },
   { data: playerStats },
   { data: yearlyStats },
   { data: allStats },
@@ -40,13 +32,20 @@ const [
   { data: allSeasonsData },
 ] = await Promise.all([
   supabase
+    .from("players")
+    .select("birth_date, preferred_foot")
+    .eq("id", id)
+    .maybeSingle(),
+  supabase
     .from("view_player_stats_all_time")
-    .select("*")
+    .select(
+      "player_id, nickname, points, matches_played, wins, draws, losses, win_pct",
+    )
     .eq("player_id", id)
     .single(),
   supabase
     .from("view_player_stats_yearly")
-    .select("*")
+    .select("year, points, matches_played, wins, draws, losses, win_pct")
     .eq("player_id", id)
     .order("year", { ascending: false }),
   supabase.from("view_player_stats_all_time").select("win_pct"),
@@ -79,7 +78,11 @@ const [
 
 if (!playerStats) return Astro.redirect("/players");
 
-const player = { ...playerInfo, ...playerStats };
+const player = {
+  birth_date: playerInfo?.birth_date ?? null,
+  preferred_foot: playerInfo?.preferred_foot ?? null,
+  ...playerStats,
+};
 
 const clubAverageWinPct = allStats
   ? Math.round(
@@ -141,7 +144,11 @@ const recentMatches: RecentMatch[] =
   allHistory?.slice(0, 5).map((mp): RecentMatch => {
     const m = getMatchData(mp.matches);
     if (!m)
-      return { date: `${getCurrentYear()}-01-01`, fieldName: "-", outcome: "L" };
+      return {
+        date: `${getCurrentYear()}-01-01`,
+        fieldName: "-",
+        outcome: "L",
+      };
 
     let outcome: MatchOutcome = "L";
     if (m.result === "draw") outcome = "D";
@@ -476,7 +483,7 @@ const winThresholds: TierThreshold[] = [
   [3, "bronze"],
 ];
 const winnerBadge = getTierBadge(
-  player.matches_won,
+  player.wins,
   winThresholds,
   "Ganador",
   "material-symbols:trophy",

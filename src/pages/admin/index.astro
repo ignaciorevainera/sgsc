@@ -16,19 +16,19 @@ if (!user) return Astro.redirect("/login");
 // Obtener conteos rápidos para mostrar en el dashboard
 const { count: matchCount } = await supabase
   .from("matches")
-  .select("*", { count: "exact", head: true });
+  .select("id", { count: "exact", head: true });
 
 // Jugadores habituales (socios) activos
 const { count: regularPlayerCount } = await supabase
   .from("players")
-  .select("*", { count: "exact", head: true })
+  .select("id", { count: "exact", head: true })
   .eq("is_active", true)
   .eq("is_guest", false);
 
 // Jugadores invitados activos
 const { count: guestPlayerCount } = await supabase
   .from("players")
-  .select("*", { count: "exact", head: true })
+  .select("id", { count: "exact", head: true })
   .eq("is_active", true)
   .eq("is_guest", true);
 ---

@@ -21,7 +21,9 @@ const showSuccess = Astro.url.searchParams.get("success") === "true";
 // A. El partido actual
 const { data: match } = await supabase
   .from("matches")
-  .select(`*, match_players(player_id, team)`)
+  .select(
+    "id, date, field_id, result, video_url, match_players(player_id, team)",
+  )
   .eq("id", id)
   .single();
 
@@ -31,11 +33,11 @@ if (!match) return Astro.redirect("/admin/matches");
 // B. Listas para los selectores (Canchas y Jugadores)
 const { data: fields } = await supabase
   .from("fields")
-  .select("*")
+  .select("id, name")
   .order("name");
 const { data: players } = await supabase
   .from("players")
-  .select("*")
+  .select("id, nickname, is_guest")
   .eq("is_active", true) // <--- Agrega esto
   .order("is_guest", { ascending: true })
   .order("nickname", { ascending: true });
@@ -129,7 +131,9 @@ if (Astro.request.method === "POST") {
       .eq("id", id);
 
     if (matchUpdateError) {
-      throw new Error("No se pudo actualizar la información general del partido.");
+      throw new Error(
+        "No se pudo actualizar la información general del partido.",
+      );
     }
 
     // 4. Actualizar equipos (con rollback de mejor esfuerzo)
@@ -146,7 +150,9 @@ if (Astro.request.method === "POST") {
       .eq("match_id", id);
 
     if (deleteError) {
-      throw new Error("No se pudieron limpiar los equipos anteriores del partido.");
+      throw new Error(
+        "No se pudieron limpiar los equipos anteriores del partido.",
+      );
     }
 
     const { error: insertError } = await supabase

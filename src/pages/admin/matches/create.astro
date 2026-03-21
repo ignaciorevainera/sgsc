@@ -81,11 +81,7 @@ if (Astro.request.method === "POST") {
     )
   }
 
-  {
-    errorMessage && (
-      <Alert type="error" message={errorMessage} class="mb-6" />
-    )
-  }
+  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
 
   <form
     method="POST"
@@ -439,18 +435,32 @@ if (Astro.request.method === "POST") {
   import { formatDate } from "@/lib/utils/dateUtils";
 
   // LÓGICA CLIENT-SIDE PARA EL PREVIEW
-  const btnPreview = document.getElementById("btnPreview");
-  const btnConfirm = document.getElementById("btnConfirm");
-  const modal = document.getElementById("preview_modal");
-  const form = document.getElementById("matchForm");
+  const btnPreview = document.getElementById(
+    "btnPreview",
+  ) as HTMLButtonElement | null;
+  const btnConfirm = document.getElementById(
+    "btnConfirm",
+  ) as HTMLButtonElement | null;
+  const modal = document.getElementById(
+    "preview_modal",
+  ) as HTMLDialogElement | null;
+  const form = document.getElementById("matchForm") as HTMLFormElement | null;
 
-  btnPreview.addEventListener("click", () => {
+  btnPreview?.addEventListener("click", () => {
     // 1. Validar campos básicos
-    const date = document.getElementById("inputDate").value;
-    const fieldSelect = document.getElementById("inputField");
+    const dateInput = document.getElementById(
+      "inputDate",
+    ) as HTMLInputElement | null;
+    const fieldSelect = document.getElementById(
+      "inputField",
+    ) as HTMLSelectElement | null;
+    const resultInput = document.querySelector(
+      'input[name="result"]:checked',
+    ) as HTMLInputElement | null;
+
+    const date = dateInput?.value ?? "";
     const fieldName =
-      fieldSelect.options[fieldSelect.selectedIndex]?.dataset.name;
-    const resultInput = document.querySelector('input[name="result"]:checked');
+      fieldSelect?.options[fieldSelect.selectedIndex]?.dataset.name;
 
     if (!date || !fieldName || !resultInput) {
       alert("Por favor completa fecha, cancha y resultado.");
@@ -458,15 +468,18 @@ if (Astro.request.method === "POST") {
     }
 
     // 2. Recolectar Jugadores
-    const lightPlayers = [];
-    const darkPlayers = [];
+    const lightPlayers: string[] = [];
+    const darkPlayers: string[] = [];
 
     // Buscamos todos los inputs "checked" que sean de jugadores
-    document.querySelectorAll(".player-selector:checked").forEach((input) => {
-      const nickname = input.dataset.nickname;
-      if (input.value === "light") lightPlayers.push(nickname);
-      if (input.value === "dark") darkPlayers.push(nickname);
-    });
+    document
+      .querySelectorAll<HTMLInputElement>(".player-selector:checked")
+      .forEach((input) => {
+        const nickname = input.dataset.nickname;
+        if (!nickname) return;
+        if (input.value === "light") lightPlayers.push(nickname);
+        if (input.value === "dark") darkPlayers.push(nickname);
+      });
 
     if (lightPlayers.length === 0 || darkPlayers.length === 0) {
       alert("Debes seleccionar jugadores para ambos equipos.");
@@ -474,11 +487,36 @@ if (Astro.request.method === "POST") {
     }
 
     // 3. Llenar el Modal
-    document.getElementById("previewDate").innerText = formatDate(date, "short");
-    document.getElementById("previewField").innerText = fieldName;
+    const previewDate = document.getElementById("previewDate");
+    const previewField = document.getElementById("previewField");
+    const badge = document.getElementById(
+      "previewResultBadge",
+    ) as HTMLSpanElement | null;
+    const lightTeam = document.getElementById("previewLightTeam");
+    const darkTeam = document.getElementById("previewDarkTeam");
+    const listLight = document.getElementById("previewLightList");
+    const listDark = document.getElementById("previewDarkList");
+
+    if (
+      !previewDate ||
+      !previewField ||
+      !badge ||
+      !lightTeam ||
+      !darkTeam ||
+      !listLight ||
+      !listDark ||
+      !modal
+    ) {
+      alert(
+        "No se pudo abrir la previsualización. Recarga la página e intenta nuevamente.",
+      );
+      return;
+    }
+
+    previewDate.innerText = formatDate(date, "short");
+    previewField.innerText = fieldName;
 
     // Estilo del Badge de Resultado
-    const badge = document.getElementById("previewResultBadge");
     const resultVal = resultInput.value;
 
     // Resetear clases del badge
@@ -486,9 +524,6 @@ if (Astro.request.method === "POST") {
       "badge badge-lg w-full rounded-xl py-4 text-sm font-bold uppercase tracking-wide ";
 
     // Equipos containers para el ring de ganador
-    const lightTeam = document.getElementById("previewLightTeam");
-    const darkTeam = document.getElementById("previewDarkTeam");
-
     // Resetear rings
     lightTeam.classList.remove(
       "ring-2",
@@ -541,9 +576,6 @@ if (Astro.request.method === "POST") {
     }
 
     // Listas de jugadores con estilo PlayerBadge
-    const listLight = document.getElementById("previewLightList");
-    const listDark = document.getElementById("previewDarkList");
-
     listLight.innerHTML = lightPlayers
       .map(
         (p) =>
@@ -562,7 +594,8 @@ if (Astro.request.method === "POST") {
   });
 
   // 5. Confirmar envío
-  btnConfirm.addEventListener("click", () => {
+  btnConfirm?.addEventListener("click", () => {
+    if (!form) return;
     form.submit(); // Esto envía el POST real al servidor
   });
 </script>

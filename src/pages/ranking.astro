@@ -49,15 +49,11 @@ const sortOptions = [
 // 3. Consulta SQL
 let query;
 if (season === "Histórico") {
-  query = supabase.from("view_player_stats_all_time").select(
-    "player_id, nickname, points, matches_played, attendance_pct, wins, draws, losses, win_rate, draw_rate, loss_rate, form_array, effectiveness, is_guest",
-  );
+  query = supabase.from("view_player_stats_all_time").select("*");
 } else {
   query = supabase
     .from("view_player_stats_yearly")
-    .select(
-      "player_id, nickname, points, matches_played, attendance_pct, wins, draws, losses, win_rate, draw_rate, loss_rate, form_array, effectiveness, is_guest, year",
-    )
+    .select("*")
     .eq("year", season);
 }
 
@@ -70,22 +66,31 @@ const hasPlayersStats = !hasError && rawPlayers && rawPlayers.length > 0;
 
 // 4. Mapeo de datos
 const players =
-  rawPlayers?.map((p) => ({
+  rawPlayers?.map((p: any) => ({
     ...p,
     matches: p.matches_played,
     // Mapeamos los campos nuevos de la vista SQL
     attendance_percentage: p.attendance_pct || 0,
 
-    // IMPORTANTE: Para la TABLA (StandingsTable), pasamos las Tasas Reales
-    win_pct: p.win_rate || 0, // % de Victorias (Matches Won / Played)
-    draw_pct: p.draw_rate || 0, // % de Empates
-    loss_pct: p.loss_rate || 0, // % de Derrotas
+    // La vista histórica usa win_pct; la anual usa win_rate/draw_rate/loss_rate.
+    // Unificamos campos para que la tabla funcione en ambos modos.
+    win_pct: p.win_rate ?? p.win_pct ?? 0,
+    draw_pct:
+      p.draw_rate ??
+      (p.matches_played > 0
+        ? Math.round((p.draws / p.matches_played) * 100)
+        : 0),
+    loss_pct:
+      p.loss_rate ??
+      (p.matches_played > 0
+        ? Math.round((p.losses / p.matches_played) * 100)
+        : 0),
 
-    // Pasamos el array de forma
+    // En histórico puede no existir en la vista.
     form_array: p.form_array || [],
 
-    // Guardamos la efectividad real por si la necesitamos para ordenar
-    effectiveness: p.effectiveness || 0,
+    // Fallback para histórico: usar % de victorias.
+    effectiveness: p.effectiveness ?? p.win_rate ?? p.win_pct ?? 0,
   })) || [];
 
 // 5. Ordenamiento

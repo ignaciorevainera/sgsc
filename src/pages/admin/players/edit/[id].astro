@@ -20,7 +20,9 @@ const { id } = Astro.params;
 // Obtener datos actuales
 const { data: player } = await supabase
   .from("players")
-  .select("*")
+  .select(
+    "id, nickname, first_name, last_name, birth_date, preferred_foot, is_guest, is_active",
+  )
   .eq("id", id)
   .single();
 if (!player) return Astro.redirect("/admin/players");
