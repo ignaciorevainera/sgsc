@@ -9,8 +9,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.6.0",
-    "@astrojs/vercel": "^9.0.3",
+    "@astrojs/sitemap": "^3.7.1",
+    "@astrojs/vercel": "^10.0.0",
     "@fontsource-variable/sora": "^5.2.8",
     "@fontsource/poppins": "^5.2.7",
     "@iconify-json/material-symbols": "^1.2.50",
@@ -18,7 +18,7 @@
     "@supabase/supabase-js": "^2.89.0",
     "@tailwindcss/vite": "^4.1.18",
     "@vercel/analytics": "^1.6.1",
-    "astro": "^5.16.6",
+    "astro": "^6.0.4",
     "astro-icon": "^1.1.5",
     "tailwindcss": "^4.1.18",
     "theme-change": "^2.5.0"
