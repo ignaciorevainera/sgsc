@@ -1,0 +1,56 @@
+{
+  "servers": {
+    "daisyUI": {
+      "type": "http",
+      "url": "https://gitmcp.io/saadeghi/daisyui"
+    },
+    "Astro docs": {
+      "url": "https://mcp.docs.astro.build/mcp",
+      "type": "http"
+    },
+    "Vercel": {
+      "url": "https://mcp.vercel.com",
+      "type": "http"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "type": "stdio"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "type": "stdio"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ],
+      "type": "stdio"
+    },
+    "git": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git"
+      ],
+      "type": "stdio"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=vbiuclhuqfqbpdddybnt&read_only=true"
+    }
+  },
+  "inputs": []
+}
