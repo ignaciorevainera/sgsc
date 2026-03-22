@@ -69,3 +69,60 @@ La Home muestra un contador en vivo, preciso y accesible del tiempo sin jugar de
 
 ### Bloqueantes para completar la tarea
 - Ninguno.
+
+## Auditoria de seguridad — 2026-03-21
+
+### Sin vulnerabilidades
+- Secretos en cliente: no se detectaron `PUBLIC_*SECRET`, `PUBLIC_*SERVICE_ROLE` ni `SUPABASE_SERVICE_ROLE_KEY` expuesta en `src/`.
+- Almacenamiento inseguro de sesion: no se detectaron tokens/sesiones en `localStorage` o `sessionStorage`.
+- Metodo HTTP en API: `src/pages/api/auth/signout.ts` exporta solo `POST`.
+- Variables de entorno locales: `.env` y `.env.production` estan en `.gitignore`.
+
+### Vulnerabilidades encontradas y corregidas
+- Falta de proteccion centralizada de rutas privadas y subrutas.
+    Archivo: `src/middleware.ts:4-49` (agregado).
+    Correccion: se implemento middleware global para proteger todo prefijo `/admin` y redirigir a `/login` si no hay sesion activa.
+
+- Falta de mitigacion CSRF para POST sensibles.
+    Archivo: `src/middleware.ts:5, 42-47`.
+    Correccion: se agrego validacion de mismo origen (Origin/Referer) para POST en `/admin` y `/api/auth/signout`, devolviendo `403` si falla.
+
+- Riesgo XSS por insercion de contenido dinamico con `innerHTML` en preview de convocatoria.
+    Archivo: `src/pages/admin/matches/create.astro:579-595`.
+    Correccion: se reemplazo render con `innerHTML` por construccion segura de nodos DOM usando `textContent`.
+
+- Riesgo XSS por interpolacion de nombres dinamicos en HTML generado para armador de equipos.
+    Archivo: `src/pages/teams-builder.astro:386, 444-458`.
+    Correccion: se agrego `escapeHtml(...)` para valores dinamicos antes de interpolarlos en el template HTML.
+
+- Riesgo XSS menor por feedback visual armado con `innerHTML`.
+    Archivo: `src/pages/teams-builder.astro:502-507`.
+    Correccion: se reemplazo `innerHTML` por `textContent` para el estado del boton de copiado.
+
+- Exposicion de error interno del servidor al cliente.
+    Archivo: `src/pages/admin/players/edit/[id].astro:60`.
+    Correccion: se reemplazo respuesta con payload tecnico por mensaje generico `Error interno`.
+
+- Header de hardening incompleto para permisos del navegador.
+    Archivo: `vercel.json:28`.
+    Correccion: se agrego `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+
+### Requiere decision del usuario
+- `tasks/lessons.md` no existe en este repositorio, por lo que no se pudo revisar historial de vulnerabilidades previas.
+
+- Supabase Security Advisors reporta politicas RLS permisivas (`USING/WITH CHECK true`) y proteccion de leaked passwords deshabilitada.
+    Detalle:
+    - `public.match_players` policy `Solo admins pueden modificar match_players` (ALL con `true`).
+    - `public.players` policy `Permitir crear jugadores a admins` (INSERT con `with_check true`).
+    - `public.players` policy `Permitir editar jugadores a admins` (UPDATE con `true`).
+    - Auth: leaked password protection disabled.
+
+    Limitacion actual:
+    - El entorno Supabase en esta sesion esta en modo read-only para migraciones (`Cannot apply migration in read-only mode`).
+    - No existe modelo de roles administrativos en tablas publicas (no hay columna/tabla de rol) para endurecer politicas sin una definicion funcional previa.
+
+### Recomendaciones adicionales
+- Definir un modelo de roles de administracion en BD (por ejemplo tabla `admin_users` vinculada a `auth.users`) y reemplazar politicas `authenticated` por chequeos explicitos de admin.
+- Habilitar leaked password protection en Supabase Auth:
+    https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+- Eliminar politicas RLS redundantes/permisivas marcadas por el linter y consolidar una sola politica por accion con condicion estricta de admin.

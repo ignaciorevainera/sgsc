@@ -57,7 +57,7 @@ if (Astro.request.method === "POST") {
 
   if (error) {
     console.error("Error al actualizar jugador:", error);
-    return new Response(JSON.stringify(error), { status: 500 });
+    return new Response("Error interno", { status: 500 });
   }
 
   return Astro.redirect(`/admin/players/edit/${id}?success=true`);

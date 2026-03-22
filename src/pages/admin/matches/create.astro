@@ -575,19 +575,25 @@ if (Astro.request.method === "POST") {
       darkTeam.classList.add("border-yellow-400");
     }
 
-    // Listas de jugadores con estilo PlayerBadge
-    listLight.innerHTML = lightPlayers
-      .map(
-        (p) =>
-          `<span class="badge badge-sm h-fit rounded-lg border border-slate-300 bg-slate-200 py-1 font-medium text-slate-800">${p}</span>`,
-      )
-      .join("");
-    listDark.innerHTML = darkPlayers
-      .map(
-        (p) =>
-          `<span class="badge badge-sm h-fit rounded-lg border border-slate-600 bg-slate-700 py-1 font-medium text-slate-100">${p}</span>`,
-      )
-      .join("");
+    // Listas de jugadores con estilo PlayerBadge (sin innerHTML para evitar XSS)
+    listLight.replaceChildren();
+    listDark.replaceChildren();
+
+    lightPlayers.forEach((playerName) => {
+      const badgeElement = document.createElement("span");
+      badgeElement.className =
+        "badge badge-sm h-fit rounded-lg border border-slate-300 bg-slate-200 py-1 font-medium text-slate-800";
+      badgeElement.textContent = playerName;
+      listLight.appendChild(badgeElement);
+    });
+
+    darkPlayers.forEach((playerName) => {
+      const badgeElement = document.createElement("span");
+      badgeElement.className =
+        "badge badge-sm h-fit rounded-lg border border-slate-600 bg-slate-700 py-1 font-medium text-slate-100";
+      badgeElement.textContent = playerName;
+      listDark.appendChild(badgeElement);
+    });
 
     // 4. Mostrar Modal
     modal.showModal();
