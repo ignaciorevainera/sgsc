@@ -6,7 +6,12 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.1",
@@ -25,10 +30,13 @@
     "theme-change": "^2.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@vitest/ui": "^4.1.0",
     "daisyui": "^5.5.14",
     "prettier": "3.7.4",
     "prettier-plugin-astro": "0.14.1",
-    "prettier-plugin-tailwindcss": "^0.7.2"
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "vitest": "^4.1.0"
   },
   "overrides": {
     "path-to-regexp": "^8.2.0"

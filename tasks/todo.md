@@ -126,3 +126,35 @@ La Home muestra un contador en vivo, preciso y accesible del tiempo sin jugar de
 - Habilitar leaked password protection en Supabase Auth:
     https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 - Eliminar politicas RLS redundantes/permisivas marcadas por el linter y consolidar una sola politica por accion con condicion estricta de admin.
+
+## Reporte de testing — 2026-03-21
+
+### Tests de unidad (Vitest)
+[14 tests pasando / 0 tests fallando]
+Cobertura:
+- [src/lib/utils/dateUtils.ts](src/lib/utils/dateUtils.ts): `getSafeDate`, `formatDate`, `getYearFromDate`, `getCurrentYear`, `calculateAge`.
+- [src/lib/utils/playerForm.ts](src/lib/utils/playerForm.ts): `parsePlayerFormData`.
+- [src/lib/supabase.ts](src/lib/supabase.ts): inicializacion de `supabase` y `createAstroSupabase` (mockeado).
+Sin cobertura:
+- Ninguna funcion exportada de `src/lib/` quedo sin test.
+
+### Tests e2e (Playwright)
+[14 tests pasando / 0 tests fallando / 8 tests omitidos por entorno]
+Flujos cubiertos (definidos en specs):
+- [tests/e2e/auth.spec.ts](tests/e2e/auth.spec.ts): redireccion de ruta protegida, login invalido, endpoint signout por GET.
+- [tests/e2e/fixtures.ts](tests/e2e/fixtures.ts): fixture autenticado para login con credenciales reales.
+- [tests/e2e/navigation.spec.ts](tests/e2e/navigation.spec.ts): navegacion publica y carga en viewport mobile.
+- [tests/e2e/forms.spec.ts](tests/e2e/forms.spec.ts): presencia de campos requeridos y submit vacio en login.
+- [tests/e2e/admin-forms.spec.ts](tests/e2e/admin-forms.spec.ts): alta real de jugador y alta real de partido (persistencia).
+Flujos sin cobertura ejecutada:
+- Login valido y logout real (definidos pero omitidos sin `TEST_EMAIL` / `TEST_PASSWORD`).
+- Persistencia real admin (definida pero omitida sin `E2E_ALLOW_MUTATIONS=true`).
+
+### Problemas encontrados
+- No existia infraestructura de testing en el repo (sin scripts, sin config, sin tests).
+- `tasks/lessons.md` no existe para extraer lecciones previas de testing.
+- `src/types/` no existe en el proyecto actual (solo tipos en utilidades), por lo que no se pudo hacer lectura obligatoria de esa carpeta.
+
+### Deuda tecnica de testing
+- Configurar `.env.test` real a partir de `.env.test.example` para habilitar ejecucion de tests autenticados.
+- Habilitar `E2E_ALLOW_MUTATIONS=true` solo en entorno de pruebas controlado para ejecutar persistencia real sin riesgo sobre datos compartidos.
