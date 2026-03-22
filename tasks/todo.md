@@ -158,3 +158,33 @@ Flujos sin cobertura ejecutada:
 ### Deuda tecnica de testing
 - Configurar `.env.test` real a partir de `.env.test.example` para habilitar ejecucion de tests autenticados.
 - Habilitar `E2E_ALLOW_MUTATIONS=true` solo en entorno de pruebas controlado para ejecutar persistencia real sin riesgo sobre datos compartidos.
+
+## Resultado de revision — 2026-03-21 (auditoria completa)
+
+### Aprobado
+- Build de produccion en verde con `npm run build`.
+- Chequeo de tipos/diagnosticos Astro en verde (`npx astro check` sin errores; solo hints).
+- Suite de tests automatizados en verde: `npm run test:run` (14/14) y `playwright test` (14 passed, 8 skipped por entorno).
+- Verificacion visual automatizada en mobile/tablet/desktop sobre rutas publicas y admin protegidas del `PROJECT_CONTEXT`: sin overflow horizontal detectado y sin errores de consola en rutas 200 (excepto ruido esperado en `/404`).
+- Rutas admin protegidas redirigen correctamente a `/login` cuando no hay sesion.
+
+### Requiere correccion
+- Alta: hay clases Tailwind con valores arbitrarios en paginas y estilos de medallas, incumpliendo la regla de proyecto de no usar valores arbitrarios en codigo nuevo/modificado. Ejemplos:
+    - `src/pages/teams.astro` (gradientes/patron con `bg-[...]`, `bg-size-[...]`, opacidad arbitraria)
+    - `src/pages/players/[id].astro` (sombras `shadow-[...]`, anchos `min-w-[...]`)
+    - `src/pages/admin/matches/create.astro` (`max-h-[90vh]`)
+    - `src/pages/404.astro` (`rounded-[100%]`)
+    - `src/pages/badges.astro` (sombras `shadow-[...]`)
+- Media: existe estilo inline en `src/pages/404.astro` (`style="rotate: -30deg;"`), incumpliendo la convencion de evitar `style=""`.
+- Media: hay colores hardcodeados en codigo de UI (`#000000`, `#ffffff`, `#F59E0B`, `#6366f1`) en:
+    - `src/pages/teams.astro`
+    - `src/pages/players/[id].astro`
+- Media: `astro check` reporta 6 hints de simbolos no usados que conviene limpiar para mantener calidad interna:
+    - `src/components/MatchCard.astro`
+    - `src/components/shared/SectionTitle.astro`
+    - `src/pages/index.astro`
+
+### Bloqueantes para completar la tarea
+- Falta `tasks/lessons.md`, por lo que no se puede validar contra historial de errores obligatorios del proyecto.
+- No estan disponibles `.github/skills/web-design-guidelines.md`, `.github/skills/performance.md` ni `AGENT_INSTRUCTIONS.md`, por lo que la auditoria no pudo contrastarse contra esas checklists internas requeridas para cierre final.
+- Auditoria visual de rutas dinamicas admin (`/admin/matches/edit/[id]`, `/admin/players/edit/[id]`) no se pudo completar sin credenciales + IDs concretos de registros en entorno de prueba.
