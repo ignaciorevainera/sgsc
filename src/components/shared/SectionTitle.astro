@@ -4,7 +4,7 @@ interface Props {
   as?: "h2" | "h3" | "h4";
 }
 
-const { class: className = "", as: Tag = "h2" } = Astro.props;
+const { class: className = "", as: Tag = "h2" } = Astro.props as Props;
 ---
 
 <Tag class={`text-sm font-black uppercase italic ${className}`}>

@@ -1,17 +1,9 @@
 ---
-import { createAstroSupabase } from "@/lib/supabase";
 import { formatDate } from "@/lib/utils/dateUtils";
 import { Icon } from "astro-icon/components";
 import PlayerBadge from "@/components/PlayerBadge.astro";
 
 const { match } = Astro.props;
-
-// 2. Verificamos si hay un usuario logueado
-const supabase = createAstroSupabase(Astro);
-const {
-  data: { session },
-} = await supabase.auth.getSession();
-const isLoggedIn = !!session; // True si hay usuario, False si es anónimo
 
 // Formato compartido: "Lun, 11 Abr"
 

@@ -12,22 +12,18 @@ import MatchCard from "@/components/MatchCard.astro";
 // --- CONSULTAS A SUPABASE ---
 
 // 1. Contadores + último partido (en paralelo)
-const [
-  { count: matchesCount, error: matchesCountError },
-  { count: playersCount },
-  { count: fieldsCount },
-  { data: lastMatchData },
-] = await Promise.all([
-  supabase.from("matches").select("id", { count: "exact", head: true }),
-  supabase
-    .from("players")
-    .select("id", { count: "exact", head: true })
-    .eq("is_guest", false),
-  supabase.from("fields").select("id", { count: "exact", head: true }),
-  supabase
-    .from("matches")
-    .select(
-      `
+const [{ error: matchesCountError }, {}, {}, { data: lastMatchData }] =
+  await Promise.all([
+    supabase.from("matches").select("id", { count: "exact", head: true }),
+    supabase
+      .from("players")
+      .select("id", { count: "exact", head: true })
+      .eq("is_guest", false),
+    supabase.from("fields").select("id", { count: "exact", head: true }),
+    supabase
+      .from("matches")
+      .select(
+        `
       id,
       date,
       result,
@@ -38,10 +34,10 @@ const [
         players (nickname)
       )
     `,
-    )
-    .order("date", { ascending: false })
-    .limit(1),
-]);
+      )
+      .order("date", { ascending: false })
+      .limit(1),
+  ]);
 
 const lastMatch = lastMatchData?.[0];
 
@@ -248,7 +244,7 @@ const features = [
 
       <!-- Feature Cards: 3 columnas cada una -->
       {
-        features.map((feature, index) => (
+        features.map((feature) => (
           <a
             href={feature.href}
             class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3"

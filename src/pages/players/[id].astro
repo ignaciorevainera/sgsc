@@ -426,8 +426,7 @@ const tiers: Record<TierKey, { name: string; style: string }> = {
   },
   diamond: {
     name: "Diamante",
-    style:
-      "bg-sky-50 text-sky-800 border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]",
+    style: "bg-sky-50 text-sky-800 border-sky-400 shadow-md",
   },
 };
 
@@ -521,8 +520,7 @@ if (totalClubSeasons > 1 && validPlayerSeasons === totalClubSeasons) {
     subLabel: "Perfecto",
     icon: "material-symbols:calendar-month",
     description: `Jugó todas las temporadas (${totalClubSeasons}) de la historia`,
-    style:
-      "bg-purple-50 text-purple-800 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]", // Estilo místico
+    style: "bg-purple-50 text-purple-800 border-purple-400 shadow-md", // Estilo místico
   });
 }
 
@@ -651,7 +649,7 @@ const debutYear = oldestMatchData?.date
       </div>
 
       <div
-        class="border-base-200 mt-2 flex min-w-[200px] flex-col items-center gap-3 border-t pt-6 lg:mt-0 lg:h-auto lg:items-end lg:self-stretch lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
+        class="border-base-200 mt-2 flex min-w-52 flex-col items-center gap-3 border-t pt-6 lg:mt-0 lg:h-auto lg:items-end lg:self-stretch lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
       >
         <a
           href="/badges"
@@ -1050,9 +1048,7 @@ const debutYear = oldestMatchData?.date
           />
         </div>
         <div class="overflow-x-auto">
-          <div
-            class="grid min-w-[400px] grid-cols-7 text-xs font-bold uppercase"
-          >
+          <div class="grid min-w-96 grid-cols-7 text-xs font-bold uppercase">
             <!-- Header -->
             <div class="bg-base-200/50 sticky top-0 py-2 pl-4">Año</div>
             <div
@@ -1202,6 +1198,18 @@ const debutYear = oldestMatchData?.date
   define:vars={{ yearsLabels, pointsByYear, monthsLabels, pointsByMonth }}
 >
   document.addEventListener("DOMContentLoaded", () => {
+    const getColorFromToken = (className, fallback) => {
+      const tokenProbe = document.createElement("span");
+      tokenProbe.className = `${className} hidden`;
+      document.body.appendChild(tokenProbe);
+      const color = getComputedStyle(tokenProbe).color;
+      tokenProbe.remove();
+      return color || fallback;
+    };
+
+    const warningColor = getColorFromToken("text-warning", "orange");
+    const secondaryColor = getColorFromToken("text-secondary", "indigo");
+
     // Configuración Común
     const commonOptions = {
       chart: {
@@ -1227,7 +1235,7 @@ const debutYear = oldestMatchData?.date
         height: window.innerWidth < 640 ? 180 : 250,
         id: "year-chart-el",
       },
-      colors: ["#F59E0B"], // Warning/Primary
+      colors: [warningColor],
       plotOptions: {
         bar: { borderRadius: 4, columnWidth: "50%" },
       },
@@ -1245,7 +1253,7 @@ const debutYear = oldestMatchData?.date
         height: window.innerWidth < 640 ? 180 : 250,
         id: "month-chart-el",
       },
-      colors: ["#6366f1"], // Secondary/Indigo
+      colors: [secondaryColor],
       fill: {
         type: "gradient",
         gradient: {

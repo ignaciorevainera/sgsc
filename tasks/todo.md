@@ -188,3 +188,29 @@ Flujos sin cobertura ejecutada:
 - Falta `tasks/lessons.md`, por lo que no se puede validar contra historial de errores obligatorios del proyecto.
 - No estan disponibles `.github/skills/web-design-guidelines.md`, `.github/skills/performance.md` ni `AGENT_INSTRUCTIONS.md`, por lo que la auditoria no pudo contrastarse contra esas checklists internas requeridas para cierre final.
 - Auditoria visual de rutas dinamicas admin (`/admin/matches/edit/[id]`, `/admin/players/edit/[id]`) no se pudo completar sin credenciales + IDs concretos de registros en entorno de prueba.
+
+## Resultado de revision — 2026-03-22
+
+### Aprobado
+- Se eliminaron los hallazgos de estilo inline y utilidades arbitrarias reportadas en esta tarea:
+    - `src/pages/404.astro` (sin `style="..."` y sin `rounded-[...]`).
+    - `src/pages/teams.astro` (sin `bg-[...]`, `bg-size-[...]` ni opacidades arbitrarias en el bloque decorativo).
+    - `src/pages/admin/matches/create.astro` (sin `max-h-[90vh]`).
+    - `src/pages/badges.astro` y `src/pages/players/[id].astro` (sin `shadow-[...]`).
+    - `src/pages/players/[id].astro` (sin `min-w-[...]`).
+- Se eliminaron colores hex hardcodeados en los graficos de `src/pages/players/[id].astro`, usando colores obtenidos desde tokens semanticos (`text-warning`, `text-secondary`).
+- Se limpiaron hints de simbolos no usados en:
+    - `src/components/MatchCard.astro`
+    - `src/components/shared/SectionTitle.astro`
+    - `src/pages/index.astro`
+- Validaciones ejecutadas en verde:
+    - `npx astro check` -> 0 errores, 0 warnings, 0 hints.
+    - `npm run build` -> build exitoso.
+    - `npm run test:run` -> 14/14 tests unitarios pasando.
+    - `npx playwright test` -> 14 passed, 8 skipped (por guardas de entorno).
+
+### Requiere correccion
+- Ninguna en el alcance de esta pasada de remediacion.
+
+### Bloqueantes para completar la tarea
+- Siguen vigentes los bloqueantes de proceso ya documentados previamente (archivos de checklist internos faltantes y falta de credenciales/IDs para auditoria visual completa de rutas admin dinamicas).
