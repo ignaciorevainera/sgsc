@@ -71,8 +71,6 @@ const mainWidthClass =
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImageURL} />
-
-    <Analytics />
   </head>
 
   <body class="bg-base-300 flex min-h-dvh flex-col">
@@ -80,7 +78,6 @@ const mainWidthClass =
     <main
       id="main-content"
       class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
-      role="main"
     >
       <slot />
     </main>
@@ -89,9 +86,8 @@ const mainWidthClass =
 </html>
 
 <script is:inline>
-  // Script original de manejo de tema
   if (localStorage.getItem("theme") === null) {
-    document.documentElement.setAttribute("data-theme", "fantasy");
+    document.documentElement.setAttribute("data-theme", "light");
   } else {
     document.documentElement.setAttribute(
       "data-theme",
