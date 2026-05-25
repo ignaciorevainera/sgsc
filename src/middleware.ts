@@ -1,40 +1,23 @@
 import { defineMiddleware } from "astro:middleware";
 import { createAstroSupabase } from "@/lib/supabase";
+import { isSameOrigin } from "@/lib/utils/csrf";
 
 const PROTECTED_PREFIXES = ["/admin"];
 const CSRF_PROTECTED_PREFIXES = ["/admin", "/api/auth/signout"];
-
-const isSameOrigin = (request: Request, currentOrigin: string): boolean => {
-  const originHeader = request.headers.get("origin");
-  if (originHeader) {
-    return originHeader === currentOrigin;
-  }
-
-  const refererHeader = request.headers.get("referer");
-  if (!refererHeader) {
-    return false;
-  }
-
-  try {
-    return new URL(refererHeader).origin === currentOrigin;
-  } catch {
-    return false;
-  }
-};
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
   const supabase = createAstroSupabase(context);
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) =>
     path.startsWith(prefix),
   );
 
-  if (isProtectedRoute && !session) {
+  if (isProtectedRoute && !user) {
     return context.redirect("/login");
   }
 

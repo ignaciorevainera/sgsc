@@ -38,4 +38,18 @@ describe("parsePlayerFormData", () => {
     expect(result.birth_date).toBeNull();
     expect(result.is_guest).toBe(false);
   });
+
+  it("throws when nickname is empty", () => {
+    const formData = new FormData();
+    formData.set("nickname", "  ");
+
+    expect(() => parsePlayerFormData(formData)).toThrow(/apodo es obligatorio/i);
+  });
+
+  it("throws when nickname exceeds 50 characters", () => {
+    const formData = new FormData();
+    formData.set("nickname", "A".repeat(51));
+
+    expect(() => parsePlayerFormData(formData)).toThrow(/apodo es obligatorio/i);
+  });
 });

@@ -20,6 +20,10 @@ export const parsePlayerFormData = (formData: FormData): PlayerFormData => {
   const birth_date = normalizeText(formData.get("birth_date"));
   const preferredFootRaw = normalizeText(formData.get("preferred_foot"));
 
+  if (!nickname || nickname.length > 50) {
+    throw new Error("El apodo es obligatorio y no puede superar los 50 caracteres.");
+  }
+
   const preferred_foot: PreferredFoot =
     preferredFootRaw === "right" ||
     preferredFootRaw === "left" ||

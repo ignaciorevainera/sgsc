@@ -17,7 +17,7 @@ if (!user) {
 // --- 2. DATA ---
 const { data: players } = await supabase
   .from("players")
-  .select("*")
+  .select("id, nickname, is_guest")
   .eq("is_active", true) // <--- Agrega esto
   // 1. Primero por Estado: 'false' (Socio) va antes que 'true' (Invitado)
   .order("is_guest", { ascending: true })
@@ -26,7 +26,7 @@ const { data: players } = await supabase
 
 const { data: fields } = await supabase
   .from("fields")
-  .select("*")
+  .select("id, name")
   .order("name");
 
 // --- 3. POST LOGIC ---
