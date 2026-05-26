@@ -3,7 +3,6 @@ import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 
-// 2. Lógica de sesión en el servidor
 const supabase = createAstroSupabase(Astro);
 const {
   data: { session },
@@ -104,10 +103,8 @@ const isLinkActive = (href: string) => {
   </nav>
 
   <div class="navbar-end gap-1">
-    {/* LÓGICA CONDICIONAL: ¿Está logueado? */}
     {
       isLoggedIn ? (
-        // OPCIÓN A: USUARIO LOGUEADO (Dropdown con Avatar)
         <div class="dropdown dropdown-end">
           <button
             tabindex="0"
@@ -207,7 +204,6 @@ const isLinkActive = (href: string) => {
           </ul>
         </div>
       ) : (
-        // OPCIÓN B: NO LOGUEADO (Botón candado)
         <a
           href="/login"
           class="btn btn-ghost btn-circle"
@@ -223,16 +219,32 @@ const isLinkActive = (href: string) => {
       )
     }
 
-    {/* Botón de Tema (Mantenemos el original) */}
-    <button
-      class="btn btn-ghost btn-circle"
-      data-toggle-theme="light,dark"
-      data-act-class="ACTIVECLASS"
-      aria-label="Cambiar tema de colores"
-      type="button"
-    >
-      <Icon name="material-symbols:contrast" size={24} aria-hidden="true" />
-    </button>
+    <label class="btn btn-ghost btn-circle swap swap-rotate">
+      <input
+        id="theme-toggle"
+        type="checkbox"
+        class="theme-controller"
+        value="dark"
+        aria-label="Activar modo oscuro"
+      />
+      <script is:inline>
+        if (localStorage.getItem("theme") === "dark") {
+          document.getElementById("theme-toggle").checked = true;
+        }
+      </script>
+      <Icon
+        name="material-symbols:wb-sunny-rounded"
+        class="swap-off"
+        size={24}
+        aria-hidden="true"
+      />
+      <Icon
+        name="material-symbols:moon-stars"
+        class="swap-on"
+        size={24}
+        aria-hidden="true"
+      />
+    </label>
   </div>
 </header>
 
@@ -247,4 +259,15 @@ const isLinkActive = (href: string) => {
 
   toggleShadow();
   window.addEventListener("scroll", toggleShadow, { passive: true });
+
+  const themeToggle = document.getElementById(
+    "theme-toggle"
+  ) as HTMLInputElement | null;
+  if (themeToggle) {
+    themeToggle.addEventListener("change", () => {
+      const theme = themeToggle.checked ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    });
+  }
 </script>
