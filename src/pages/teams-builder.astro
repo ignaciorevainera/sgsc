@@ -16,17 +16,17 @@ const { data: allPlayers } = await supabase
 
 // 2. FILTRADO - Excluimos "amigo de X"
 const filteredPlayers =
-  allPlayers?.filter((p) => !p.nickname.toLowerCase().includes("amigo de")) ||
+  allPlayers?.filter((p: { nickname: string; }) => !p.nickname.toLowerCase().includes("amigo de")) ||
   [];
 
 // 3. ORDENAMIENTO - Socios primero, luego alfabético
-const sortedPlayers = filteredPlayers.sort((a, b) => {
+const sortedPlayers = filteredPlayers.sort((a: { is_guest: any; nickname: string; }, b: { is_guest: any; nickname: any; }) => {
   if (a.is_guest !== b.is_guest) return a.is_guest ? 1 : -1;
   return a.nickname.localeCompare(b.nickname);
 });
 
 // 4. Mapeo de datos para el cliente
-const playersData = sortedPlayers.map((p) => ({
+const playersData = sortedPlayers.map((p: { player_id: any; nickname: any; matches_played: number; win_pct: any; is_guest: any; }) => ({
   id: p.player_id,
   name: p.nickname,
   rating: p.matches_played > 3 ? p.win_pct : 50,
@@ -35,7 +35,7 @@ const playersData = sortedPlayers.map((p) => ({
 
 // Contadores
 const totalPlayers = playersData.length;
-const guestPlayers = playersData.filter((p) => p.isGuest).length;
+const guestPlayers = playersData.filter((p: { isGuest: any; }) => p.isGuest).length;
 const clubPlayers = totalPlayers - guestPlayers;
 ---
 
@@ -127,7 +127,7 @@ const clubPlayers = totalPlayers - guestPlayers;
       class="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
     >
       {
-        playersData.map((player) => (
+        playersData.map((player: { id: string | number; name: string; rating: number; isGuest: boolean | undefined; }) => (
           <PlayerSelectCard
             id={player.id}
             name={player.name}
@@ -383,14 +383,6 @@ const clubPlayers = totalPlayers - guestPlayers;
   function renderResult(t1, t2) {
     if (!teamsContainer) return;
 
-    const escapeHtml = (value) =>
-      String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-
     const avg1 = t1.players.length ? Math.round(t1.sum / t1.players.length) : 0;
     const avg2 = t2.players.length ? Math.round(t2.sum / t2.players.length) : 0;
     const diff = Math.abs(avg1 - avg2);
@@ -402,6 +394,15 @@ const clubPlayers = totalPlayers - guestPlayers;
       diffEl.className = `text-lg font-black ${diff < 5 ? "text-success" : diff < 10 ? "text-warning" : "text-error"}`;
     }
 
+    // Helper DOM
+    const el = (tag, className, text, children = []) => {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text) e.textContent = text;
+      children.forEach(c => { if (c) e.appendChild(c); });
+      return e;
+    };
+
     // Estilos por tipo de equipo
     const getTeamClasses = (type) => {
       if (type === "light") {
@@ -410,9 +411,7 @@ const clubPlayers = totalPlayers - guestPlayers;
           header: "bg-slate-100 border-b border-slate-200",
           headerText: "text-slate-700",
           item: "bg-white border-slate-100 text-slate-700",
-          avg: "bg-slate-200 text-slate-600",
-          avatar: "bg-slate-200 text-slate-600",
-          icon: "bg-slate-200 border-slate-300",
+          avg: "bg-slate-200 text-slate-600"
         };
       }
       return {
@@ -420,63 +419,63 @@ const clubPlayers = totalPlayers - guestPlayers;
         header: "bg-slate-900 border-b border-slate-700",
         headerText: "text-slate-100",
         item: "bg-slate-700 border-slate-600 text-slate-200",
-        avg: "bg-slate-600 text-slate-300",
-        avatar: "bg-slate-600 text-slate-300",
-        icon: "bg-slate-700 border-slate-600",
+        avg: "bg-slate-600 text-slate-300"
       };
     };
 
-    const createTeamHTML = (team, avg) => {
+    const createTeamNode = (team, avg) => {
       const s = getTeamClasses(team.type);
       const isLight = team.type === "light";
 
-      return `
-        <div class="${s.container} flex flex-col overflow-hidden rounded-xl border shadow-md">
-          <div class="${s.header} ${s.headerText} flex items-center justify-between p-3 sm:p-4">
-            <div class="flex items-center gap-2">
-              <svg class="size-5 ${isLight ? "text-amber-500" : "text-slate-400"}" viewBox="0 0 24 24" fill="currentColor">
-                ${
-                  isLight
-                    ? '<path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>'
-                    : '<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>'
-                }
-              </svg>
-              <span class="text-sm font-black uppercase tracking-wider">${escapeHtml(team.name)}</span>
-            </div>
-            <span class="${s.avg} rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wider">${avg}% AVG</span>
-          </div>
-          <ul class="flex-1 space-y-1 p-2">
-            ${team.players
-              .map(
-                (p) => `
-                <li class="${s.item} flex items-center gap-3 rounded-lg border p-2">
-                  <div class="avatar placeholder">
-                    <div class="bg-neutral text-neutral-content flex w-8 items-center justify-center rounded-full text-xs font-black ring-2 ${isLight ? "ring-slate-200" : "ring-slate-600"} ring-offset-1 ${isLight ? "ring-offset-white" : "ring-offset-slate-700"}">
-                      ${p.isAnonymous ? "?" : escapeHtml(p.name.charAt(0))}
-                    </div>
-                  </div>
-                  <span class="flex-1 text-xs font-bold uppercase tracking-wide ${p.isGuest ? "italic opacity-70" : ""}">${escapeHtml(p.name)}</span>
-                  ${p.isGuest ? '<span class="badge badge-warning badge-xs text-xs font-bold">INV</span>' : ""}
-                </li>
-              `,
-              )
-              .join("")}
-          </ul>
-        </div>
-      `;
+      // Icono SVG
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("class", `size-5 ${isLight ? "text-amber-500" : "text-slate-400"}`);
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("fill", "currentColor");
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", isLight 
+        ? "M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"
+        : "M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"
+      );
+      svg.appendChild(path);
+
+      // Header del equipo
+      const headerDiv = el("div", `${s.header} ${s.headerText} flex items-center justify-between p-3 sm:p-4`, null, [
+        el("div", "flex items-center gap-2", null, [
+          svg,
+          el("span", "text-sm font-black uppercase tracking-wider", team.name)
+        ]),
+        el("span", `${s.avg} rounded-lg px-2 py-1 text-xs font-bold uppercase tracking-wider`, `${avg}% AVG`)
+      ]);
+
+      // Lista de jugadores
+      const ul = el("ul", "flex-1 space-y-1 p-2", null, team.players.map(p => {
+        const avatarChar = p.isAnonymous ? "?" : p.name.charAt(0);
+        const ringClasses = isLight ? "ring-slate-200 ring-offset-white" : "ring-slate-600 ring-offset-slate-700";
+        const avatarInner = el("div", `bg-neutral text-neutral-content flex w-8 items-center justify-center rounded-full text-xs font-black ring-2 ${ringClasses} ring-offset-1`, avatarChar);
+        const avatarDiv = el("div", "avatar placeholder", null, [avatarInner]);
+        
+        const nameSpan = el("span", `flex-1 text-xs font-bold uppercase tracking-wide ${p.isGuest ? "italic opacity-70" : ""}`, p.name);
+        const guestBadge = p.isGuest ? el("span", "badge badge-warning badge-xs text-xs font-bold", "INV") : null;
+
+        return el("li", `${s.item} flex items-center gap-3 rounded-lg border p-2`, null, [
+          avatarDiv, nameSpan, guestBadge
+        ]);
+      }));
+
+      return el("div", `${s.container} flex flex-col overflow-hidden rounded-xl border shadow-md`, null, [
+        headerDiv, ul
+      ]);
     };
 
-    teamsContainer.innerHTML = `
-      <div class="contents">
-        ${createTeamHTML(t1, avg1)}
-      </div>
-      <div class="flex items-center justify-center md:hidden">
-        <div class="bg-base-100 border-base-200 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-widest opacity-60 shadow-sm">VS</div>
-      </div>
-      <div class="contents">
-        ${createTeamHTML(t2, avg2)}
-      </div>
-    `;
+    // Actualizar contenedor de forma segura (sin innerHTML)
+    teamsContainer.textContent = ''; // Vaciar
+    teamsContainer.appendChild(el("div", "contents", null, [createTeamNode(t1, avg1)]));
+    teamsContainer.appendChild(el("div", "flex items-center justify-center md:hidden", null, [
+      el("div", "bg-base-100 border-base-200 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-widest opacity-60 shadow-sm", "VS")
+    ]));
+    teamsContainer.appendChild(el("div", "contents", null, [createTeamNode(t2, avg2)]));
 
     // Texto para WhatsApp
     const pageUrl = window.location.href;
