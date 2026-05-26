@@ -82,11 +82,18 @@ const player = {
   birth_date: playerInfo?.birth_date ?? null,
   preferred_foot: playerInfo?.preferred_foot ?? null,
   ...playerStats,
+  nickname: playerStats.nickname ?? "Jugador",
+  matches_played: playerStats.matches_played ?? 0,
+  wins: playerStats.wins ?? 0,
+  draws: playerStats.draws ?? 0,
+  losses: playerStats.losses ?? 0,
+  points: playerStats.points ?? 0,
+  win_pct: playerStats.win_pct ?? 0,
 };
 
 const clubAverageWinPct = allStats
   ? Math.round(
-      allStats.reduce((acc, s) => acc + s.win_pct, 0) / allStats.length,
+      allStats.reduce((acc, s) => acc + (s.win_pct || 0), 0) / allStats.length,
     )
   : 0;
 
@@ -330,7 +337,7 @@ const statsOscuro = {
 
 // 1. Gráfico Anual (Orden cronológico)
 const chartYearlyData = [...(yearlyStats || [])].sort(
-  (a, b) => a.year - b.year,
+  (a, b) => (a.year || 0) - (b.year || 0),
 );
 const yearsLabels = chartYearlyData.map((d) => d.year);
 const pointsByYear = chartYearlyData.map((d) => d.points);
@@ -1099,7 +1106,7 @@ const debutYear = oldestMatchData?.date
                     {s.losses}
                   </div>
                   <div class="hover:bg-base-200/30 py-2 pr-4 text-center text-xs font-semibold normal-case">
-                    {Math.round(s.win_pct)}%
+                    {Math.round(s.win_pct || 0)}%
                   </div>
                 </>
               ))

@@ -13,7 +13,8 @@ if (!user) {
   return Astro.redirect("/login");
 }
 
-const { id } = Astro.params;
+const id = Astro.params.id as string;
+if (!id) return Astro.redirect("/admin/matches");
 let errorMessage = "";
 const showSuccess = Astro.url.searchParams.get("success") === "true";
 
@@ -109,12 +110,12 @@ if (Astro.request.method === "POST") {
     const newPlayers = [
       ...newLightKeys.map((key) => ({
         match_id: id,
-        player_id: resolvePlayerId(key),
+        player_id: resolvePlayerId(key) as string,
         team: "light",
       })),
       ...newDarkKeys.map((key) => ({
         match_id: id,
-        player_id: resolvePlayerId(key),
+        player_id: resolvePlayerId(key) as string,
         team: "dark",
       })),
     ];

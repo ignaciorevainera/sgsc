@@ -335,12 +335,12 @@ const categories = [
             {champions.map((champ) => (
               <div class="flex flex-col items-center">
                 <span class="text-4xl font-black italic sm:text-5xl">
-                  {champ.nickname.toUpperCase()}
+                  {champ.nickname?.toUpperCase() || "N/A"}
                 </span>
                 <div class="text-base-content/60 mt-3 flex items-center gap-2 text-xs font-bold uppercase sm:text-sm">
                   <span>{champ.points} pts</span>
                   <span class="h-1 w-1 rounded-full bg-current" />
-                  <span>{Math.round(champ.win_rate)}% w-rate</span>
+                  <span>{Math.round(champ.win_rate || 0)}% w-rate</span>
                 </div>
               </div>
             ))}
@@ -375,7 +375,7 @@ const categories = [
 
                 <a href={`/players/${leader.player_id}`}>
                   <Avatar
-                    initial={leader.nickname.charAt(0).toUpperCase()}
+                    initial={(leader.nickname || "L").charAt(0).toUpperCase()}
                     ring={true}
                   />
 
@@ -409,7 +409,7 @@ const categories = [
                       </span>
 
                       <Avatar
-                        initial={player.nickname.charAt(0).toUpperCase()}
+                        initial={(player.nickname || "P").charAt(0).toUpperCase()}
                         size="sm"
                         interactive={true}
                       />

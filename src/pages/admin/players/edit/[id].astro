@@ -15,7 +15,8 @@ if (!user) {
   return Astro.redirect("/login");
 }
 
-const { id } = Astro.params;
+const id = Astro.params.id as string;
+if (!id) return Astro.redirect("/admin/players");
 
 // Obtener datos actuales
 const { data: player } = await supabase
@@ -85,12 +86,12 @@ if (Astro.request.method === "POST") {
       <PlayerFormFields
         idPrefix={`edit-player-${id}`}
         values={{
-          nickname: player.nickname,
-          first_name: player.first_name,
-          last_name: player.last_name,
-          birth_date: player.birth_date,
-          preferred_foot: player.preferred_foot,
-          is_guest: player.is_guest,
+          nickname: player.nickname ?? "",
+          first_name: player.first_name ?? "",
+          last_name: player.last_name ?? "",
+          birth_date: player.birth_date ?? "",
+          preferred_foot: (player.preferred_foot as any) ?? "right",
+          is_guest: player.is_guest ?? false,
         }}
       />
 

@@ -1,15 +1,16 @@
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "../types/database.types";
 
 const supabaseUrl = import.meta.env.SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.SUPABASE_KEY;
 
 // Esta función crea el cliente dependiendo de si estamos en el servidor o el navegador
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 // Función especial para usar DENTRO de los archivos .astro (Server Side)
 export const createAstroSupabase = (context: any) => {
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return parseCookieHeader(

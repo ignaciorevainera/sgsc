@@ -31,7 +31,7 @@ const hasMatches = !hasError && matches && matches.length > 0;
 
 // 2. Lógica para agrupar por AÑO (Temporadas)
 // Transformamos la lista plana en un objeto: { "2025": [...], "2024": [...] }
-const matchesByYear = (matches || []).reduce((acc, match) => {
+const matchesByYear = (matches || []).reduce((acc: Record<string, any[]>, match) => {
   const year = getYearFromDate(match.date);
   if (!year) return acc;
   if (!acc[year]) acc[year] = [];

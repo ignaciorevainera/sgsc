@@ -55,10 +55,9 @@ if (p1Id && p2Id && p1Id !== p2Id) {
     )
     .in("player_id", [p1Id, p2Id]);
 
-  // --- FUNCIÓN DE CÁLCULO MANUAL (Para evitar ceros de la vista) ---
   const calculateStats = (
     playerId: string,
-    matches: { player_id: any; team: any; match: { id: any; result: any }[] }[],
+    matches: any[],
   ) => {
     // Filtramos solo los partidos de ESTE jugador
     const myMatches =

@@ -36,9 +36,9 @@ let errorMessage = "";
 if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
-    const date = formData.get("date");
-    const field_id = formData.get("field_id");
-    const result = formData.get("result");
+    const date = formData.get("date")?.toString() || "";
+    const field_id = formData.get("field_id")?.toString() || "";
+    const result = formData.get("result")?.toString() || "";
 
     const lightPlayers: any[] = [];
     const darkPlayers: any[] = [];

@@ -16,26 +16,28 @@ const { data: allPlayers } = await supabase
 
 // 2. FILTRADO - Excluimos "amigo de X"
 const filteredPlayers =
-  allPlayers?.filter((p: { nickname: string; }) => !p.nickname.toLowerCase().includes("amigo de")) ||
+  allPlayers?.filter((p) => p.nickname && !p.nickname.toLowerCase().includes("amigo de")) ||
   [];
 
 // 3. ORDENAMIENTO - Socios primero, luego alfabético
-const sortedPlayers = filteredPlayers.sort((a: { is_guest: any; nickname: string; }, b: { is_guest: any; nickname: any; }) => {
+const sortedPlayers = filteredPlayers.sort((a, b) => {
   if (a.is_guest !== b.is_guest) return a.is_guest ? 1 : -1;
-  return a.nickname.localeCompare(b.nickname);
+  const nameA = a.nickname || "";
+  const nameB = b.nickname || "";
+  return nameA.localeCompare(nameB);
 });
 
 // 4. Mapeo de datos para el cliente
-const playersData = sortedPlayers.map((p: { player_id: any; nickname: any; matches_played: number; win_pct: any; is_guest: any; }) => ({
-  id: p.player_id,
-  name: p.nickname,
-  rating: p.matches_played > 3 ? p.win_pct : 50,
-  isGuest: p.is_guest,
+const playersData = sortedPlayers.map((p) => ({
+  id: String(p.player_id),
+  name: p.nickname || "Sin nombre",
+  rating: (p.matches_played ?? 0) > 3 ? (p.win_pct ?? 50) : 50,
+  isGuest: Boolean(p.is_guest),
 }));
 
 // Contadores
 const totalPlayers = playersData.length;
-const guestPlayers = playersData.filter((p: { isGuest: any; }) => p.isGuest).length;
+const guestPlayers = playersData.filter((p) => p.isGuest).length;
 const clubPlayers = totalPlayers - guestPlayers;
 ---
 
@@ -127,7 +129,7 @@ const clubPlayers = totalPlayers - guestPlayers;
       class="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
     >
       {
-        playersData.map((player: { id: string | number; name: string; rating: number; isGuest: boolean | undefined; }) => (
+        playersData.map((player) => (
           <PlayerSelectCard
             id={player.id}
             name={player.name}

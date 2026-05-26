@@ -17,7 +17,7 @@ const { data: yearsData } = await supabase
   .select("year");
 // Filtramos años únicos y ordenamos descendente (2025, 2024...)
 const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
-  (a, b) => b - a,
+  (a, b) => (b || 0) - (a || 0),
 );
 const currentYear = String(getCurrentYear());
 // Si no hay datos, usamos el año actual como fallback
@@ -54,7 +54,7 @@ if (season === "Histórico") {
   query = supabase
     .from("view_player_stats_yearly")
     .select("player_id, nickname, matches_played, wins, draws, losses, points, win_rate, draw_rate, loss_rate, attendance_pct, form_array, effectiveness, is_guest")
-    .eq("year", season);
+    .eq("year", Number(season));
 }
 
 // Filtramos solo socios (no invitados)
