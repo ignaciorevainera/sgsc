@@ -28,3 +28,4 @@ playwright-report/
 
 # jetbrains setting folder
 .idea/
+.vscode/
