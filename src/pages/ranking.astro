@@ -49,7 +49,7 @@ const sortOptions = [
 // 3. Consulta SQL
 let query;
 if (season === "Histórico") {
-  query = supabase.from("view_player_stats_all_time").select("player_id, nickname, matches_played, wins, draws, losses, points, win_pct, attendance_pct, form_array, effectiveness, is_guest");
+  query = supabase.from("view_player_stats_all_time").select("player_id, nickname, matches_played, wins, draws, losses, points, win_pct, attendance_pct, form_array, is_guest");
 } else {
   query = supabase
     .from("view_player_stats_yearly")
