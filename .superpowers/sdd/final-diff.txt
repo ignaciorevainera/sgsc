@@ -1,0 +1,538 @@
+﻿diff --git a/src/components/shared/ToastContainer.astro b/src/components/shared/ToastContainer.astro
+new file mode 100644
+index 0000000..6f90213
+--- /dev/null
++++ b/src/components/shared/ToastContainer.astro
+@@ -0,0 +1,72 @@
++---
++import { Icon } from "astro-icon/components";
++
++interface Props {
++  toastType?: "success" | "error" | "warning" | "info";
++  toastMessage?: string;
++}
++
++const urlType = Astro.url.searchParams.get("toast") as Props["toastType"];
++const urlMessage = Astro.url.searchParams.get("msg");
++
++const type = Astro.props.toastType || urlType;
++const message = Astro.props.toastMessage || urlMessage;
++const show = type && message;
++
++const icons: Record<string, string> = {
++  success: "material-symbols:check-circle",
++  error: "material-symbols:error",
++  warning: "material-symbols:warning",
++  info: "material-symbols:info",
++};
++---
++
++{show && (
++  <div
++    id="toast-container"
++    class="toast toast-top toast-end pointer-events-none fixed z-[9999]"
++  >
++    <div
++      role="alert"
++      class={`toast-item alert alert-${type} pointer-events-auto cursor-pointer rounded-xl shadow-lg`}
++      onclick="this.remove()"
++    >
++      <Icon name={icons[type!]} size={24} />
++      <span>{message}</span>
++    </div>
++  </div>
++)}
++
++<script>
++  const toastItem = document.querySelector(".toast-item");
++  if (toastItem) {
++    setTimeout(() => {
++      toastItem.classList.add("toast-out");
++      setTimeout(() => toastItem.remove(), 300);
++    }, 5000);
++  }
++
++  const url = new URL(window.location.href);
++  if (url.searchParams.has("toast")) {
++    url.searchParams.delete("toast");
++    url.searchParams.delete("msg");
++    window.history.replaceState({}, "", url.toString());
++  }
++</script>
++
++<style>
++  @keyframes toast-in {
++    from { transform: translateX(100%); opacity: 0; }
++    to { transform: translateX(0); opacity: 1; }
++  }
++  @keyframes toast-out {
++    from { transform: translateX(0); opacity: 1; }
++    to { transform: translateX(100%); opacity: 0; }
++  }
++  .toast-item {
++    animation: toast-in 0.3s ease-out;
++  }
++  .toast-out {
++    animation: toast-out 0.3s ease-in forwards;
++  }
++</style>
+diff --git a/src/layouts/Main.astro b/src/layouts/Main.astro
+index 2ea61a0..e89690a 100644
+--- a/src/layouts/Main.astro
++++ b/src/layouts/Main.astro
+@@ -1,30 +1,35 @@
+ ---
+ import "@styles/global.css";
+ import Analytics from "@vercel/analytics/astro";
+ import Footer from "@/components/shared/Footer.astro";
+ import Header from "@/components/shared/Header.astro";
++import ToastContainer from "@/components/shared/ToastContainer.astro";
+ 
+ interface Props {
+   title: string;
+-  description?: string; // Hacemos opcional la descripci├│n
+-  image?: string; // Hacemos opcional la imagen para compartir
+-  type?: "website" | "article" | "profile"; // Tipo de contenido
++  description?: string;
++  image?: string;
++  type?: "website" | "article" | "profile";
+   contentWidth?: "public" | "admin";
++  toastType?: "success" | "error" | "warning" | "info";
++  toastMessage?: string;
+ }
+ 
+ const {
+   title,
+-  description = "Resultados, estad├¡sticas y ranking del grupo Solo Gente S├║per Comprometida.", // Valor por defecto
+-  image = "/images/og-default.jpg", // ┬íDebes crear esta imagen! (ver abajo)
++  description = "Resultados, estad├¡sticas y ranking del grupo Solo Gente S├║per Comprometida.",
++  image = "/images/og-default.jpg",
+   type = "website",
+   contentWidth = "public",
++  toastType,
++  toastMessage,
+ } = Astro.props;
+ 
+ // Generamos URLs absolutas (necesarias para WhatsApp/FB)
+ const canonicalURL = new URL(
+   Astro.url.pathname,
+   Astro.site || Astro.url.origin
+ );
+ const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen relativa a absoluta
+ const mainWidthClass =
+   contentWidth === "admin" ? "max-w-[80ch] lg:max-w-7xl" : "max-w-[80ch]";
+@@ -85,18 +90,19 @@ const mainWidthClass =
+   </head>
+ 
+   <body class="bg-base-300 flex min-h-dvh flex-col">
+     <Header />
+     <main
+       id="main-content"
+       class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
+     >
+       <slot />
+     </main>
++    <ToastContainer toastType={toastType} toastMessage={toastMessage} />
+     <Footer />
+   </body>
+ </html>
+ 
+ <script>
+   import { themeChange } from "theme-change";
+   themeChange();
+ </script>
+diff --git a/src/pages/admin/matches/create.astro b/src/pages/admin/matches/create.astro
+index 3fd1dab..249e8ca 100644
+--- a/src/pages/admin/matches/create.astro
++++ b/src/pages/admin/matches/create.astro
+@@ -1,94 +1,82 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+-import Alert from "@/components/shared/Alert.astro";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+-// --- 1. SEGURIDAD ---
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
+ 
+-// --- 2. DATA ---
++// --- DATA ---
+ const { data: players } = await supabase
+   .from("players")
+   .select("id, nickname, is_guest")
+   .eq("is_active", true) // <--- Agrega esto
+   // 1. Primero por Estado: 'false' (Socio) va antes que 'true' (Invitado)
+   .order("is_guest", { ascending: true })
+   // 2. Luego Alfab├®ticamente por Apodo
+   .order("nickname", { ascending: true });
+ 
+ const { data: fields } = await supabase
+   .from("fields")
+   .select("id, name")
+   .order("name");
+ 
+-// --- 3. POST LOGIC ---
+-let successMessage = "";
++// --- POST LOGIC ---
+ let errorMessage = "";
+ 
+ if (Astro.request.method === "POST") {
+   try {
+     const formData = await Astro.request.formData();
+     const date = formData.get("date")?.toString() || "";
+     const field_id = formData.get("field_id")?.toString() || "";
+     const result = formData.get("result")?.toString() || "";
+ 
+-    const lightPlayers: any[] = [];
+-    const darkPlayers: any[] = [];
++    const lightPlayers: string[] = [];
++    const darkPlayers: string[] = [];
+ 
+-    // Recolectar jugadores
+     players?.forEach((p) => {
+       const selection = formData.get(`player_${p.id}`);
+       if (selection === "light") lightPlayers.push(p.id);
+       if (selection === "dark") darkPlayers.push(p.id);
+     });
+ 
+     if (!date || !field_id || !result)
+       throw new Error("Faltan datos obligatorios");
+     if (lightPlayers.length === 0 || darkPlayers.length === 0)
+       throw new Error("Equipos incompletos");
+ 
+     const { error } = await supabase.rpc("create_complete_match", {
+       p_date: date,
+       p_field_id: field_id,
+       p_result: result,
+       p_light_players: lightPlayers,
+       p_dark_players: darkPlayers,
+     });
+ 
+     if (error) throw error;
+-    successMessage = "┬íPartido registrado con ├®xito!";
++    return Astro.redirect("/admin/matches?toast=success&msg=Partido+registrado+con+exito");
+   } catch (err: any) {
+     errorMessage = err.message;
+   }
+ }
+ ---
+ 
+-<Main title="Cargar Partido | SGSC" contentWidth="admin">
++<Main
++  title="Cargar Partido | SGSC"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Cargar Partido" subtitle="Panel de Administraci├│n" />
+ 
+-  {/* Alertas */}
+-  {
+-    successMessage && (
+-      <Alert type="success" message={successMessage} class="mb-6" />
+-    )
+-  }
+ 
+-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
+ 
+   <form
+     method="POST"
+     id="matchForm"
+     class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+   >
+     {/* Secci├│n: Fecha y Sede */}
+     <div class="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-4">
+       <div class="form-control">
+         <fieldset class="fieldset">
+diff --git a/src/pages/admin/matches/edit/[id].astro b/src/pages/admin/matches/edit/[id].astro
+index 945a215..5b60ebb 100644
+--- a/src/pages/admin/matches/edit/[id].astro
++++ b/src/pages/admin/matches/edit/[id].astro
+@@ -1,29 +1,22 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+-import Alert from "@/components/shared/Alert.astro";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
+ 
+ const id = Astro.params.id as string;
+ if (!id) return Astro.redirect("/admin/matches");
+ let errorMessage = "";
+-const showSuccess = Astro.url.searchParams.get("success") === "true";
++
+ 
+ // 1. Obtener datos para llenar el formulario
+ // A. El partido actual
+ const { data: match } = await supabase
+   .from("matches")
+   .select(
+     "id, date, field_id, result, video_url, match_players(player_id, team)",
+   )
+   .eq("id", id)
+   .single();
+@@ -179,49 +172,37 @@ if (Astro.request.method === "POST") {
+         throw new Error(
+           "No se pudieron guardar los equipos y tampoco se pudo restaurar el estado anterior.",
+         );
+       }
+ 
+       throw new Error(
+         "No se pudieron guardar los equipos del partido. Se restaur├│ el estado anterior.",
+       );
+     }
+ 
+-    return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
++    return Astro.redirect(`/admin/matches/edit/${id}?toast=success&msg=Partido+actualizado+correctamente`);
+   } catch (error: any) {
+     errorMessage =
+       error?.message ||
+       "No se pudo actualizar el partido. Por favor, intenta m├ís tarde.";
+   }
+ }
+ ---
+ 
+-<Main title="Editar Partido | SGSC" contentWidth="admin">
++<Main
++  title="Editar Partido | SGSC"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Editar Partido" subtitle="Panel de Administraci├│n" />
+ 
+-  {/* Alertas */}
+-  {
+-    showSuccess && (
+-      <div class="mb-6 flex flex-col gap-2">
+-        <Alert type="success" message="┬íPartido actualizado correctamente!" />
+-        <a
+-          href="/admin/matches"
+-          class="btn btn-ghost btn-sm w-full rounded-xl sm:w-fit"
+-        >
+-          <Icon name="material-symbols:arrow-back" size={18} />
+-          Volver al historial
+-        </a>
+-      </div>
+-    )
+-  }
+-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
+-
+   <form method="POST" class="space-y-6">
+     {/* Secci├│n: Informaci├│n General */}
+     <div
+       class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+         {/* Fecha */}
+         <div class="form-control">
+           <fieldset class="fieldset">
+             <legend class="fieldset-legend">Fecha del Partido</legend>
+diff --git a/src/pages/admin/players/create.astro b/src/pages/admin/players/create.astro
+index 815524f..a5f1362 100644
+--- a/src/pages/admin/players/create.astro
++++ b/src/pages/admin/players/create.astro
+@@ -1,52 +1,69 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+ import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
+ import { parsePlayerFormData } from "@/lib/utils/playerForm";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
++let errorMessage = "";
++let formValues = {
++  nickname: "",
++  first_name: "",
++  last_name: "",
++  birth_date: "",
++  preferred_foot: "right" as const,
++  is_guest: false,
++};
+ 
+ if (Astro.request.method === "POST") {
+   const formData = await Astro.request.formData();
+   const playerInput = parsePlayerFormData(formData);
+ 
++  formValues = {
++    nickname: playerInput.nickname,
++    first_name: playerInput.first_name ?? "",
++    last_name: playerInput.last_name ?? "",
++    birth_date: playerInput.birth_date ?? "",
++    preferred_foot: playerInput.preferred_foot ?? "right",
++    is_guest: playerInput.is_guest,
++  };
++
+   const { error } = await supabase.from("players").insert({
+     ...playerInput,
+   });
+ 
+   if (error) {
+-    console.error(error);
++    errorMessage = error.message;
+   } else {
+-    return Astro.redirect("/admin/players");
++    return Astro.redirect("/admin/players?toast=success&msg=Jugador+creado+correctamente");
+   }
+ }
+ ---
+ 
+-<Main title="Nuevo Jugador" contentWidth="admin">
++<Main
++  title="Nuevo Jugador"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Nuevo Jugador" subtitle="Panel de Administraci├│n" />
+ 
+   <div class="flex flex-col gap-6">
+     <form
+       id="playerForm"
+       method="POST"
+       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+-      <PlayerFormFields idPrefix="create-player" />
++      <PlayerFormFields idPrefix="create-player" values={formValues} />
+     </form>
+ 
+     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+       <button
+         type="submit"
+         form="playerForm"
+         class="btn btn-primary rounded-xl sm:flex-1"
+       >
+         <Icon name="material-symbols:save" size={20} aria-hidden="true" />
+         Guardar Jugador
+diff --git a/src/pages/admin/players/edit/[id].astro b/src/pages/admin/players/edit/[id].astro
+index 4874c2f..ec9b9ed 100644
+--- a/src/pages/admin/players/edit/[id].astro
++++ b/src/pages/admin/players/edit/[id].astro
+@@ -1,88 +1,77 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+ import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
+-import Alert from "@/components/shared/Alert.astro";
++
+ import { parsePlayerFormData } from "@/lib/utils/playerForm";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
+ 
+ const id = Astro.params.id as string;
+ if (!id) return Astro.redirect("/admin/players");
+ 
+ // Obtener datos actuales
+ const { data: player } = await supabase
+   .from("players")
+   .select(
+     "id, nickname, first_name, last_name, birth_date, preferred_foot, is_guest, is_active",
+   )
+   .eq("id", id)
+   .single();
+ if (!player) return Astro.redirect("/admin/players");
+ 
++let errorMessage = "";
++
+ // --- UPDATE ---
+ if (Astro.request.method === "POST") {
+   const formData = await Astro.request.formData();
+   const action = formData.get("action");
+ 
+   let error = null;
+ 
+   if (action === "toggle_status") {
+-    // Borrado L├│gico
+     const newStatus = !player.is_active;
+     const { error: updateError } = await supabase
+       .from("players")
+       .update({ is_active: newStatus })
+       .eq("id", id);
+     error = updateError;
+   } else {
+-    // Edici├│n normal
+     const playerInput = parsePlayerFormData(formData);
+-
+     const { error: updateError } = await supabase
+       .from("players")
+-      .update({
+-        ...playerInput,
+-      })
++      .update({ ...playerInput })
+       .eq("id", id);
+     error = updateError;
+   }
+ 
+   if (error) {
+-    console.error("Error al actualizar jugador:", error);
+-    return new Response("Error interno", { status: 500 });
++    errorMessage = error.message;
++  } else {
++    const msg = action === "toggle_status"
++      ? "Estado+actualizado+correctamente"
++      : "Jugador+actualizado+correctamente";
++    return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=${msg}`);
+   }
+-
+-  return Astro.redirect(`/admin/players/edit/${id}?success=true`);
+ }
+ ---
+ 
+-<Main title="Editar Jugador" contentWidth="admin">
++<Main
++  title="Editar Jugador"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Editar Jugador" subtitle="Panel de Administraci├│n" />
+-  {
+-    Astro.url.searchParams.get("success") && (
+-      <Alert
+-        type="success"
+-        message="Cambios guardados correctamente."
+-        class="mb-4"
+-      />
+-    )
+-  }
+ 
+   <div class="flex flex-col gap-6">
+     <form
+       method="POST"
+       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+       <input type="hidden" name="action" value="update" />
+       <PlayerFormFields
+         idPrefix={`edit-player-${id}`}
+         values={{

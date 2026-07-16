@@ -108,6 +108,8 @@ const getMatchData = (matches: unknown): MatchData | null => {
   return m && typeof m === "object" && "date" in m ? (m as MatchData) : null;
 };
 
+
+
 const totalMatches = player.matches_played || 0;
 const win_pct = Math.round(player.win_pct || 0);
 const draw_pct =
@@ -300,25 +302,24 @@ const colorStats = {
 };
 
 allMatchEntries?.forEach((entry) => {
-  const matchNode = Array.isArray(entry.match)
-    ? (entry.match as { result: string }[])[0]
-    : (entry.match as { result: string } | null);
+  const matchData = Array.isArray(entry.match)
+    ? entry.match[0]
+    : entry.match;
 
-  if (!matchNode?.result) return;
+  if (!matchData?.result) return;
 
-  const result = matchNode.result;
-  const myTeam = entry.team?.toLowerCase().trim() as "light" | "dark";
+  const result = matchData.result;
+  const myTeam = entry.team?.toLowerCase().trim();
+  if (myTeam !== "light" && myTeam !== "dark") return;
 
-  if (myTeam === "light" || myTeam === "dark") {
-    const stats = colorStats[myTeam];
-    stats.played++;
+  const stats = colorStats[myTeam];
+  stats.played++;
 
-    if (result === myTeam) {
-      stats.wins++;
-      stats.points += 3;
-    } else if (result === "draw") {
-      stats.points += 1;
-    }
+  if (result === myTeam) {
+    stats.wins++;
+    stats.points += 3;
+  } else if (result === "draw") {
+    stats.points += 1;
   }
 });
 

@@ -1,12 +1,8 @@
 ---
-import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 
-const supabase = createAstroSupabase(Astro);
-const {
-  data: { session },
-} = await supabase.auth.getSession();
+const session = Astro.locals.session;
 const isLoggedIn = !!session;
 
 const links = [

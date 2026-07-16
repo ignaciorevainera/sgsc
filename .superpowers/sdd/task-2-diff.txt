@@ -1,0 +1,65 @@
+﻿diff --git a/src/layouts/Main.astro b/src/layouts/Main.astro
+index 2ea61a0..e89690a 100644
+--- a/src/layouts/Main.astro
++++ b/src/layouts/Main.astro
+@@ -1,30 +1,35 @@
+ ---
+ import "@styles/global.css";
+ import Analytics from "@vercel/analytics/astro";
+ import Footer from "@/components/shared/Footer.astro";
+ import Header from "@/components/shared/Header.astro";
++import ToastContainer from "@/components/shared/ToastContainer.astro";
+ 
+ interface Props {
+   title: string;
+-  description?: string; // Hacemos opcional la descripci├│n
+-  image?: string; // Hacemos opcional la imagen para compartir
+-  type?: "website" | "article" | "profile"; // Tipo de contenido
++  description?: string;
++  image?: string;
++  type?: "website" | "article" | "profile";
+   contentWidth?: "public" | "admin";
++  toastType?: "success" | "error" | "warning" | "info";
++  toastMessage?: string;
+ }
+ 
+ const {
+   title,
+-  description = "Resultados, estad├¡sticas y ranking del grupo Solo Gente S├║per Comprometida.", // Valor por defecto
+-  image = "/images/og-default.jpg", // ┬íDebes crear esta imagen! (ver abajo)
++  description = "Resultados, estad├¡sticas y ranking del grupo Solo Gente S├║per Comprometida.",
++  image = "/images/og-default.jpg",
+   type = "website",
+   contentWidth = "public",
++  toastType,
++  toastMessage,
+ } = Astro.props;
+ 
+ // Generamos URLs absolutas (necesarias para WhatsApp/FB)
+ const canonicalURL = new URL(
+   Astro.url.pathname,
+   Astro.site || Astro.url.origin
+ );
+ const socialImageURL = new URL(image, Astro.url.origin); // Resuelve la imagen relativa a absoluta
+ const mainWidthClass =
+   contentWidth === "admin" ? "max-w-[80ch] lg:max-w-7xl" : "max-w-[80ch]";
+@@ -85,18 +90,19 @@ const mainWidthClass =
+   </head>
+ 
+   <body class="bg-base-300 flex min-h-dvh flex-col">
+     <Header />
+     <main
+       id="main-content"
+       class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
+     >
+       <slot />
+     </main>
++    <ToastContainer toastType={toastType} toastMessage={toastMessage} />
+     <Footer />
+   </body>
+ </html>
+ 
+ <script>
+   import { themeChange } from "theme-change";
+   themeChange();
+ </script>

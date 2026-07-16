@@ -30,38 +30,39 @@ const darkPct = totalMatches > 0 ? (stats.dark / totalMatches) * 100 : 0;
 const drawPct = totalMatches > 0 ? (stats.draw / totalMatches) * 100 : 0;
 
 // 2. Obtener estadísticas de "Lealtad"
+type RawAppearance = {
+  team: string;
+  players: { nickname: string } | { nickname: string }[] | null;
+};
+
+const getNickname = (players: RawAppearance["players"]): string | undefined => {
+  if (!players) return;
+  const p = Array.isArray(players) ? players[0] : players;
+  return p?.nickname;
+};
+
 const { data: rawAppearances } = await supabase
   .from("match_players")
   .select("team, players (nickname, is_guest)")
   .eq("players.is_guest", false);
 
-const appearances = { light: {}, dark: {} };
+const appearances: Record<string, Record<string, number>> = {
+  light: {},
+  dark: {},
+};
 
-// @ts-ignore
-rawAppearances?.forEach((record) => {
-  const team = record.team;
-  // @ts-ignore
-  const name = record.players?.nickname;
+(rawAppearances as RawAppearance[] | null)?.forEach((record) => {
+  const name = getNickname(record.players);
   if (!name) return;
-
-  // @ts-ignore
-  if (!appearances[team][name]) appearances[team][name] = 0;
-  // @ts-ignore
-  appearances[team][name]++;
+  if (!appearances[record.team][name]) appearances[record.team][name] = 0;
+  appearances[record.team][name]++;
 });
 
-// @ts-ignore
-const getTopLoyal = (team: "light" | "dark") => {
-  // @ts-ignore
-  return (
-    Object.entries(appearances[team])
-      // @ts-ignore
-      .map(([name, count]) => ({ name, count: Number(count) }))
-      // @ts-ignore
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-  );
-};
+const getTopLoyal = (team: "light" | "dark") =>
+  Object.entries(appearances[team])
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
 const topLight = getTopLoyal("light");
 const topDark = getTopLoyal("dark");

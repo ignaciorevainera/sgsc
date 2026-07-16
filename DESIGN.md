@@ -1,19 +1,23 @@
 # DESIGN SYSTEM - SGSC
 
-Generado el 2026-03-21. Este archivo reemplaza a DESIGN_STANDARDS.md como referencia oficial para decisiones de diseno, estilo y nomenclatura.
+Generado el 2026-03-21. Ultima actualizacion: 2026-07-16. Reemplaza a DESIGN_STANDARDS.md como referencia oficial.
 
 ## Stack
 
 - Astro 6 + Tailwind CSS 4 + DaisyUI 5
 - Iconos con astro-icon (set principal: material-symbols)
-- Fuente base: Sora Variable
-- Runtime de tema con theme-change
+- Fuente base UI: Sora Variable (@fontsource-variable/sora)
+- Fuente mono/countdown: Roboto Mono Variable (@fontsource-variable/roboto-mono)
+- Importadas en src/styles/global.css via @import
+- Runtime de tema con theme-change; themes DaisyUI: light --default, dark --prefersdark
+- Init theme inline en Main.astro (lee localStorage, fallback light)
 
 ## Tema activo
 
 - Modo soportado: claro y oscuro
-- data-theme en layout principal
+- data-theme en layout principal (html data-theme="light")
 - Toggle global en Header
+- theme-color meta: light #570df8, dark #1d232a
 - Regla de proyecto: usar light/dark como base
 
 ## Tokens de color en uso
@@ -39,8 +43,9 @@ Norma:
 ## Tipografia
 
 - Fuente principal UI: Sora Variable
+- Fuente secundaria (countdown/datos tabulares): Roboto Mono Variable (clase .font-countdown)
 - Jerarquia visual predominante: titulos bold/black y labels uppercase
-- Poppins esta instalada pero no se declara como fuente base global
+- Poppins (@fontsource/poppins) instalada en package.json pero no declarada como fuente base global ni en global.css
 
 ## Escala tipografica usada
 
@@ -70,11 +75,11 @@ Global/shared:
 Dominio:
 
 - Avatar, MatchCard, FieldCard, ResultStats, PlayerBadge
-- players/_, ranking/_, compare/_, teams/_, admin/\*
+- players/_, ranking/_, compare/_, teams/_, admin/\_
 
 Patrones de composicion:
 
-- Main.astro centraliza head, layout y shell global
+- Main.astro centraliza head, layout, shell global, OG meta, twitter cards, favicon/apple-touch-icon/site.webmanifest, theme init
 - Title se usa como encabezado estandar de vistas
 - Alert para estados (error/warning/success)
 - Card compartida como base visual de contenedores
@@ -107,7 +112,7 @@ Clases y estilo:
 
 ## Patrones prohibidos
 
-- select("\*") en paginas (usar columnas explicitas)
+- select(*) en paginas (usar columnas explicitas)
 - Mezclar sets de iconos sin justificacion
 - Repetir componentes visuales sin pasar por shared/ui
 - Agregar nuevos colores hardcodeados para UI general
@@ -115,11 +120,13 @@ Clases y estilo:
 
 ## Decisiones documentadas
 
-- El DS oficial pasa a ser DESIGN_SYSTEM.md
+- El DS oficial es DESIGN.md
 - DESIGN_STANDARDS.md queda como referencia historica no normativa
 - Naming unificado recomendado para proyectos nuevos: global/ui/sections/features
 - Query style en servidor: explicit column selection por defecto
 - Iconografia principal: material-symbols
+- STACK.md eliminado — CONTEXT.md unifica contexto + stack
+- AGENTS.md contiene instrucciones operativas para agentes de IA
 
 ## Pendientes
 
@@ -127,3 +134,4 @@ Clases y estilo:
 - Reducir uso de classes puntuales con colores no semanticos cuando existan equivalentes DaisyUI
 - Eliminar inconsistencias de tema por scripts legacy y unificar default theme
 - Documentar ejemplos de plantillas base de componentes (global, ui, sections, features)
+- Crear /images/og-default.jpg para meta tags sociales

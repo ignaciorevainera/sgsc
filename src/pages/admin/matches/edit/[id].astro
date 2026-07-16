@@ -10,7 +10,6 @@ const id = Astro.params.id as string;
 if (!id) return Astro.redirect("/admin/matches");
 let errorMessage = "";
 
-
 // 1. Obtener datos para llenar el formulario
 // A. El partido actual
 const { data: match } = await supabase

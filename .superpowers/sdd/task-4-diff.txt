@@ -1,0 +1,109 @@
+﻿diff --git a/src/pages/admin/players/edit/[id].astro b/src/pages/admin/players/edit/[id].astro
+index 4874c2f..ec9b9ed 100644
+--- a/src/pages/admin/players/edit/[id].astro
++++ b/src/pages/admin/players/edit/[id].astro
+@@ -1,88 +1,77 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+ import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
+-import Alert from "@/components/shared/Alert.astro";
++
+ import { parsePlayerFormData } from "@/lib/utils/playerForm";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
+ 
+ const id = Astro.params.id as string;
+ if (!id) return Astro.redirect("/admin/players");
+ 
+ // Obtener datos actuales
+ const { data: player } = await supabase
+   .from("players")
+   .select(
+     "id, nickname, first_name, last_name, birth_date, preferred_foot, is_guest, is_active",
+   )
+   .eq("id", id)
+   .single();
+ if (!player) return Astro.redirect("/admin/players");
+ 
++let errorMessage = "";
++
+ // --- UPDATE ---
+ if (Astro.request.method === "POST") {
+   const formData = await Astro.request.formData();
+   const action = formData.get("action");
+ 
+   let error = null;
+ 
+   if (action === "toggle_status") {
+-    // Borrado L├│gico
+     const newStatus = !player.is_active;
+     const { error: updateError } = await supabase
+       .from("players")
+       .update({ is_active: newStatus })
+       .eq("id", id);
+     error = updateError;
+   } else {
+-    // Edici├│n normal
+     const playerInput = parsePlayerFormData(formData);
+-
+     const { error: updateError } = await supabase
+       .from("players")
+-      .update({
+-        ...playerInput,
+-      })
++      .update({ ...playerInput })
+       .eq("id", id);
+     error = updateError;
+   }
+ 
+   if (error) {
+-    console.error("Error al actualizar jugador:", error);
+-    return new Response("Error interno", { status: 500 });
++    errorMessage = error.message;
++  } else {
++    const msg = action === "toggle_status"
++      ? "Estado+actualizado+correctamente"
++      : "Jugador+actualizado+correctamente";
++    return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=${msg}`);
+   }
+-
+-  return Astro.redirect(`/admin/players/edit/${id}?success=true`);
+ }
+ ---
+ 
+-<Main title="Editar Jugador" contentWidth="admin">
++<Main
++  title="Editar Jugador"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Editar Jugador" subtitle="Panel de Administraci├│n" />
+-  {
+-    Astro.url.searchParams.get("success") && (
+-      <Alert
+-        type="success"
+-        message="Cambios guardados correctamente."
+-        class="mb-4"
+-      />
+-    )
+-  }
+ 
+   <div class="flex flex-col gap-6">
+     <form
+       method="POST"
+       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+       <input type="hidden" name="action" value="update" />
+       <PlayerFormFields
+         idPrefix={`edit-player-${id}`}
+         values={{

@@ -1,0 +1,84 @@
+﻿diff --git a/src/pages/admin/players/create.astro b/src/pages/admin/players/create.astro
+index 815524f..a5f1362 100644
+--- a/src/pages/admin/players/create.astro
++++ b/src/pages/admin/players/create.astro
+@@ -1,52 +1,69 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+ import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
+ import { parsePlayerFormData } from "@/lib/utils/playerForm";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
++let errorMessage = "";
++let formValues = {
++  nickname: "",
++  first_name: "",
++  last_name: "",
++  birth_date: "",
++  preferred_foot: "right" as const,
++  is_guest: false,
++};
+ 
+ if (Astro.request.method === "POST") {
+   const formData = await Astro.request.formData();
+   const playerInput = parsePlayerFormData(formData);
+ 
++  formValues = {
++    nickname: playerInput.nickname,
++    first_name: playerInput.first_name ?? "",
++    last_name: playerInput.last_name ?? "",
++    birth_date: playerInput.birth_date ?? "",
++    preferred_foot: playerInput.preferred_foot ?? "right",
++    is_guest: playerInput.is_guest,
++  };
++
+   const { error } = await supabase.from("players").insert({
+     ...playerInput,
+   });
+ 
+   if (error) {
+-    console.error(error);
++    errorMessage = error.message;
+   } else {
+-    return Astro.redirect("/admin/players");
++    return Astro.redirect("/admin/players?toast=success&msg=Jugador+creado+correctamente");
+   }
+ }
+ ---
+ 
+-<Main title="Nuevo Jugador" contentWidth="admin">
++<Main
++  title="Nuevo Jugador"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Nuevo Jugador" subtitle="Panel de Administraci├│n" />
+ 
+   <div class="flex flex-col gap-6">
+     <form
+       id="playerForm"
+       method="POST"
+       class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+-      <PlayerFormFields idPrefix="create-player" />
++      <PlayerFormFields idPrefix="create-player" values={formValues} />
+     </form>
+ 
+     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+       <button
+         type="submit"
+         form="playerForm"
+         class="btn btn-primary rounded-xl sm:flex-1"
+       >
+         <Icon name="material-symbols:save" size={20} aria-hidden="true" />
+         Guardar Jugador

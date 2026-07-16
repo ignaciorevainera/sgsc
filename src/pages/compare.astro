@@ -57,14 +57,31 @@ if (p1Id && p2Id && p1Id !== p2Id) {
     )
     .in("player_id", [p1Id, p2Id]);
 
+  type MatchEntry = {
+    player_id: string;
+    team: string;
+    match: { id: string; result: string } | { id: string; result: string }[] | null;
+  };
+
+  const getMatchResult = (entry: MatchEntry): string | undefined => {
+    if (!entry.match) return;
+    const m = Array.isArray(entry.match) ? entry.match[0] : entry.match;
+    return m?.result;
+  };
+
+  const getMatchId = (entry: MatchEntry): string | undefined => {
+    if (!entry.match) return;
+    const m = Array.isArray(entry.match) ? entry.match[0] : entry.match;
+    return m?.id;
+  };
+
   const calculateStats = (
     playerId: string,
-    matches: any[],
+    matches: MatchEntry[],
   ) => {
-    // Filtramos solo los partidos de ESTE jugador
     const myMatches =
       matches?.filter(
-        (m: { player_id: any }) => String(m.player_id) === String(playerId),
+        (m) => String(m.player_id) === String(playerId),
       ) || [];
 
     const played = myMatches.length;
@@ -72,8 +89,7 @@ if (p1Id && p2Id && p1Id !== p2Id) {
     let drawn = 0;
 
     myMatches.forEach((m) => {
-      // @ts-ignore
-      const res = m.match.result;
+      const res = getMatchResult(m);
       if (res === m.team) won++;
       else if (res === "draw") drawn++;
     });
@@ -103,26 +119,25 @@ if (p1Id && p2Id && p1Id !== p2Id) {
   }
 
   // D. Calcular Historial H2H (Cara a Cara)
-  const matchesMap = new Map();
-  history?.forEach((entry) => {
-    // @ts-ignore
-    const matchId = entry.match.id;
+  const matchesMap = new Map<string, MatchEntry[]>();
+  (history as MatchEntry[] | null)?.forEach((entry) => {
+    const matchId = getMatchId(entry);
+    if (!matchId) return;
     if (!matchesMap.has(matchId)) matchesMap.set(matchId, []);
-    matchesMap.get(matchId).push(entry);
+    matchesMap.get(matchId)!.push(entry);
   });
 
   matchesMap.forEach((entries) => {
     if (entries.length === 2) {
       const p1Entry = entries.find(
-        (e: any) => String(e.player_id) === String(p1Id),
+        (e) => String(e.player_id) === String(p1Id),
       );
       const p2Entry = entries.find(
-        (e: any) => String(e.player_id) === String(p2Id),
+        (e) => String(e.player_id) === String(p2Id),
       );
 
       if (p1Entry && p2Entry) {
-        // @ts-ignore
-        const result = p1Entry.match.result;
+        const result = getMatchResult(p1Entry);
 
         if (p1Entry.team !== p2Entry.team) {
           // Rivales

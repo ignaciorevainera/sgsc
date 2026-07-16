@@ -7,11 +7,6 @@ import StatCard from "@/components/admin/StatCard.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-
-if (!user) return Astro.redirect("/login");
 
 // Obtener conteos rápidos para mostrar en el dashboard
 const { count: matchCount } = await supabase

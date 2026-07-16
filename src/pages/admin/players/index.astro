@@ -5,12 +5,6 @@ import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-if (!user) {
-  return Astro.redirect("/login");
-}
 
 const { data: players } = await supabase
   .from("players")

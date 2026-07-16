@@ -1,0 +1,92 @@
+﻿diff --git a/src/pages/admin/matches/edit/[id].astro b/src/pages/admin/matches/edit/[id].astro
+index 945a215..5b60ebb 100644
+--- a/src/pages/admin/matches/edit/[id].astro
++++ b/src/pages/admin/matches/edit/[id].astro
+@@ -1,29 +1,22 @@
+ ---
+ import { createAstroSupabase } from "@/lib/supabase";
+ import { Icon } from "astro-icon/components";
+-import Alert from "@/components/shared/Alert.astro";
+ import Main from "@/layouts/Main.astro";
+ import Title from "@/components/shared/Title.astro";
+ 
+ const supabase = createAstroSupabase(Astro);
+-const {
+-  data: { user },
+-} = await supabase.auth.getUser();
+-if (!user) {
+-  return Astro.redirect("/login");
+-}
+ 
+ const id = Astro.params.id as string;
+ if (!id) return Astro.redirect("/admin/matches");
+ let errorMessage = "";
+-const showSuccess = Astro.url.searchParams.get("success") === "true";
++
+ 
+ // 1. Obtener datos para llenar el formulario
+ // A. El partido actual
+ const { data: match } = await supabase
+   .from("matches")
+   .select(
+     "id, date, field_id, result, video_url, match_players(player_id, team)",
+   )
+   .eq("id", id)
+   .single();
+@@ -179,49 +172,37 @@ if (Astro.request.method === "POST") {
+         throw new Error(
+           "No se pudieron guardar los equipos y tampoco se pudo restaurar el estado anterior.",
+         );
+       }
+ 
+       throw new Error(
+         "No se pudieron guardar los equipos del partido. Se restaur├│ el estado anterior.",
+       );
+     }
+ 
+-    return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
++    return Astro.redirect(`/admin/matches/edit/${id}?toast=success&msg=Partido+actualizado+correctamente`);
+   } catch (error: any) {
+     errorMessage =
+       error?.message ||
+       "No se pudo actualizar el partido. Por favor, intenta m├ís tarde.";
+   }
+ }
+ ---
+ 
+-<Main title="Editar Partido | SGSC" contentWidth="admin">
++<Main
++  title="Editar Partido | SGSC"
++  contentWidth="admin"
++  toastType={errorMessage ? "error" : undefined}
++  toastMessage={errorMessage || undefined}
++>
+   <Title title="Editar Partido" subtitle="Panel de Administraci├│n" />
+ 
+-  {/* Alertas */}
+-  {
+-    showSuccess && (
+-      <div class="mb-6 flex flex-col gap-2">
+-        <Alert type="success" message="┬íPartido actualizado correctamente!" />
+-        <a
+-          href="/admin/matches"
+-          class="btn btn-ghost btn-sm w-full rounded-xl sm:w-fit"
+-        >
+-          <Icon name="material-symbols:arrow-back" size={18} />
+-          Volver al historial
+-        </a>
+-      </div>
+-    )
+-  }
+-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
+-
+   <form method="POST" class="space-y-6">
+     {/* Secci├│n: Informaci├│n General */}
+     <div
+       class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+     >
+       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+         {/* Fecha */}
+         <div class="form-control">
+           <fieldset class="fieldset">
+             <legend class="fieldset-legend">Fecha del Partido</legend>
