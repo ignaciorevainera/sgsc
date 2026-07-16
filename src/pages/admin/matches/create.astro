@@ -1,20 +1,12 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
-import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
-// --- 1. SEGURIDAD ---
 const supabase = createAstroSupabase(Astro);
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-if (!user) {
-  return Astro.redirect("/login");
-}
 
-// --- 2. DATA ---
+// --- DATA ---
 const { data: players } = await supabase
   .from("players")
   .select("id, nickname, is_guest")
@@ -29,8 +21,7 @@ const { data: fields } = await supabase
   .select("id, name")
   .order("name");
 
-// --- 3. POST LOGIC ---
-let successMessage = "";
+// --- POST LOGIC ---
 let errorMessage = "";
 
 if (Astro.request.method === "POST") {
@@ -40,10 +31,9 @@ if (Astro.request.method === "POST") {
     const field_id = formData.get("field_id")?.toString() || "";
     const result = formData.get("result")?.toString() || "";
 
-    const lightPlayers: any[] = [];
-    const darkPlayers: any[] = [];
+    const lightPlayers: string[] = [];
+    const darkPlayers: string[] = [];
 
-    // Recolectar jugadores
     players?.forEach((p) => {
       const selection = formData.get(`player_${p.id}`);
       if (selection === "light") lightPlayers.push(p.id);
@@ -64,24 +54,22 @@ if (Astro.request.method === "POST") {
     });
 
     if (error) throw error;
-    successMessage = "¡Partido registrado con éxito!";
+    return Astro.redirect("/admin/matches?toast=success&msg=Partido+registrado+con+exito");
   } catch (err: any) {
     errorMessage = err.message;
   }
 }
 ---
 
-<Main title="Cargar Partido | SGSC" contentWidth="admin">
+<Main
+  title="Cargar Partido | SGSC"
+  contentWidth="admin"
+  toastType={errorMessage ? "error" : undefined}
+  toastMessage={errorMessage || undefined}
+>
   <Title title="Cargar Partido" subtitle="Panel de Administración" />
 
-  {/* Alertas */}
-  {
-    successMessage && (
-      <Alert type="success" message={successMessage} class="mb-6" />
-    )
-  }
 
-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
 
   <form
     method="POST"
