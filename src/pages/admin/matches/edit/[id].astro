@@ -1,22 +1,15 @@
 ---
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
-import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-if (!user) {
-  return Astro.redirect("/login");
-}
 
 const id = Astro.params.id as string;
 if (!id) return Astro.redirect("/admin/matches");
 let errorMessage = "";
-const showSuccess = Astro.url.searchParams.get("success") === "true";
+
 
 // 1. Obtener datos para llenar el formulario
 // A. El partido actual
@@ -186,7 +179,7 @@ if (Astro.request.method === "POST") {
       );
     }
 
-    return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
+    return Astro.redirect(`/admin/matches/edit/${id}?toast=success&msg=Partido+actualizado+correctamente`);
   } catch (error: any) {
     errorMessage =
       error?.message ||
@@ -195,25 +188,13 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<Main title="Editar Partido | SGSC" contentWidth="admin">
+<Main
+  title="Editar Partido | SGSC"
+  contentWidth="admin"
+  toastType={errorMessage ? "error" : undefined}
+  toastMessage={errorMessage || undefined}
+>
   <Title title="Editar Partido" subtitle="Panel de Administración" />
-
-  {/* Alertas */}
-  {
-    showSuccess && (
-      <div class="mb-6 flex flex-col gap-2">
-        <Alert type="success" message="¡Partido actualizado correctamente!" />
-        <a
-          href="/admin/matches"
-          class="btn btn-ghost btn-sm w-full rounded-xl sm:w-fit"
-        >
-          <Icon name="material-symbols:arrow-back" size={18} />
-          Volver al historial
-        </a>
-      </div>
-    )
-  }
-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
 
   <form method="POST" class="space-y-6">
     {/* Sección: Información General */}
