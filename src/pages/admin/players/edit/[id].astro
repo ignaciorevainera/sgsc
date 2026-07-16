@@ -2,18 +2,12 @@
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
-import Alert from "@/components/shared/Alert.astro";
+
 import { parsePlayerFormData } from "@/lib/utils/playerForm";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-if (!user) {
-  return Astro.redirect("/login");
-}
 
 const id = Astro.params.id as string;
 if (!id) return Astro.redirect("/admin/players");
@@ -28,6 +22,8 @@ const { data: player } = await supabase
   .single();
 if (!player) return Astro.redirect("/admin/players");
 
+let errorMessage = "";
+
 // --- UPDATE ---
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
@@ -36,7 +32,6 @@ if (Astro.request.method === "POST") {
   let error = null;
 
   if (action === "toggle_status") {
-    // Borrado Lógico
     const newStatus = !player.is_active;
     const { error: updateError } = await supabase
       .from("players")
@@ -44,38 +39,32 @@ if (Astro.request.method === "POST") {
       .eq("id", id);
     error = updateError;
   } else {
-    // Edición normal
     const playerInput = parsePlayerFormData(formData);
-
     const { error: updateError } = await supabase
       .from("players")
-      .update({
-        ...playerInput,
-      })
+      .update({ ...playerInput })
       .eq("id", id);
     error = updateError;
   }
 
   if (error) {
-    console.error("Error al actualizar jugador:", error);
-    return new Response("Error interno", { status: 500 });
+    errorMessage = error.message;
+  } else {
+    const msg = action === "toggle_status"
+      ? "Estado+actualizado+correctamente"
+      : "Jugador+actualizado+correctamente";
+    return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=${msg}`);
   }
-
-  return Astro.redirect(`/admin/players/edit/${id}?success=true`);
 }
 ---
 
-<Main title="Editar Jugador" contentWidth="admin">
+<Main
+  title="Editar Jugador"
+  contentWidth="admin"
+  toastType={errorMessage ? "error" : undefined}
+  toastMessage={errorMessage || undefined}
+>
   <Title title="Editar Jugador" subtitle="Panel de Administración" />
-  {
-    Astro.url.searchParams.get("success") && (
-      <Alert
-        type="success"
-        message="Cambios guardados correctamente."
-        class="mb-4"
-      />
-    )
-  }
 
   <div class="flex flex-col gap-6">
     <form
