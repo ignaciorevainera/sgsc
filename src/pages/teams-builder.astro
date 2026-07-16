@@ -1,4 +1,6 @@
 ---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
 import { createAstroSupabase } from "@/lib/supabase";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";

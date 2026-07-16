@@ -23,6 +23,9 @@ playwright-report/
 .env.production
 .env.test
 
+# local opencode config (secrets)
+opencode.jsonc
+
 # macOS-specific files
 .DS_Store
 
