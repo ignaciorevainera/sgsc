@@ -2,13 +2,15 @@
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { createAstroSupabase } from "@/lib/supabase";
-import {
-  formatDate,
+import { formatDate,
   calculateAge,
   getCurrentYear,
   getSafeDate,
   getYearFromDate,
 } from "@/lib/utils/dateUtils";
+import { computeBadges } from "@/lib/utils/badges";
+import { computeColorStats } from "@/lib/utils/colorStats";
+import { computeHeadToHead } from "@/lib/utils/headToHead";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
@@ -197,144 +199,10 @@ const outcomeConfigs: Record<MatchOutcome, OutcomeConfig> = {
 const getOutcomeConfig = (outcome: MatchOutcome): OutcomeConfig =>
   outcomeConfigs[outcome] || outcomeConfigs.L;
 
-const myMatchIds = allMatchEntries?.map((m) => m.match_id) || [];
-const myMatchEntriesByMatchId = new Map(
-  (allMatchEntries || []).map((entry) => [entry.match_id, entry]),
-);
-
-// 2. Obtener a TODOS los demás jugadores que participaron en ESOS mismos partidos
-// Agregamos el filtro !inner para que Supabase filtre la consulta principal
-// basándose en una condición de la tabla relacionada (players)
-const teammatesAndRivals =
-  myMatchIds.length === 0
-    ? []
-    : (
-        await supabase
-          .from("match_players")
-          .select(
-            `
-            player_id,
-            team,
-            match_id,
-            player:players!inner (
-              nickname,
-              is_guest
-            )
-          `,
-          )
-          .in("match_id", myMatchIds)
-          .neq("player_id", id)
-          .eq("player.is_guest", false)
-      ).data || []; // <--- FILTRO CLAVE: Solo socios
-
-// 3. Procesar estadísticas de Socios y Némesis
-const partnerStats = new Map(); // Para "Mejor Socio" (Mismo equipo)
-const rivalStats = new Map(); // Para "Némesis" (Equipo contrario)
-
-teammatesAndRivals?.forEach((entry) => {
-  const myEntry = myMatchEntriesByMatchId.get(entry.match_id);
-  if (!myEntry) return;
-
-  const isTeammate = entry.team === myEntry.team;
-
-  // SOLUCIÓN 1: Acceder al primer elemento si viene como array [0]
-  const match = myEntry.match as
-    | { result: string }
-    | { result: string }[]
-    | null;
-  const matchResult = Array.isArray(match) ? match[0]?.result : match?.result;
-
-  const iWon = myEntry.team === matchResult;
-  const iLost = matchResult !== "draw" && myEntry.team !== matchResult;
-
-  const statsMap = isTeammate ? partnerStats : rivalStats;
-
-  if (!statsMap.has(entry.player_id)) {
-    // SOLUCIÓN 2: Acceder al nickname del objeto player
-    const playerData = entry.player as
-      | { nickname: string }
-      | { nickname: string }[]
-      | null;
-    const playerNickname = Array.isArray(playerData)
-      ? playerData[0]?.nickname
-      : playerData?.nickname;
-
-    statsMap.set(entry.player_id, {
-      id: entry.player_id,
-      nickname: playerNickname || "Desconocido",
-      matches: 0,
-      wins: 0,
-      losses: 0,
-    });
-  }
-
-  const current = statsMap.get(entry.player_id);
-  if (current) {
-    current.matches++;
-    if (isTeammate) {
-      if (iWon) current.wins++;
-    } else {
-      // Si era rival, sumamos victoria para el oponente si nosotros perdimos
-      if (iLost) current.wins++;
-    }
-  }
-});
-
-// 4. Calcular los ganadores (mínimo 3 partidos para que sea relevante)
-const minMatches = 2;
-
-const bestPartner = [...partnerStats.values()]
-  .filter((p) => p.matches >= minMatches)
-  .sort(
-    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
-  )[0];
-
-const nemesis = [...rivalStats.values()]
-  .filter((r) => r.matches >= minMatches)
-  .sort(
-    (a, b) => b.wins / b.matches - a.wins / a.matches || b.matches - a.matches,
-  )[0];
+const { bestPartner, nemesis } = await computeHeadToHead(supabase, id, allMatchEntries ?? []);
 
 // --- LÓGICA DE COLOR (CLARO vs OSCURO) ---
-const colorStats = {
-  light: { played: 0, wins: 0, points: 0 },
-  dark: { played: 0, wins: 0, points: 0 },
-};
-
-allMatchEntries?.forEach((entry) => {
-  const matchData = Array.isArray(entry.match)
-    ? entry.match[0]
-    : entry.match;
-
-  if (!matchData?.result) return;
-
-  const result = matchData.result;
-  const myTeam = entry.team?.toLowerCase().trim();
-  if (myTeam !== "light" && myTeam !== "dark") return;
-
-  const stats = colorStats[myTeam];
-  stats.played++;
-
-  if (result === myTeam) {
-    stats.wins++;
-    stats.points += 3;
-  } else if (result === "draw") {
-    stats.points += 1;
-  }
-});
-
-const getWinRate = (wins: number, played: number): number =>
-  played > 0 ? Math.round((wins / played) * 100) : 0;
-
-const statsClaro = {
-  ...colorStats.light,
-  winRate: getWinRate(colorStats.light.wins, colorStats.light.played),
-};
-
-const statsOscuro = {
-  ...colorStats.dark,
-  winRate: getWinRate(colorStats.dark.wins, colorStats.dark.played),
-};
+const { light: statsClaro, dark: statsOscuro } = computeColorStats(allMatchEntries ?? []);
 
 // 1. Gráfico Anual (Orden cronológico)
 const chartYearlyData = [...(yearlyStats || [])].sort(
@@ -384,197 +252,18 @@ allHistory?.forEach((m) => {
 const uniqueClubYears = [...new Set(allSeasonsData?.map((s) => s.year) ?? [])];
 const totalClubSeasons = uniqueClubYears.length;
 
-// --- SISTEMA DE MEDALLAS POR RANGOS (TIERS) ---
-type TierKey =
-  | "bronze"
-  | "silver"
-  | "gold"
-  | "platinum"
-  | "sapphire"
-  | "ruby"
-  | "emerald"
-  | "diamond";
-type TierThreshold = [number, TierKey];
+const badges = computeBadges({
+  matchesPlayed: player.matches_played,
+  wins: player.wins,
+  points: player.points,
+  yearlyStats: yearlyStats ?? [],
+  totalClubSeasons,
+  lightWins: statsClaro.wins,
+  darkWins: statsOscuro.wins,
+  allHistory: allHistory ?? [],
+  getMatchData,
+});
 
-interface Badge {
-  label: string;
-  icon: string;
-  description: string;
-  style: string;
-  subLabel?: string;
-}
-
-const badges: Badge[] = [];
-
-const tiers: Record<TierKey, { name: string; style: string }> = {
-  bronze: {
-    name: "Bronce",
-    style: "bg-orange-50 text-orange-900 border-orange-300",
-  },
-  silver: {
-    name: "Plata",
-    style: "bg-slate-50 text-slate-700 border-slate-300",
-  },
-  gold: {
-    name: "Oro",
-    style: "bg-yellow-50 text-yellow-800 border-yellow-400",
-  },
-  platinum: {
-    name: "Platino",
-    style: "bg-cyan-50 text-cyan-800 border-cyan-300",
-  },
-  sapphire: {
-    name: "Zafiro",
-    style: "bg-blue-50 text-blue-800 border-blue-400",
-  },
-  ruby: { name: "Rubí", style: "bg-rose-50 text-rose-800 border-rose-400" },
-  emerald: {
-    name: "Esmeralda",
-    style: "bg-emerald-50 text-emerald-800 border-emerald-400",
-  },
-  diamond: {
-    name: "Diamante",
-    style: "bg-sky-50 text-sky-800 border-sky-400 shadow-md",
-  },
-};
-
-const getTierBadge = (
-  value: number,
-  thresholds: TierThreshold[],
-  baseLabel: string,
-  icon: string,
-  descriptionFn: (limit: number) => string,
-): Badge | null => {
-  for (const [limit, tierKey] of thresholds) {
-    if (value >= limit) {
-      return {
-        label: baseLabel,
-        icon,
-        description: descriptionFn(limit),
-        style: tiers[tierKey].style,
-      };
-    }
-  }
-  return null;
-};
-
-// 1. TRAYECTORIA
-const matchThresholds: TierThreshold[] = [
-  [40, "diamond"],
-  [35, "emerald"],
-  [30, "ruby"],
-  [25, "sapphire"],
-  [20, "platinum"],
-  [15, "gold"],
-  [10, "silver"],
-  [5, "bronze"],
-];
-const trayectoryBadge = getTierBadge(
-  player.matches_played,
-  matchThresholds,
-  "Trayectoria",
-  "material-symbols:footprint",
-  (limit) => `Superó los ${limit} partidos jugados`,
-);
-if (trayectoryBadge) badges.push(trayectoryBadge);
-
-// 2. GANADOR
-const winThresholds: TierThreshold[] = [
-  [25, "diamond"],
-  [20, "emerald"],
-  [17, "ruby"],
-  [15, "sapphire"],
-  [10, "platinum"],
-  [7, "gold"],
-  [5, "silver"],
-  [3, "bronze"],
-];
-const winnerBadge = getTierBadge(
-  player.wins,
-  winThresholds,
-  "Ganador",
-  "material-symbols:trophy",
-  (limit) => `Acumula más de ${limit} victorias`,
-);
-if (winnerBadge) badges.push(winnerBadge);
-
-// 3. LEYENDA
-const pointsThresholds: TierThreshold[] = [
-  [50, "diamond"],
-  [40, "emerald"],
-  [35, "ruby"],
-  [30, "sapphire"],
-  [25, "platinum"],
-  [20, "gold"],
-  [15, "silver"],
-  [10, "bronze"],
-];
-const legendBadge = getTierBadge(
-  player.points,
-  pointsThresholds,
-  "Leyenda",
-  "material-symbols:workspace-premium",
-  (limit) => `Superó la barrera de los ${limit} puntos`,
-);
-if (legendBadge) badges.push(legendBadge);
-
-const validPlayerSeasons =
-  yearlyStats?.filter((y: any) => y.matches_played >= 3).length || 0;
-
-// Si las temporadas válidas del jugador igualan al total de temporadas del club (y hay más de 1 temporada historia)
-if (totalClubSeasons > 1 && validPlayerSeasons === totalClubSeasons) {
-  badges.push({
-    label: "Presentismo",
-    subLabel: "Perfecto",
-    icon: "material-symbols:calendar-month",
-    description: `Jugó todas las temporadas (${totalClubSeasons}) de la historia`,
-    style: "bg-purple-50 text-purple-800 border-purple-400 shadow-md", // Estilo místico
-  });
-}
-
-// 4. ESPECIALISTA (Color)
-if (statsClaro.wins > 0 || statsOscuro.wins > 0) {
-  if (statsClaro.wins > statsOscuro.wins) {
-    badges.push({
-      label: "Especialista",
-      // subLabel: "Claro",
-      icon: "material-symbols:sunny",
-      description: `Rinde mejor con camiseta Clara`,
-      style: "bg-orange-50 text-orange-800 border-orange-300",
-    });
-  } else if (statsOscuro.wins > statsClaro.wins) {
-    badges.push({
-      label: "Especialista",
-      // subLabel: "Oscuro",
-      icon: "material-symbols:dark-mode",
-      description: `Rinde mejor con camiseta Oscura`,
-      style: "bg-indigo-50 text-indigo-800 border-indigo-300",
-    });
-  }
-}
-
-const last3 = allHistory?.slice(0, 3) || [];
-const isOnFire =
-  last3.length === 3 &&
-  last3.every((m) => {
-    const matchData = getMatchData(m.matches);
-    return matchData?.result === m.team;
-  });
-
-// 6. ON FIRE
-if (isOnFire) {
-  badges.push({
-    label: "En Racha",
-    subLabel: "En Racha",
-    icon: "material-symbols:local-fire-department",
-    description: "Ganó sus últimos 3 partidos seguidos",
-    style: "bg-red-50 text-red-700 border-red-400 animate-pulse",
-  });
-}
-
-// ... (código existente)
-
-// --- CÁLCULO DE AÑO DE DEBUT ---
 const oldestMatch = allHistory?.[allHistory.length - 1];
 const oldestMatchData = getMatchData(oldestMatch?.matches);
 const debutYear = oldestMatchData?.date
