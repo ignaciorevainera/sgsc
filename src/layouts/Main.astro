@@ -3,21 +3,26 @@ import "@styles/global.css";
 import Analytics from "@vercel/analytics/astro";
 import Footer from "@/components/shared/Footer.astro";
 import Header from "@/components/shared/Header.astro";
+import ToastContainer from "@/components/shared/ToastContainer.astro";
 
 interface Props {
   title: string;
-  description?: string; // Hacemos opcional la descripción
-  image?: string; // Hacemos opcional la imagen para compartir
-  type?: "website" | "article" | "profile"; // Tipo de contenido
+  description?: string;
+  image?: string;
+  type?: "website" | "article" | "profile";
   contentWidth?: "public" | "admin";
+  toastType?: "success" | "error" | "warning" | "info";
+  toastMessage?: string;
 }
 
 const {
   title,
-  description = "Resultados, estadísticas y ranking del grupo Solo Gente Súper Comprometida.", // Valor por defecto
-  image = "/images/og-default.jpg", // ¡Debes crear esta imagen! (ver abajo)
+  description = "Resultados, estadísticas y ranking del grupo Solo Gente Súper Comprometida.",
+  image = "/images/og-default.jpg",
   type = "website",
   contentWidth = "public",
+  toastType,
+  toastMessage,
 } = Astro.props;
 
 // Generamos URLs absolutas (necesarias para WhatsApp/FB)
@@ -92,6 +97,7 @@ const mainWidthClass =
     >
       <slot />
     </main>
+    <ToastContainer toastType={toastType} toastMessage={toastMessage} />
     <Footer />
   </body>
 </html>
