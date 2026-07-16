@@ -1,0 +1,45 @@
+---
+Astro.response.status = 500;
+Astro.response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+
+import { Icon } from "astro-icon/components";
+import Main from "@/layouts/Main.astro";
+---
+
+<Main title="Error interno | SGSC">
+  <div class="flex grow flex-col items-center justify-center gap-4 text-center">
+    <div class="flex -rotate-12 justify-center" aria-hidden="true">
+      <div class="relative inline-block">
+        <Icon name="material-symbols:error" class="text-error" size={72} />
+        <div
+          class="absolute -bottom-2 left-4 h-4 w-24 rounded-full bg-black/10 blur-sm"
+        >
+        </div>
+      </div>
+    </div>
+
+    <h1 class="text-error text-3xl font-black tracking-widest uppercase">
+      Error 500 - Error interno del servidor
+    </h1>
+
+    <p
+      class="text-base-content/60 mx-auto mt-6 max-w-md leading-7 text-balance"
+    >
+      Ocurrió un error inesperado. Por favor, intentá de nuevo más tarde o
+      contactá al administrador del sistema.
+    </p>
+
+    <div class="mt-10 flex items-center justify-center gap-x-6">
+      <a href="/" class="btn btn-primary btn-sm sm:btn-md rounded-xl">
+        Volver al inicio
+      </a>
+      <a
+        href="/matches"
+        class="btn btn-sm btn-ghost md:btn-md gap-2 rounded-xl"
+      >
+        Ver historial
+        <Icon name="material-symbols:arrow-forward" aria-hidden="true" />
+      </a>
+    </div>
+  </div>
+</Main>

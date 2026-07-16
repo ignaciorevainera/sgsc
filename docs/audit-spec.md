@@ -256,8 +256,8 @@ if (!["light", "dark", "draw"].includes(result)) throw new Error("Resultado inv√
 - `Astro.response.status = 500`
 
 **Checklist**:
-- [ ] Crear `500.astro`
-- [ ] Verificar que se renderiza forzando un error
+- [x] Crear `500.astro`
+- [x] Verificar que se renderiza forzando un error
 
 ---
 
@@ -281,5 +281,5 @@ if (!["light", "dark", "draw"].includes(result)) throw new Error("Resultado inv√
 | 1. Seguridad | 1 | 0 | 0 | 1 |
 | 2. Infraestructura | 4 | 0 | 0 | 4 |
 | 3. Calidad de c√≥digo | 4 | 0 | 0 | 4 |
-| 4. UX y errores | 3 | 1 | 0 | 2 |
-| **Total** | **12** | **1** | **0** | **11** |
+| 4. UX y errores | 3 | 0 | 0 | 3 |
+| **Total** | **12** | **0** | **0** | **12** |
