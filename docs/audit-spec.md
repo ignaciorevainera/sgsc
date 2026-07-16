@@ -164,11 +164,11 @@ Y usarla en la consulta y procesamiento.
 Las importaciones en `[id].astro` se reducen a 3 líneas.
 
 **Checklist**:
-- [ ] Crear `src/lib/utils/badges.ts`
-- [ ] Crear `src/lib/utils/headToHead.ts`
-- [ ] Crear `src/lib/utils/colorStats.ts`
-- [ ] Refactorizar `[id].astro` para usar los nuevos módulos
-- [ ] Verificar que la página se renderiza igual
+- [x] Crear `src/lib/utils/badges.ts` (computeBadges)
+- [x] Crear `src/lib/utils/headToHead.ts` (computeHeadToHead)
+- [x] Crear `src/lib/utils/colorStats.ts` (computeColorStats)
+- [x] Refactorizar `[id].astro` — 1293 → 982 líneas
+- [x] Build + tests + astro check pasan
 
 ### C-4 🟡 `@ts-ignore` en `compare.astro`
 
@@ -197,38 +197,25 @@ type MatchEntry = {
 
 > Feedback claro al usuario en formularios y manejo de estados de error.
 
-### U-1 🟡 Sin feedback en error de creación de jugador
+### U-1 🟡 Reemplazar Alert por Toast notifications
 
-**Archivo**: `src/pages/admin/players/create.astro`
-**Líneas**: 24–27
-**Problema**: Cuando `supabase.from("players").insert()` falla, solo se registra el error en consola. El usuario no ve nada y queda en la misma página sin indicación.
+**Archivos**: Múltiples admin pages
+**Problema**: Alert component sin animación, no auto-dismiss, UX pobre.
 
-**Solución**:
-
-```astro
-// En frontmatter
-let errorMessage = "";
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-  const playerInput = parsePlayerFormData(formData);
-  const { error } = await supabase.from("players").insert(playerInput);
-
-  if (error) {
-    errorMessage = error.message;
-  } else {
-    return Astro.redirect("/admin/players?success=true");
-  }
-}
-```
-
-Y en el template agregar `<Alert type="error" message={errorMessage} />`.
+**Solución aplicada**:
+1. Crear `ToastContainer.astro` con slide-in/out animation, auto-dismiss 5s, click-to-dismiss
+2. Integrar en `Main.astro` layout, acepta props o lee URL params
+3. Reemplazar Alert en todas las páginas admin:
+   - `admin/players/create.astro` — error toast + success redirect
+   - `admin/players/edit/[id].astro` — toast redirects en save/toggle
+   - `admin/matches/create.astro` — error toast + success redirect
+   - `admin/matches/edit/[id].astro` — toast redirects en save
 
 **Checklist**:
-- [ ] Agregar variable `errorMessage` en frontmatter
-- [ ] Mostrar `<Alert type="error">` en el template
-- [ ] Redirigir con `?success=true`
-- [ ] Opcional: mostrar `<Alert type="success">` en `admin/players/index.astro` si `?success=true`
+- [x] Crear ToastContainer.astro
+- [x] Integrar en Main.astro layout
+- [x] Reemplazar en players create/edit
+- [x] Reemplazar en matches create/edit
 
 ### U-2 🟡 Validación débil en `admin/matches/create.astro`
 
@@ -252,9 +239,10 @@ if (!["light", "dark", "draw"].includes(result)) throw new Error("Resultado inv�
 ```
 
 **Checklist**:
-- [ ] Agregar validación de formato de fecha
-- [ ] Agregar validación de field_id existente
-- [ ] Agregar validación de resultado contra valores permitidos
+- [x] Agregar validación de formato de fecha
+- [x] Agregar validación de field_id existente
+- [x] Agregar validación de resultado contra valores permitidos
+- [x] Aplicar mismas validaciones a `matches/edit/[id].astro`
 
 ### U-3 🟡 Falta página de error 500
 
@@ -292,6 +280,6 @@ if (!["light", "dark", "draw"].includes(result)) throw new Error("Resultado inv�
 |---------|-------|------------|-------------|-------------|
 | 1. Seguridad | 1 | 0 | 0 | 1 |
 | 2. Infraestructura | 4 | 0 | 0 | 4 |
-| 3. Calidad de código | 4 | 1 | 0 | 3 |
-| 4. UX y errores | 3 | 3 | 0 | 0 |
-| **Total** | **12** | **4** | **0** | **8** |
+| 3. Calidad de código | 4 | 0 | 0 | 4 |
+| 4. UX y errores | 3 | 1 | 0 | 2 |
+| **Total** | **12** | **1** | **0** | **11** |

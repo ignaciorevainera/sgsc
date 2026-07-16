@@ -57,6 +57,9 @@ if (Astro.request.method === "POST") {
     if (!date || !field_id || !result) {
       throw new Error("Faltan datos obligatorios para actualizar el partido.");
     }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new Error("Formato de fecha inválido.");
+    }
     if (!["light", "dark", "draw"].includes(result)) {
       throw new Error("El resultado seleccionado no es válido.");
     }
