@@ -215,6 +215,16 @@ const isLinkActive = (href: string) => {
       )
     }
 
+    <button
+      type="button"
+      class="btn btn-ghost btn-circle"
+      aria-label="Buscar (Ctrl+K)"
+      id="header-search-btn"
+      title="Buscar (Ctrl+K)"
+    >
+      <Icon name="material-symbols:search" size={22} aria-hidden="true" />
+    </button>
+
     <label class="btn btn-ghost btn-circle swap swap-rotate">
       <input
         id="theme-toggle"
@@ -266,4 +276,11 @@ const isLinkActive = (href: string) => {
       localStorage.setItem("theme", theme);
     });
   }
+
+  document.getElementById("header-search-btn")?.addEventListener("click", () => {
+    (document.getElementById("search-modal") as HTMLDialogElement)?.showModal();
+    setTimeout(() => {
+      (document.getElementById("search-input") as HTMLInputElement)?.focus();
+    }, 100);
+  });
 </script>
