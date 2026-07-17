@@ -1,19 +1,21 @@
-# Task 4 Report — Replace Alert with toast (player edit page)
+# Task 4: Pagination Component — Report
 
 ## Status
-✅ Complete
+Complete.
 
-## Commits
-- `3b69cf5` — `fix: replace Alert with toast in player edit page`
+## Commit
+```
+086f6b2 feat(ux): add Pagination component with DaisyUI join
+```
 
-## Changes
-| Step | Action | Result |
-|------|--------|--------|
-| 1 | Remove Alert import | Done |
-| 2 | Replace POST handler (errorMessage + toast redirect) | Done |
-| 3 | Remove inline success alert block | Done |
-| 4 | Update Main with toastType/toastMessage props | Done |
-| 5 | Build (`npm run build`) | ✅ `Complete!` (daisyUI CSS warning only, pre-existing) |
+## Build Check
+`npx astro check` passes for Pagination.astro. 2 pre-existing errors in `create.astro` and `players/[id].astro` (unrelated).
 
-## Concerns
-None. File reduced from 130 to 125 lines. PRG pattern now used (redirect with `?toast=success&msg=...`), error surfaces via `errorMessage` → Main toast props instead of bare `Response(500)`.
+## Summary
+- Created `src/components/features/ux/Pagination.astro`
+- Props: `currentPage`, `totalPages`, `currentUrl`
+- Uses `setFilter` from `@/lib/ux/filters` for page URL generation
+- DaisyUI `join` layout with ellipsis logic (first, last, ±1 pages)
+- Previous/next buttons with disabled state
+- Returns empty Response when `totalPages <= 1`
+- Fixed Astro parser issue: moved `.filter().map()` chain to frontmatter, used `<Fragment>` over `<>`

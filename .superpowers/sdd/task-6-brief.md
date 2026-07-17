@@ -1,79 +1,252 @@
-# Task 6: Fix admin/matches/edit/[id].astro — replace Alert with toast
+# Task 6: Matches Page — Filters and Pagination
 
 **Files:**
-- Modify: `src/pages/admin/matches/edit/[id].astro`
+- Modify: `src/pages/matches.astro`
 
-**Context:** Task 2 made Main accept toast props. This task replaces Alert in the match edit page with redirect-based toasts.
+**Interfaces:**
+- Consumes: `src/lib/ux/types.ts` (MatchFilters), `src/lib/ux/filters.ts` (getFilters, clearFilters), `src/components/features/ux/FilterBar.astro`, `src/components/features/ux/Pagination.astro`
+- Produces: updated `/matches` page with date range filter (from/to), field filter dropdown, pagination (20 per page)
 
 ## Steps
 
-### Step 1: Remove Alert import
+1. Read existing `src/pages/matches.astro`
+2. Replace with implementation code below
+3. Verify build (`npx astro check`)
+4. Commit
 
-Remove the line:
+## Key Design
+
+- When NO filters active: keep year-grouped view (original behavior)
+- When filters active: show flat paginated list, no year groups
+- Pagination resets to page 1 when filters change
+- Field filter dropdown populated dynamically from `fields` table
+- `from` and `to` are native HTML date inputs
+
+## Implementation
+
 ```astro
+---
+// src/pages/matches.astro
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
+import { Icon } from "astro-icon/components";
+import { supabase } from "@lib/supabase";
+import { getYearFromDate } from "@/lib/utils/dateUtils";
+import { getFilters, clearFilters } from "@/lib/ux/filters";
+import type { MatchFilters } from "@/lib/ux/types";
 import Alert from "@/components/shared/Alert.astro";
-```
+import FilterBar from "@/components/features/ux/FilterBar.astro";
+import Pagination from "@/components/features/ux/Pagination.astro";
+import Main from "@/layouts/Main.astro";
+import MatchCard from "@components/MatchCard.astro";
+import Title from "@/components/shared/Title.astro";
 
-### Step 2: Change success redirect param
+const MATCHES_PER_PAGE = 20;
 
-Find the line:
-```astro
-return Astro.redirect(`/admin/matches/edit/${id}?success=true`);
-```
-Replace with:
-```astro
-return Astro.redirect(`/admin/matches/edit/${id}?toast=success&msg=Partido+actualizado+correctamente`);
-```
+const filters = getFilters<MatchFilters>(Astro.url, {
+  defaults: { from: "", to: "", field_id: "", page: 1 },
+});
 
-### Step 3: Remove inline Alert blocks
+const { data: matches, error } = await supabase
+  .from("matches")
+  .select(
+    `
+    id,
+    date,
+    result,
+    video_url,
+    field_id,
+    fields (name),
+    match_players (
+      team,
+      players (nickname)
+    )
+  `
+  )
+  .order("date", { ascending: false });
 
-In the template, remove these Alert blocks:
-```astro
+const { data: fieldsList } = await supabase
+  .from("fields")
+  .select("id, name, city")
+  .order("name");
+
+let filtered = matches || [];
+
+if (filters.from) {
+  filtered = filtered.filter((m) => m.date >= filters.from);
+}
+if (filters.to) {
+  filtered = filtered.filter((m) => m.date <= filters.to);
+}
+if (filters.field_id) {
+  filtered = filtered.filter((m) => m.field_id === filters.field_id);
+}
+
+const totalPages = Math.max(1, Math.ceil(filtered.length / MATCHES_PER_PAGE));
+const currentPage = Math.min(filters.page, totalPages);
+const startIdx = (currentPage - 1) * MATCHES_PER_PAGE;
+const paginatedMatches = filtered.slice(startIdx, startIdx + MATCHES_PER_PAGE);
+
+const hasError = !!error;
+const hasMatches = !hasError && paginatedMatches.length > 0;
+
+const hasActiveFilters = filters.from !== "" || filters.to !== "" || filters.field_id !== "";
+
+let matchesByYear: Record<string, typeof filtered> = {};
+let years: string[] = [];
+
+if (!hasActiveFilters) {
+  matchesByYear = filtered.reduce((acc: Record<string, typeof filtered>, match) => {
+    const year = getYearFromDate(match.date);
+    if (!year) return acc;
+    if (!acc[year]) acc[year] = [];
+    acc[year].push(match);
+    return acc;
+  }, {});
+  years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
+}
+
+const clearUrl = clearFilters(Astro.url, ["from", "to", "field_id", "page"]).pathname + clearFilters(Astro.url, ["from", "to", "field_id", "page"]).search;
+---
+
+<Main title="Historial | SGSC">
+  <Title
+    title="Historial de Partidos"
+    subtitle="Revisa todos los partidos jugados en la historia del club, organizados por temporada."
+  />
+
+  <FilterBar hasActiveFilters={hasActiveFilters} clearUrl={clearUrl}>
+    <div class="form-control">
+      <label for="from" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Desde</span>
+      </label>
+      <input
+        id="from"
+        name="from"
+        type="date"
+        value={filters.from}
+        class="input input-bordered input-sm md:input-md w-full rounded-xl"
+        aria-label="Fecha desde"
+      />
+    </div>
+    <div class="form-control">
+      <label for="to" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Hasta</span>
+      </label>
+      <input
+        id="to"
+        name="to"
+        type="date"
+        value={filters.to}
+        class="input input-bordered input-sm md:input-md w-full rounded-xl"
+        aria-label="Fecha hasta"
+      />
+    </div>
+    <div class="form-control">
+      <label for="field_id" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Cancha</span>
+      </label>
+      <select
+        id="field_id"
+        name="field_id"
+        class="select select-bordered select-sm md:select-md w-full rounded-xl"
+        aria-label="Filtrar por cancha"
+      >
+        <option value="" selected={!filters.field_id}>Todas</option>
+        {fieldsList?.map((f) => (
+          <option value={f.id} selected={filters.field_id === f.id}>{f.name}</option>
+        ))}
+      </select>
+    </div>
+  </FilterBar>
+
   {
-    showSuccess && (
-      <div class="mb-6 flex flex-col gap-2">
-        <Alert type="success" message="¡Partido actualizado correctamente!" />
-        <a href="/admin/matches" class="btn btn-ghost btn-sm w-full rounded-xl sm:w-fit">
-          <Icon name="material-symbols:arrow-back" size={18} />
-          Volver al historial
-        </a>
-      </div>
+    hasError && (
+      <Alert
+        type="error"
+        message="No se pudo cargar el historial de partidos. Por favor, intenta más tarde."
+      />
     )
   }
-  {errorMessage && <Alert type="error" message={errorMessage} class="mb-6" />}
+
+  {
+    !hasError && !hasMatches && (
+      <Alert
+        type="info"
+        message={hasActiveFilters
+          ? "No se encontraron partidos con los filtros seleccionados."
+          : "No se encontraron partidos registrados."
+        }
+      />
+    )
+  }
+
+  {
+    hasActiveFilters && hasMatches && (
+      <>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {paginatedMatches.map((match: any) => (
+            <MatchCard match={match} />
+          ))}
+        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          currentUrl={Astro.url}
+        />
+      </>
+    )
+  }
+
+  {
+    !hasActiveFilters && !hasError && years.map((year) => (
+      <section class="mb-10 last:mb-0">
+        <div class="mb-8 flex items-center gap-4">
+          <div class="bg-base-300 h-px flex-1" />
+          <div class="bg-primary flex items-center gap-3 rounded-full px-5 py-2 shadow-lg">
+            <span class="text-primary-content text-2xl font-black tracking-wider">{year}</span>
+            <div class="bg-primary-content/20 h-6 w-px" />
+            <span class="text-primary-content/90 text-sm font-medium">
+              {matchesByYear[year].length} {matchesByYear[year].length === 1 ? "Partido" : "Partidos"}
+            </span>
+          </div>
+          <div class="bg-base-300 h-px flex-1" />
+        </div>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {matchesByYear[year].map((match: any) => (
+            <MatchCard match={match} />
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</Main>
+
+<script>
+  const from = document.getElementById("from") as HTMLInputElement | null;
+  const to = document.getElementById("to") as HTMLInputElement | null;
+  const fieldId = document.getElementById("field_id") as HTMLSelectElement | null;
+
+  const update = () => {
+    const url = new URL(window.location.href);
+    if (from && from.value) url.searchParams.set("from", from.value);
+    else url.searchParams.delete("from");
+    if (to && to.value) url.searchParams.set("to", to.value);
+    else url.searchParams.delete("to");
+    if (fieldId && fieldId.value) url.searchParams.set("field_id", fieldId.value);
+    else url.searchParams.delete("field_id");
+    url.searchParams.delete("page");
+    window.location.href = url.toString();
+  };
+
+  from?.addEventListener("change", update);
+  to?.addEventListener("change", update);
+  fieldId?.addEventListener("change", update);
+</script>
 ```
 
-### Step 4: Remove showSuccess variable
+## Commit Message
 
-Remove the line:
-```astro
-const showSuccess = Astro.url.searchParams.get("success") === "true";
 ```
-
-### Step 5: Update Main props
-
-Replace `<Main title="Editar Partido | SGSC" contentWidth="admin">` with:
-```astro
-<Main
-  title="Editar Partido | SGSC"
-  contentWidth="admin"
-  toastType={errorMessage ? "error" : undefined}
-  toastMessage={errorMessage || undefined}
->
+feat: add date range, field filter, and pagination to matches page
 ```
-
-### Step 6: Build
-
-Run: `npm run build`
-Expected: `Complete!`
-
-### Step 7: Commit
-
-```bash
-git add src/pages/admin/matches/edit/[id].astro
-git commit -m "fix: replace Alert with toast in match edit page"
-```
-
-## Report
-
-Write to `.superpowers/sdd/task-6-report.md` with status, commits, build result, concerns.

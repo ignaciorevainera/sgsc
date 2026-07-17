@@ -3,6 +3,7 @@ Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
+import { clearFilters } from "@/lib/ux/filters";
 import Alert from "@/components/shared/Alert.astro";
 import Main from "@/layouts/Main.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
@@ -28,6 +29,7 @@ const defaultYear =
 const sort = Astro.url.searchParams.get("sort") || "points";
 const season = Astro.url.searchParams.get("season") || defaultYear;
 const mode = Astro.url.searchParams.get("mode") || "simple";
+const minMatches = Number(Astro.url.searchParams.get("min_matches")) || 0;
 
 // Construimos las opciones del selector incluyendo "Histórico"
 const seasons = [...availableYears.map(String), "Histórico"];
@@ -93,8 +95,13 @@ const players =
     effectiveness: p.effectiveness ?? p.win_rate ?? p.win_pct ?? 0,
   })) || [];
 
-// 5. Ordenamiento
-const sortedPlayers = [...players].sort((a, b) => {
+// 5. Filtro por mínimo de partidos
+const minFilteredPlayers = minMatches > 0
+  ? players.filter((p) => p.matches_played >= minMatches)
+  : players;
+
+// 6. Ordenamiento
+const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   switch (sort) {
     case "name":
       return a.nickname.localeCompare(b.nickname);
@@ -209,6 +216,25 @@ const sortedPlayers = [...players].sort((a, b) => {
         />
       </label>
     </div>
+
+    <div class="divider m-0 sm:hidden"></div>
+
+    <div class="form-control w-full">
+      <label for="min_matches" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Mín. Partidos</span>
+      </label>
+      <input
+        id="min_matches"
+        name="min_matches"
+        type="number"
+        min="0"
+        max="50"
+        value={minMatches || ""}
+        placeholder="Sin mínimo"
+        class="input input-bordered input-sm md:input-md w-full rounded-xl"
+        aria-label="Filtrar por mínimo de partidos jugados"
+      />
+    </div>
   </div>
 
   {/* Error de conexión */}
@@ -249,16 +275,25 @@ const sortedPlayers = [...players].sort((a, b) => {
   const s = document.getElementById("season") as HTMLSelectElement;
   const o = document.getElementById("sort") as HTMLSelectElement;
   const m = document.getElementById("mode-toggle") as HTMLInputElement;
+  const mm = document.getElementById("min_matches") as HTMLInputElement;
+
+  let debounceTimer: ReturnType<typeof setTimeout>;
 
   const update = () => {
     const url = new URL(window.location.href);
     if (s) url.searchParams.set("season", s.value);
     if (o) url.searchParams.set("sort", o.value);
     if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
+    if (mm && mm.value) url.searchParams.set("min_matches", mm.value);
+    else url.searchParams.delete("min_matches");
     window.location.href = url.toString();
   };
 
   s?.addEventListener("change", update);
   o?.addEventListener("change", update);
   m?.addEventListener("change", update);
+  mm?.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(update, 500);
+  });
 </script>

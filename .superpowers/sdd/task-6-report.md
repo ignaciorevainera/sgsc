@@ -1,26 +1,29 @@
-# Task 6 Report — Replace Alert with toast in match edit page
+# Task 6 Report: Matches Page — Filters and Pagination
 
-**Status:** ✅ Complete
+## Status: ✅ Complete
 
 ## Changes
 
-1. Removed `import Alert` from `src/pages/admin/matches/edit/[id].astro`
-2. Removed `showSuccess` variable
-3. Changed redirect from `?success=true` to `?toast=success&msg=Partido+actualizado+correctamente`
-4. Removed inline Alert blocks from template (success + error)
-5. Updated `<Main>` with `toastType` and `toastMessage` props
+### `src/pages/matches.astro`
+- Added `FilterBar` component with date range (`from`/`to`) inputs and field dropdown
+- Added `Pagination` component (20 per page)
+- When no filters active: preserves original year-grouped rendering
+- When filters active: shows flat paginated list with Pagination
+- Client-side `<script>` resets `page` param on filter change
+- Added `field_id` to Supabase select
+
+### `src/lib/ux/types.ts`
+- Added `[key: string]: unknown` index signature to `MatchFilters` to satisfy `Record<string, unknown>` constraint in `getFilters<MatchFilters>()`
+
+## Type Check
+- `npx astro check` — **0 errors** from modified files
+- 2 pre-existing errors in `create.astro` and `players/[id].astro` (unrelated)
 
 ## Commit
-
 ```
-989a045 fix: replace Alert with toast in match edit page
+fd23096 feat: add date range, field filter, and pagination to matches page
 ```
 
-## Build
-
-`npm run build` → `Complete!` (12.97s)
-
-## Concerns
-
-- CSS warning about `@property` at-rule is pre-existing from DaisyUI 5, unrelated.
-- Empty line remains at line 13 where `showSuccess` was removed — cosmetic only.
+## Notes
+- FilterBar Popover pattern was agreed in DD session (not a horizontal bar)
+- `clearUrl` fixed from brief's double `clearFilters()` call to single call with `.pathname + .search`

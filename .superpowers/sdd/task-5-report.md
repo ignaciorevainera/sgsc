@@ -1,21 +1,18 @@
-# Task 5 Report — Replace Alert with toast in match create page
+# Task 5 Report: Players Page Filters
 
-**Status:** ✅ Done
+**Status:** Done
 
-## Completed Steps
-1. Removed `import Alert from "@/components/shared/Alert.astro"`
-2. Replaced POST handler: `successMessage` → redirect with toast query params; typed `lightPlayers/darkPlayers` as `string[]`
-3. Removed Alert blocks from template
-4. Updated `<Main>` props: passes `toastType` and `toastMessage` from `errorMessage`
+**Branch:** `master`
 
-## Commit
-```
-db4bff5 fix: replace Alert with toast in match create page
-```
+**Commits:**
+- `8bd3774` — feat: add search, sort, and active filter to players page
 
-## Build
-`npm run build` → `Complete!` (no errors)
+**Changes:**
+- Added `FilterBar` component with search input (debounced 300ms), sort dropdown (name/points/wins/matches), active-only toggle
+- Client-side filtering via URL search params; `getFilters` / `clearFilters` from `@/lib/ux/filters`
+- Contextual empty state (shows search term when filtering)
+- Client script updates URL on input/change; page reloads for server rendering
 
-## Concerns
-- Error messages surface via Main layout toast (same mechanism as Task 2). Success toast on redirect uses query params.
-- DaisyUI `@property` CSS warning pre-existing, not related to this change.
+**astro check:** 2 pre-existing errors only (create.astro:2322, [id].astro:2322) — no new errors from this change.
+
+**Notes:** Used `as const` + `as unknown as PlayerFilters` to satisfy `Record<string, unknown>` constraint on `getFilters` without modifying shared lib types.

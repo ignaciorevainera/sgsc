@@ -1,97 +1,95 @@
-# Task 4: Fix admin/players/edit/[id].astro — replace Alert with toast
+# Task 4: Pagination Component
 
 **Files:**
-- Modify: `src/pages/admin/players/edit/[id].astro`
+- Create: `src/components/features/ux/Pagination.astro`
 
-**Context:** Task 2 made Main layout accept toast props. This task replaces the inline `<Alert>` usage in the player edit page with redirect-based toasts following the PRG pattern.
+**Interfaces:**
+- Consumes: `src/lib/ux/filters.ts` (setFilter from Task 1)
+- Produces: `<Pagination />` — reusable page navigation with DaisyUI `join`
+- Props:
+  - `currentPage: number`
+  - `totalPages: number`
+  - `currentUrl: URL`
 
 ## Steps
 
-### Step 1: Remove Alert import
+1. Create the Pagination component
+2. Verify it builds with `npx astro check`
+3. Commit
 
-Remove the line:
+## Implementation Code
+
 ```astro
-import Alert from "@/components/shared/Alert.astro";
-```
-(It may not exist — check the current file. If not present, skip.)
+---
+// src/components/features/ux/Pagination.astro
+import { Icon } from "astro-icon/components";
+import { setFilter } from "@/lib/ux/filters";
 
-### Step 2: Replace POST handler
-
-The current POST handler uses `return Astro.redirect(\`/admin/players/edit/${id}?success=true\`)` and `return new Response("Error interno", { status: 500 })`.
-
-Replace the POST handler with:
-```astro
-let errorMessage = "";
-
-if (Astro.request.method === "POST") {
-  const formData = await Astro.request.formData();
-  const action = formData.get("action");
-
-  let error = null;
-
-  if (action === "toggle_status") {
-    const newStatus = !player.is_active;
-    const { error: updateError } = await supabase
-      .from("players")
-      .update({ is_active: newStatus })
-      .eq("id", id);
-    error = updateError;
-  } else {
-    const playerInput = parsePlayerFormData(formData);
-    const { error: updateError } = await supabase
-      .from("players")
-      .update({ ...playerInput })
-      .eq("id", id);
-    error = updateError;
-  }
-
-  if (error) {
-    errorMessage = error.message;
-  } else {
-    const msg = action === "toggle_status"
-      ? "Estado+actualizado+correctamente"
-      : "Jugador+actualizado+correctamente";
-    return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=${msg}`);
-  }
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  currentUrl: URL;
 }
-```
 
-### Step 3: Remove inline success alert block
+const { currentPage, totalPages, currentUrl } = Astro.props;
 
-In the template, remove this block if present:
-```astro
-{
-  Astro.url.searchParams.get("success") && (
-    <Alert type="success" message="Cambios guardados correctamente." class="mb-4" />
-  )
+function buildPageUrl(page: number): string {
+  const url = setFilter(currentUrl, "page", page === 1 ? undefined : page);
+  return url.pathname + url.search;
 }
+
+if (totalPages <= 1) {
+  return new Response(null);
+}
+---
+
+<div class="mt-6 flex items-center justify-center gap-2">
+  <a
+    href={currentPage > 1 ? buildPageUrl(currentPage - 1) : undefined}
+    class={`btn btn-ghost btn-sm rounded-xl ${currentPage <= 1 ? "btn-disabled" : ""}`}
+    aria-label="Página anterior"
+  >
+    <Icon name="material-symbols:chevron-left" size={20} aria-hidden="true" />
+  </a>
+
+  <div class="join rounded-xl">
+    {
+      Array.from({ length: totalPages }, (_, i) => i + 1)
+        .filter((page) => {
+          const distance = Math.abs(page - currentPage);
+          return page === 1 || page === totalPages || distance <= 1;
+        })
+        .map((page, idx, arr) => {
+          const showEllipsis = idx > 0 && page - arr[idx - 1] > 1;
+          return (
+            <>
+              {showEllipsis && (
+                <span class="join-item btn btn-ghost btn-sm btn-disabled pointer-events-none">...</span>
+              )}
+              <a
+                href={buildPageUrl(page)}
+                class={`join-item btn btn-sm ${page === currentPage ? "btn-primary" : "btn-ghost"}`}
+              >
+                {page}
+              </a>
+            </>
+          );
+        })
+    }
+  </div>
+
+  <a
+    href={currentPage < totalPages ? buildPageUrl(currentPage + 1) : undefined}
+    class={`btn btn-ghost btn-sm rounded-xl ${currentPage >= totalPages ? "btn-disabled" : ""}`}
+    aria-label="Página siguiente"
+  >
+    <Icon name="material-symbols:chevron-right" size={20} aria-hidden="true" />
+  </a>
+</div>
 ```
-(ToastContainer in Main reads `?toast=success&msg=...` from URL instead.)
 
-### Step 4: Update Main toast props
+## Commit Message
 
-Replace `<Main title="Editar Jugador"` opening tag with:
-```astro
-<Main
-  title="Editar Jugador"
-  contentWidth="admin"
-  toastType={errorMessage ? "error" : undefined}
-  toastMessage={errorMessage || undefined}
->
 ```
-
-### Step 5: Build
-
-Run: `npm run build`
-Expected: `Complete!`
-
-### Step 6: Commit
-
-```bash
-git add src/pages/admin/players/edit/[id].astro
-git commit -m "fix: replace Alert with toast in player edit page"
+feat(ux): add Pagination component with DaisyUI join
 ```
-
-## Report
-
-Write to `.superpowers/sdd/task-4-report.md` with status, commits, build result, concerns.

@@ -1,14 +1,27 @@
-# Task 3 — Report
+# Task 3 Report: FilterBar Component
 
-**Status:** ✅ Done
+## What was created
 
-**Changes to `src/pages/admin/players/create.astro`:**
-1. Frontmatter: added `errorMessage` and `formValues` variables; POST handler now saves form values for re-fill on error; redirects with `?toast=success&msg=Jugador+creado+correctamente` on success.
-2. `<Main>`: passes `toastType`/`toastMessage` props to show error toast.
-3. `<PlayerFormFields>`: passes `values={formValues}` to pre-fill form on validation error.
+- **`src/components/features/ux/FilterBar.astro`** — reusable filter container with:
+  - `<slot />` for filter controls (flex-wrap layout)
+  - Conditional "Limpiar filtros" button (shown when `hasActiveFilters && clearUrl`)
+  - DaisyUI styling: `bg-base-100`, `border-base-200`, `rounded-xl`, `shadow-md`
+  - No client-side JavaScript — pure template
 
-**Commit:** `e73ead6` — `fix: add error toast and form pre-fill to player create`
+## Build verification
 
-**Build:** `Complete!` (13s)
+`npx astro check` — **2 pre-existing errors** (unrelated to this component):
+- `src/pages/admin/players/create.astro:29` — `preferred_foot` type mismatch
+- `src/pages/players/[id].astro:259` — `yearlyStats` type mismatch
 
-**Concerns:** None. DaisyUI `@property` warning is pre-existing, not introduced.
+FilterBar.astro: **0 errors, 0 warnings.**
+
+## Files changed
+
+| File | Action |
+|------|--------|
+| `src/components/features/ux/FilterBar.astro` | CREATE |
+
+## Issues
+
+None.
