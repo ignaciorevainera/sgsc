@@ -17,6 +17,13 @@ const type = Astro.props.toastType || urlType;
 const message = Astro.props.toastMessage || urlMessage;
 const show = type && message;
 
+const colorStyles: Record<string, string> = {
+  success: "background-color:var(--color-success);color:var(--color-success-content);border-color:var(--color-success);",
+  error: "background-color:var(--color-error);color:var(--color-error-content);border-color:var(--color-error);",
+  warning: "background-color:var(--color-warning);color:var(--color-warning-content);border-color:var(--color-warning);",
+  info: "background-color:var(--color-info);color:var(--color-info-content);border-color:var(--color-info);",
+};
+
 const icons: Record<string, string> = {
   success: "material-symbols:check-circle",
   error: "material-symbols:error",
@@ -28,11 +35,12 @@ const icons: Record<string, string> = {
 {show && (
   <div
     id="toast-container"
-    class="toast toast-top toast-end pointer-events-none fixed z-[9999]"
+    class="toast toast-bottom toast-end pointer-events-none fixed z-[9999]"
   >
     <div
       role="alert"
-      class={`toast-item alert alert-${type} pointer-events-auto cursor-pointer rounded-xl shadow-lg`}
+      class={`toast-item alert pointer-events-auto cursor-pointer rounded-xl shadow-lg`}
+      style={colorStyles[type!]}
       onclick="this.remove()"
     >
       <Icon name={icons[type!]} size={24} />
