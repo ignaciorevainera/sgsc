@@ -71,7 +71,8 @@ const hasError = !!error;
 const hasFields = !hasError && filtered.length > 0;
 
 const hasActiveFilters = filters.city !== "" || filters.sort !== "matches";
-const clearUrl = clearFilters(Astro.url, ["city", "sort"]).pathname + clearFilters(Astro.url, ["city", "sort"]).search;
+const clearedUrl = clearFilters(Astro.url, ["city", "sort"]);
+const clearUrl = clearedUrl.pathname + clearedUrl.search;
 ---
 
 <Main title="Sedes | SGSC">

@@ -54,7 +54,7 @@ export function buildSearchIndex(
       id: m.id,
       label: dateStr,
       subtitle: m.field || "",
-      href: "",
+      href: "/matches",
       type: "match",
     });
   }

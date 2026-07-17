@@ -1,3 +1,23 @@
+# Task 10: Search Command Palette Component
+
+**Files:**
+- Create: `src/components/features/ux/SearchCommandPalette.astro`
+
+**Interfaces:**
+- Consumes: `src/lib/ux/search.ts` (SearchItem type — used in Astro frontmatter types)
+- Produces: `<SearchCommandPalette />` — client island with Cmd+K/Ctrl+K trigger, DaisyUI modal
+- Props:
+  - `items: SearchItem[]` — pre-built search index (passed server-side, used client-side via JSON)
+
+## Steps
+
+1. Create the component
+2. Verify build
+3. Commit
+
+## Implementation
+
+```astro
 ---
 import { Icon } from "astro-icon/components";
 import type { SearchItem } from "@/lib/ux/search";
@@ -8,7 +28,6 @@ interface Props {
 
 const { items } = Astro.props;
 const serializedItems = JSON.stringify(items);
-void serializedItems;
 ---
 
 <button
@@ -57,12 +76,7 @@ void serializedItems;
 </dialog>
 
 <script>
-  // @ts-ignore Astro template expression — replaced at build time
   const items: import("@/lib/ux/search").SearchItem[] = {serializedItems};
-
-  function escapeHTML(str: string): string {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
 
   function fuzzyMatch(query: string, target: string): boolean {
     if (!query) return true;
@@ -84,6 +98,7 @@ void serializedItems;
       return;
     }
 
+    const q = query.toLowerCase();
     const grouped = new Map<string, import("@/lib/ux/search").SearchItem[]>();
 
     for (const item of items) {
@@ -120,13 +135,13 @@ void serializedItems;
       html += `<div class="text-base-content/40 px-2 py-1 text-xs font-bold uppercase">${typeLabels[type] || type}</div>`;
       for (const item of typeItems.slice(0, 5)) {
         html += `
-          <a href="${escapeHTML(item.href)}" class="hover:bg-base-200 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors">
+          <a href="${item.href}" class="hover:bg-base-200 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors">
             <div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-              <span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0).toUpperCase())}</span>
+              <span class="text-base-content/60 text-xs font-bold">${item.label.charAt(0).toUpperCase()}</span>
             </div>
             <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium">${escapeHTML(item.label)}</div>
-              <div class="text-base-content/60 truncate text-xs">${escapeHTML(item.subtitle)}</div>
+              <div class="truncate text-sm font-medium">${item.label}</div>
+              <div class="text-base-content/60 truncate text-xs">${item.subtitle}</div>
             </div>
           </a>
         `;
@@ -141,10 +156,8 @@ void serializedItems;
     setTimeout(() => input?.focus(), 100);
   });
 
-  let debounceTimer: ReturnType<typeof setTimeout>;
   input?.addEventListener("input", () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => renderResults(input?.value || ""), 300);
+    renderResults(input?.value || "");
   });
 
   document.addEventListener("keydown", (e) => {
@@ -167,3 +180,12 @@ void serializedItems;
     renderResults("");
   });
 </script>
+```
+
+## Commit Message
+
+```
+feat(ux): add SearchCommandPalette component
+```
+
+Note: In Astro, `{serializedItems}` in a `<script>` block renders the variable content directly as a JS expression. Since `serializedItems` is already a valid JSON array string (e.g. `[{"id":"1"}]`), `const items = {serializedItems};` produces `const items = [{"id":"1"}];` which is a valid JS array literal.

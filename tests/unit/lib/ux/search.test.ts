@@ -48,7 +48,7 @@ describe("buildSearchIndex", () => {
       id: "m1",
       label: "15/06/2025",
       subtitle: "La Canchita",
-      href: "",
+      href: "/matches",
       type: "match",
     });
     expect(index[3]).toEqual({

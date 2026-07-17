@@ -22,11 +22,23 @@ const { data: players, error } = await supabase
   .eq("is_guest", false)
   .order("nickname", { ascending: true });
 
+const { data: playerStatuses } = await supabase
+  .from("players")
+  .select("id, is_active");
+
+const activePlayerIds = new Set(
+  (playerStatuses || []).filter((p) => p.is_active).map((p) => p.id)
+);
+
 let filtered = players || [];
 
 if (filters.search) {
   const q = filters.search.toLowerCase();
   filtered = filtered.filter((p) => p.nickname?.toLowerCase().includes(q) ?? false);
+}
+
+if (filters.active) {
+  filtered = filtered.filter((p) => p.player_id && activePlayerIds.has(p.player_id));
 }
 
 const sortBy = filters.sort;
@@ -45,7 +57,8 @@ const hasError = !!error;
 const hasPlayers = !hasError && filtered.length > 0;
 
 const hasActiveFilters = filters.search !== "" || filters.sort !== "name" || filters.active;
-const clearUrl = clearFilters(Astro.url, ["search", "sort", "active"]).pathname + clearFilters(Astro.url, ["search", "sort", "active"]).search;
+const clearedUrl = clearFilters(Astro.url, ["search", "sort", "active"]);
+const clearUrl = clearedUrl.pathname + clearedUrl.search;
 ---
 
 <Main title="Plantel | SGSC">
