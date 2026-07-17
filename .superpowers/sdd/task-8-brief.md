@@ -1,3 +1,22 @@
+# Task 8: Fields Page — City Filter and Sort
+
+**Files:**
+- Modify: `src/pages/fields.astro`
+
+**Interfaces:**
+- Consumes: `src/lib/ux/types.ts` (FieldFilters), `src/lib/ux/filters.ts` (getFilters, clearFilters), `src/components/features/ux/FilterBar.astro`
+- Produces: updated `/fields` page with city filter dropdown and sort (most played / name)
+
+## Steps
+
+1. Read existing `src/pages/fields.astro`
+2. Replace with implementation below
+3. Verify build
+4. Commit
+
+## Implementation
+
+```astro
 ---
 Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300');
 
@@ -108,7 +127,7 @@ const clearUrl = clearFilters(Astro.url, ["city", "sort"]).pathname + clearFilte
         class="select select-bordered select-sm md:select-md w-full rounded-xl"
         aria-label="Ordenar sedes"
       >
-        <option value="matches" selected={filters.sort === "matches"}>Más partidos</option>
+        <option value="matches" selected={filters.sort === "matches"}>M�s partidos</option>
         <option value="name" selected={filters.sort === "name"}>Nombre</option>
       </select>
     </div>
@@ -183,3 +202,10 @@ const clearUrl = clearFilters(Astro.url, ["city", "sort"]).pathname + clearFilte
   city?.addEventListener("change", update);
   sort?.addEventListener("change", update);
 </script>
+```
+
+## Commit Message
+
+```
+feat: add city filter and sort to fields page
+```
