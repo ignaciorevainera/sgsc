@@ -18,6 +18,7 @@ import StatCard from "@/components/players/StatCard.astro";
 import InfoCard from "@/components/players/InfoCard.astro";
 import BadgeItem from "@/components/players/BadgeItem.astro";
 import Breadcrumb from "@/components/features/ux/Breadcrumb.astro";
+import ShareButtons from "@/components/features/ux/ShareButtons.astro";
 
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
@@ -400,6 +401,14 @@ const jsonLd = {
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="flex justify-end mb-4">
+    <ShareButtons
+      url={`https://sgsc.vercel.app/players/${id}`}
+      text={`Mira las estadísticas de ${player.nickname} en SGSC`}
+      client:load
+    />
   </div>
 
   <!-- Bento Grid de Estadísticas (Mobile-First) -->

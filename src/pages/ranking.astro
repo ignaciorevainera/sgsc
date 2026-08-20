@@ -9,6 +9,7 @@ import Main from "@/layouts/Main.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import StandingsTable from "@/components/ranking/StandingsTable.astro";
 import Title from "@/components/shared/Title.astro";
+import ShareButtons from "@/components/features/ux/ShareButtons.astro";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -139,6 +140,14 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
       ? "Histórico Global"
       : `Temporada ${season}`}
   />
+
+  <div class="flex justify-end mb-4">
+    <ShareButtons
+      url={`https://sgsc.vercel.app${Astro.url.pathname}${Astro.url.search}`}
+      text="Tabla de posiciones SGSC"
+      client:load
+    />
+  </div>
 
   <div
     class="bg-base-100 border-base-200 mb-6 flex flex-col gap-2 rounded-xl border p-4 shadow-md sm:flex-row sm:items-center sm:gap-4"
