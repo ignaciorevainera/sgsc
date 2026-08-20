@@ -80,7 +80,7 @@ const isGroupActive = (group: { href: string }[]) =>
         role="menu"
       >
         {
-          navGroups.map((group) => (
+          navGroups.map((group, idx) => (
             <>
               <li class="menu-title text-base-content/40 text-xs uppercase">{group.label}</li>
               {group.groups.map((link) => (
@@ -93,7 +93,9 @@ const isGroupActive = (group: { href: string }[]) =>
                   </a>
                 </li>
               ))}
-              <div class="divider m-0" />
+              {idx < navGroups.length - 1 && (
+                <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
+              )}
             </>
           ))
         }
@@ -165,7 +167,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
 
-            <div class="divider m-0" />
+            <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
 
             <li class="menu-title text-base-content/60 text-xs uppercase">
               Accesos Rápidos
@@ -212,7 +214,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
 
-            <div class="divider m-0" />
+            <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
 
             <li>
               <form

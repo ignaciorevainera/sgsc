@@ -272,6 +272,7 @@ const debutYear = oldestMatchData?.date
   ? getYearFromDate(oldestMatchData.date)
   : null;
 
+const siteUrl = Astro.site?.toString().replace(/\/$/, "") ?? Astro.url.origin;
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
@@ -279,14 +280,14 @@ const jsonLd = {
   memberOf: {
     "@type": "SportsTeam",
     name: "Solo Gente Súper Comprometida F.C.",
-    url: "https://sgsc.vercel.app",
+    url: siteUrl,
   },
   description: `${player.nickname} — ${player.points} puntos, ${player.matches_played} partidos, ${player.wins} victorias. Efectividad: ${win_pct}%.`,
 };
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <Breadcrumb pathname={Astro.url.pathname} playerNickname={player.nickname} />
   <!-- Banner Principal del Jugador -->
   <div

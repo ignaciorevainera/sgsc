@@ -23,7 +23,7 @@ const { message, retryHref } = Astro.props;
         <button
           type="button"
           class="btn btn-sm btn-ghost shrink-0 rounded-xl"
-          onclick="location.reload()"
+          data-retry-reload
         >
           <Icon name="material-symbols:refresh" size={18} aria-hidden="true" />
           Reintentar
@@ -32,3 +32,9 @@ const { message, retryHref } = Astro.props;
     }
   </div>
 </div>
+
+<script>
+  document.querySelectorAll("[data-retry-reload]").forEach((btn) => {
+    btn.addEventListener("click", () => window.location.reload());
+  });
+</script>
