@@ -6,6 +6,8 @@ import Header from "@/components/shared/Header.astro";
 import ToastContainer from "@/components/shared/ToastContainer.astro";
 import { supabase } from "@/lib/supabase";
 import { buildSearchIndex } from "@/lib/ux/search";
+import BackToTop from "@/components/features/ux/BackToTop.astro";
+import BottomNav from "@/components/features/ux/BottomNav.astro";
 import SearchCommandPalette from "@/components/features/ux/SearchCommandPalette.astro";
 
 interface Props {
@@ -128,12 +130,14 @@ const searchIndex = buildSearchIndex(
     <SearchCommandPalette items={searchIndex} client:load />
     <main
       id="main-content"
-      class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
+      class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12 pb-20 xl:pb-0`}
     >
       <slot />
     </main>
     <ToastContainer toastType={toastType} toastMessage={toastMessage} />
     <Footer />
+    <BackToTop />
+    <BottomNav />
   </body>
 </html>
 

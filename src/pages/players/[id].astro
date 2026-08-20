@@ -17,6 +17,7 @@ import Main from "@/layouts/Main.astro";
 import StatCard from "@/components/players/StatCard.astro";
 import InfoCard from "@/components/players/InfoCard.astro";
 import BadgeItem from "@/components/players/BadgeItem.astro";
+import Breadcrumb from "@/components/features/ux/Breadcrumb.astro";
 
 const supabase = createAstroSupabase(Astro);
 const { id } = Astro.params;
@@ -272,6 +273,7 @@ const debutYear = oldestMatchData?.date
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
+  <Breadcrumb pathname={Astro.url.pathname} playerNickname={player.nickname} />
   <!-- Banner Principal del Jugador -->
   <div
     class="card bg-base-100 border-base-200 mb-10 min-h-[200px] rounded-xl border shadow-xl"
