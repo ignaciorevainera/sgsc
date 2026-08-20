@@ -5,17 +5,6 @@ import Avatar from "@/components/Avatar.astro";
 const session = Astro.locals.session;
 const isLoggedIn = !!session;
 
-const links = [
-  { href: "/ranking", label: "Clasificación" },
-  { href: "/matches", label: "Partidos" },
-  { href: "/players", label: "Jugadores" },
-  { href: "/compare", label: "Versus" },
-  { href: "/teams", label: "Equipos" },
-  { href: "/teams-builder", label: "Armador de Equipos" },
-  { href: "/fields", label: "Canchas" },
-  { href: "/badges", label: "Medallas" },
-  { href: "/hall-of-fame", label: "Salón de la Fama" },
-];
 const currentPath = Astro.url.pathname;
 
 const isLinkActive = (href: string) => {
@@ -30,6 +19,36 @@ const isLinkActive = (href: string) => {
   }
   return currentPath.startsWith(href);
 };
+
+const navGroups = [
+  {
+    label: "Estadísticas",
+    groups: [
+      { href: "/ranking", label: "Clasificación" },
+      { href: "/players", label: "Jugadores" },
+      { href: "/fields", label: "Canchas" },
+    ],
+  },
+  {
+    label: "Herramientas",
+    groups: [
+      { href: "/teams", label: "Equipos" },
+      { href: "/teams-builder", label: "Armador de Equipos" },
+      { href: "/compare", label: "Versus" },
+    ],
+  },
+  {
+    label: "Reconocimientos",
+    groups: [
+      { href: "/badges", label: "Medallas" },
+      { href: "/hall-of-fame", label: "Salón de la Fama" },
+      { href: "/matches", label: "Partidos" },
+    ],
+  },
+];
+
+const isGroupActive = (group: { href: string }[]) =>
+  group.some((link) => isLinkActive(link.href));
 ---
 
 <header
@@ -57,21 +76,25 @@ const isLinkActive = (href: string) => {
       <ul
         tabindex="-1"
         id="mobile-menu"
-        class="menu dropdown-content bg-base-100 z-10 mt-4 w-52 rounded-xl p-2 shadow-md"
+        class="menu dropdown-content bg-base-100 z-10 mt-4 w-64 rounded-xl p-2 shadow-md"
         role="menu"
       >
         {
-          links.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                class={
-                  isLinkActive(link.href) ? "active text-primary font-bold" : ""
-                }
-              >
-                {link.label}
-              </a>
-            </li>
+          navGroups.map((group) => (
+            <>
+              <li class="menu-title text-base-content/40 text-xs uppercase">{group.label}</li>
+              {group.groups.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class={isLinkActive(link.href) ? "active text-primary font-bold" : ""}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+              <div class="divider m-0" />
+            </>
           ))
         }
       </ul>
@@ -82,16 +105,25 @@ const isLinkActive = (href: string) => {
   <nav class="navbar-center hidden xl:flex" aria-label="Navegación principal">
     <ul class="menu menu-horizontal px-1" role="menubar">
       {
-        links.map((link) => (
+        navGroups.map((group) => (
           <li>
-            <a
-              href={link.href}
-              class={
-                isLinkActive(link.href) ? "active text-primary font-bold" : ""
-              }
-            >
-              {link.label}
-            </a>
+            <details>
+              <summary class={isGroupActive(group.groups) ? "text-primary font-bold" : ""}>
+                {group.label}
+              </summary>
+              <ul class="bg-base-100 rounded-xl p-2 shadow-md">
+                {group.groups.map((link) => (
+                  <li>
+                    <a
+                      href={link.href}
+                      class={isLinkActive(link.href) ? "active text-primary font-bold" : ""}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </li>
         ))
       }
