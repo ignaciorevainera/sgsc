@@ -1,0 +1,38 @@
+/* src/styles/print.css */
+@media print {
+  header,
+  footer,
+  nav,
+  .btm-nav,
+  #back-to-top,
+  dialog,
+  .modal,
+  .modal-backdrop,
+  [role="banner"],
+  [aria-label="Navegación inferior"],
+  [aria-label="Migas de pan"] {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .card,
+  .stats,
+  .alert {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  a {
+    color: black !important;
+    text-decoration: underline !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}
