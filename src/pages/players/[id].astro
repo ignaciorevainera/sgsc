@@ -270,9 +270,22 @@ const oldestMatchData = getMatchData(oldestMatch?.matches);
 const debutYear = oldestMatchData?.date
   ? getYearFromDate(oldestMatchData.date)
   : null;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: player.nickname,
+  memberOf: {
+    "@type": "SportsTeam",
+    name: "Solo Gente Súper Comprometida F.C.",
+    url: "https://sgsc.vercel.app",
+  },
+  description: `${player.nickname} — ${player.points} puntos, ${player.matches_played} partidos, ${player.wins} victorias. Efectividad: ${win_pct}%.`,
+};
 ---
 
 <Main title={`${player.nickname} | SGSC`}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <Breadcrumb pathname={Astro.url.pathname} playerNickname={player.nickname} />
   <!-- Banner Principal del Jugador -->
   <div

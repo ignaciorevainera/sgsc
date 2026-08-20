@@ -9,6 +9,10 @@ import { buildSearchIndex } from "@/lib/ux/search";
 import BackToTop from "@/components/features/ux/BackToTop.astro";
 import BottomNav from "@/components/features/ux/BottomNav.astro";
 import SearchCommandPalette from "@/components/features/ux/SearchCommandPalette.astro";
+import SkipLink from "@/components/features/ux/SkipLink.astro";
+import KeyboardShortcutsModal from "@/components/features/ux/KeyboardShortcutsModal.astro";
+import "@styles/accessibility.css";
+import "@styles/print.css";
 
 interface Props {
   title: string;
@@ -126,6 +130,7 @@ const searchIndex = buildSearchIndex(
   </head>
 
   <body class="bg-base-300 flex min-h-dvh flex-col">
+    <SkipLink />
     <Header />
     <SearchCommandPalette items={searchIndex} client:load />
     <main
@@ -135,6 +140,7 @@ const searchIndex = buildSearchIndex(
       <slot />
     </main>
     <ToastContainer toastType={toastType} toastMessage={toastMessage} />
+    <KeyboardShortcutsModal client:load />
     <Footer />
     <BackToTop />
     <BottomNav />
