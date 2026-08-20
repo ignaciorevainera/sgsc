@@ -1,0 +1,68 @@
+---
+// src/components/features/ux/Skeleton.astro
+interface Props {
+  variant?: "card" | "table-row" | "list-item" | "text";
+  count?: number;
+}
+
+const { variant = "card", count = 1 } = Astro.props;
+---
+
+{
+  variant === "card" && (
+    <div class="flex flex-col gap-4">
+      {Array.from({ length: count }, () => (
+        <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+          <div class="flex items-center gap-4">
+            <div class="skeleton h-12 w-12 shrink-0 rounded-full"></div>
+            <div class="flex flex-col gap-2 flex-1">
+              <div class="skeleton h-4 w-3/4"></div>
+              <div class="skeleton h-3 w-1/2"></div>
+            </div>
+          </div>
+          <div class="skeleton h-20 w-full mt-4 rounded-xl"></div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+{
+  variant === "table-row" && (
+    <div class="flex flex-col gap-2">
+      {Array.from({ length: count }, () => (
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class="skeleton h-4 w-8"></div>
+          <div class="skeleton h-4 w-32"></div>
+          <div class="skeleton h-4 w-16 ml-auto"></div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+{
+  variant === "list-item" && (
+    <div class="flex flex-col gap-3">
+      {Array.from({ length: count }, () => (
+        <div class="flex items-center gap-3">
+          <div class="skeleton h-10 w-10 rounded-full"></div>
+          <div class="flex flex-col gap-2 flex-1">
+            <div class="skeleton h-3 w-24"></div>
+            <div class="skeleton h-2 w-16"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+{
+  variant === "text" && (
+    <div class="flex flex-col gap-2">
+      {Array.from({ length: count }, () => (
+        <div class="skeleton h-4 w-full"></div>
+      ))}
+    </div>
+  )
+}
