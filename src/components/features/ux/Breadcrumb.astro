@@ -1,0 +1,25 @@
+---
+import { buildBreadcrumbs } from "@/lib/ux/breadcrumbs";
+
+interface Props {
+  pathname: string;
+  playerNickname?: string;
+}
+
+const { pathname, playerNickname } = Astro.props;
+const items = buildBreadcrumbs(pathname, playerNickname);
+---
+
+<nav class="breadcrumbs text-sm" aria-label="Migas de pan">
+  <ul>
+    {
+      items.map((item) =>
+        item.href ? (
+          <li><a href={item.href} class="link link-hover">{item.label}</a></li>
+        ) : (
+          <li class="text-base-content/60">{item.label}</li>
+        )
+      )
+    }
+  </ul>
+</nav>
