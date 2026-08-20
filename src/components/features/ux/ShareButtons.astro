@@ -1,0 +1,96 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  url: string;
+  text: string;
+  variant?: "compact" | "full";
+}
+
+const { url, text, variant = "compact" } = Astro.props;
+const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`;
+const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+---
+
+<div class="flex items-center gap-2" data-share-url={url} data-share-text={text}>
+  <a
+    href={whatsappUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="btn btn-sm btn-circle bg-[#25D366] text-white border-none hover:bg-[#128C7E]"
+    aria-label="Compartir por WhatsApp"
+    title="WhatsApp"
+    data-share-action="whatsapp"
+  >
+    <Icon name="material-symbols:share" size={18} aria-hidden="true" />
+  </a>
+
+  <a
+    href={twitterUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="btn btn-sm btn-circle bg-[#1DA1F2] text-white border-none hover:bg-[#0d8bd9]"
+    aria-label="Compartir en X"
+    title="X / Twitter"
+    data-share-action="twitter"
+  >
+    <Icon name="material-symbols:share" size={18} aria-hidden="true" />
+  </a>
+
+  <button
+    type="button"
+    class="btn btn-sm btn-circle btn-ghost border-base-300 border"
+    aria-label="Copiar enlace"
+    title="Copiar enlace"
+    data-share-action="copy"
+  >
+    <Icon name="material-symbols:content-copy" size={18} aria-hidden="true" />
+  </button>
+
+  <span class="share-feedback hidden text-xs font-bold text-success ml-1" role="status" aria-live="polite">
+    ¡Copiado!
+  </span>
+</div>
+
+<script>
+  document.querySelectorAll("[data-share-action='copy']").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const container = btn.closest("[data-share-url]") as HTMLElement | null;
+      if (!container) return;
+      const url = container.dataset.shareUrl || window.location.href;
+      const feedback = container.querySelector(".share-feedback") as HTMLElement | null;
+
+      try {
+        await navigator.clipboard.writeText(url);
+        if (feedback) {
+          feedback.classList.remove("hidden");
+          setTimeout(() => feedback.classList.add("hidden"), 2000);
+        }
+      } catch {
+        // Fallback: select and copy via execCommand
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (feedback) {
+          feedback.classList.remove("hidden");
+          setTimeout(() => feedback.classList.add("hidden"), 2000);
+        }
+      }
+
+      // Analytics
+      (window as any).va?.track?.("share_clicked", { action: "copy", url });
+    });
+  });
+
+  document.querySelectorAll("[data-share-action='whatsapp'], [data-share-action='twitter']").forEach((link) => {
+    link.addEventListener("click", () => {
+      const action = (link as HTMLElement).dataset.shareAction;
+      const container = link.closest("[data-share-url]") as HTMLElement | null;
+      const url = container?.dataset.shareUrl || window.location.href;
+      (window as any).va?.track?.("share_clicked", { action, url });
+    });
+  });
+</script>
