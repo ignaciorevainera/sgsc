@@ -1,0 +1,29 @@
+---
+// src/components/features/ux/EmptyState.astro
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  icon: string;
+  title: string;
+  description: string;
+  actionHref?: string;
+  actionLabel?: string;
+}
+
+const { icon, title, description, actionHref, actionLabel } = Astro.props;
+---
+
+<div class="card bg-base-100 border-base-200 rounded-xl border p-8 text-center shadow-md">
+  <div class="bg-base-200 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+    <Icon name={icon} size={32} class="text-base-content/40" aria-hidden="true" />
+  </div>
+  <h3 class="text-lg font-black">{title}</h3>
+  <p class="text-base-content/60 mx-auto mt-2 max-w-sm text-sm">{description}</p>
+  {
+    actionHref && actionLabel && (
+      <a href={actionHref} class="btn btn-primary btn-sm mt-4 rounded-xl">
+        {actionLabel}
+      </a>
+    )
+  }
+</div>
