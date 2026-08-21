@@ -1,0 +1,27 @@
+---
+import type { SynergyEntry } from "@/lib/stats/synergy";
+
+interface Props {
+  entries: SynergyEntry[];
+}
+
+const { entries } = Astro.props;
+---
+
+{
+  entries.length === 0 ? (
+    <p class="text-sm opacity-50">Sin datos suficientes</p>
+  ) : (
+    <ul class="divide-base-200 divide-y">
+      {entries.map((e) => (
+        <li class="flex items-center justify-between gap-2 py-2">
+          <span class="truncate text-sm font-black">{e.teammateNickname}</span>
+          <span class="text-xs font-bold opacity-60">
+            {e.matchesTogether} partidos
+          </span>
+          <span class="text-success text-sm font-black">{e.winRate}%</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
