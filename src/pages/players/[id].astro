@@ -11,6 +11,20 @@ import { formatDate,
 import { computeBadges } from "@/lib/utils/badges";
 import { computeColorStats } from "@/lib/utils/colorStats";
 import { computeHeadToHead } from "@/lib/utils/headToHead";
+import { computeStreaks } from "@/lib/stats/streaks";
+import { rollingWinRate, computeTrend } from "@/lib/stats/form";
+import { computeClutch } from "@/lib/stats/clutch";
+import { computeConsistency } from "@/lib/stats/consistency";
+import { computeComebackRate } from "@/lib/stats/comeback";
+import { computeBestWorstMonth } from "@/lib/stats/temporal";
+import { computeSynergy } from "@/lib/stats/synergy";
+import { toOutcome } from "@/lib/stats/types";
+import type { Outcome, MatchOutcomeInput } from "@/lib/stats/types";
+import StreakBadge from "@/components/features/stats/StreakBadge.astro";
+import FormGraph from "@/components/features/stats/FormGraph.astro";
+import ClutchMeter from "@/components/features/stats/ClutchMeter.astro";
+import SynergyList from "@/components/features/stats/SynergyList.astro";
+import TrendArrow from "@/components/features/stats/TrendArrow.astro";
 import { Icon } from "astro-icon/components";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
@@ -253,6 +267,73 @@ allHistory?.forEach((m) => {
 // Extraemos los años únicos que ha tenido el club (Ej: 2024, 2025, 2026)
 const uniqueClubYears = [...new Set(allSeasonsData?.map((s) => s.year) ?? [])];
 const totalClubSeasons = uniqueClubYears.length;
+
+const outcomesAsc: Outcome[] = [...(allHistory ?? [])]
+  .reverse()
+  .map((entry) => {
+    const m = getMatchData(entry.matches);
+    return m ? toOutcome(entry.team, m.result) : null;
+  })
+  .filter((o): o is Outcome => o !== null);
+
+const streakInfo = computeStreaks(outcomesAsc);
+const recentWinRate = rollingWinRate(outcomesAsc, 5) ?? 0;
+const trend = computeTrend(outcomesAsc, win_pct);
+const clutch = computeClutch(recentWinRate, win_pct);
+const consistency = computeConsistency(outcomesAsc);
+const comebackRate = computeComebackRate(outcomesAsc);
+
+const matchInputs: MatchOutcomeInput[] = (allHistory ?? [])
+  .map((entry) => {
+    const m = getMatchData(entry.matches);
+    if (!m) return null;
+    return {
+      date: m.date,
+      team: entry.team as "light" | "dark",
+      result: m.result as "light" | "dark" | "draw",
+      fieldName: m.fields?.name ?? null,
+    };
+  })
+  .filter((x): x is MatchOutcomeInput => x !== null);
+
+const { bestMonth, worstMonth } = computeBestWorstMonth(matchInputs);
+const monthName = (m: number | null) => (m ? monthsLabels[m - 1] : null);
+
+const { data: teammateRows } = await supabase
+  .from("match_players")
+  .select("player_id, team, match_id, player:players!inner (nickname)")
+  .in("match_id", (allMatchEntries ?? []).map((m) => m.match_id))
+  .neq("player_id", id)
+  .eq("player.is_guest", false);
+
+const myEntryByMatch = new Map(
+  (allMatchEntries ?? []).map((e) => [e.match_id, e]),
+);
+
+const synergyMatches = (teammateRows ?? [])
+  .map((row) => {
+    const my = myEntryByMatch.get(row.match_id);
+    if (!my) return null;
+    const myMatch = Array.isArray(my.match)
+      ? (my.match as { result: string }[])[0]
+      : (my.match as { result: string } | null);
+    if (!myMatch?.result) return null;
+    if (row.team !== my.team) return null;
+    const nickname = Array.isArray(row.player)
+      ? (row.player as { nickname: string }[])[0]?.nickname
+      : (row.player as { nickname: string } | null)?.nickname;
+    return {
+      teammateId: row.player_id,
+      teammateNickname: nickname || "Desconocido",
+      win: myMatch.result === my.team,
+    };
+  })
+  .filter(
+    (x): x is { teammateId: string; teammateNickname: string; win: boolean } =>
+      x !== null,
+  );
+
+const synergyList = computeSynergy(synergyMatches);
 
 const badges = computeBadges({
   matchesPlayed: player.matches_played,
@@ -912,6 +993,68 @@ const jsonLd = {
       </div>
     </div>
   </div>
+
+  <!-- Métricas avanzadas -->
+  <section aria-label="Métricas avanzadas" class="mt-10">
+    <h2 class="mb-4 text-lg font-black tracking-tight">Métricas Avanzadas</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-2 flex items-center justify-between">
+          <span class="text-xs font-bold tracking-wider uppercase opacity-60">Racha</span>
+          <StreakBadge info={streakInfo} />
+        </div>
+        <div class="text-base-content/60 flex justify-between text-xs">
+          <span>Racha de victorias más larga: {streakInfo.longestWin}</span>
+          <span>Derrotas: {streakInfo.longestLoss}</span>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-3 flex items-center justify-between">
+          <span class="text-xs font-bold tracking-wider uppercase opacity-60">Tendencia</span>
+          <TrendArrow trend={trend} />
+        </div>
+        <FormGraph outcomes={outcomesAsc} />
+      </div>
+
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Factor Clutch</div>
+        <ClutchMeter clutch={clutch} />
+      </div>
+
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Consistencia</div>
+        {consistency === null ? (
+          <p class="text-sm opacity-50">Datos insuficientes (&lt; 3 partidos)</p>
+        ) : (
+          <span class="text-3xl font-black">{consistency}<span class="text-base opacity-40">/100</span></span>
+        )}
+      </div>
+
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Revancha tras derrota</div>
+        {comebackRate === null ? (
+          <p class="text-sm opacity-50">Datos insuficientes</p>
+        ) : (
+          <span class="text-3xl font-black">{comebackRate}<span class="text-base opacity-40">%</span></span>
+        )}
+      </div>
+
+      <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Mejor / Peor mes</div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-success font-black">{monthName(bestMonth?.month ?? null) ?? "—"}</span>
+          <span class="text-base-content/40">vs</span>
+          <span class="text-error font-black">{monthName(worstMonth?.month ?? null) ?? "—"}</span>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 border-base-200 col-span-1 rounded-xl border p-4 shadow-md sm:col-span-2 lg:col-span-3">
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Sinergia (top compañeros)</div>
+        <SynergyList entries={synergyList} />
+      </div>
+    </div>
+  </section>
 </Main>
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
