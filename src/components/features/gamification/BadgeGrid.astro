@@ -1,0 +1,69 @@
+---
+import BadgeCard from "./BadgeCard.astro";
+import type { PlayerBadges } from "@/lib/gamification/badges";
+
+interface Props {
+  badges: PlayerBadges;
+}
+
+const { badges } = Astro.props;
+
+const groups = [
+  { id: "all", label: "Todas" },
+  { id: "trayectoria", label: "Trayectoria" },
+  { id: "rachas", label: "Rachas" },
+  { id: "duplas", label: "Duplas" },
+  { id: "especial", label: "Especiales" },
+];
+---
+
+<div class="space-y-4">
+  <div role="tablist" class="tabs tabs-box" id="badge-tabs">
+    {groups.map((g, i) => (
+      <button
+        role="tab"
+        type="button"
+        class:list={["tab", i === 0 && "tab-active"]}
+        data-group={g.id}
+      >
+        {g.label}
+      </button>
+    ))}
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="badge-grid">
+    {badges.earned.map((b) => (
+      <div data-group-item={b.category}>
+        <BadgeCard name={b.name} icon={b.icon} description={b.description} tier={b.tier} />
+      </div>
+    ))}
+    {badges.progress.map((p) => (
+      <div data-group-item={p.category}>
+        <BadgeCard
+          name={p.name}
+          icon={p.icon}
+          description={`${p.current} / ${p.nextThreshold} para ${p.nextTier}`}
+          tier={null}
+          progress={p.progress}
+        />
+      </div>
+    ))}
+  </div>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>("#badge-tabs .tab");
+  const items = document.querySelectorAll<HTMLElement>("[data-group-item]");
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("tab-active"));
+      tab.classList.add("tab-active");
+      const group = tab.dataset.group;
+      items.forEach((item) => {
+        const match = group === "all" || item.dataset.groupItem === group;
+        item.style.display = match ? "" : "none";
+      });
+    });
+  });
+</script>
