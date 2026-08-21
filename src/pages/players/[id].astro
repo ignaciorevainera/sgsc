@@ -8,7 +8,11 @@ import { formatDate,
   getSafeDate,
   getYearFromDate,
 } from "@/lib/utils/dateUtils";
-import { computeBadges } from "@/lib/utils/badges";
+import { computePlayerBadges } from "@/lib/gamification/badges";
+import { computeBestDuoWins, computeNemesisWins, computeComebackStreak, computeBestFieldWins, computeIronMan, computeSocialButterfly } from "@/lib/gamification/metrics";
+import { computeCumulativePoints } from "@/lib/gamification/progression";
+import BadgeShowcase from "@/components/features/gamification/BadgeShowcase.astro";
+import ProgressionChart from "@/components/features/gamification/ProgressionChart.astro";
 import { computeColorStats } from "@/lib/utils/colorStats";
 import { computeHeadToHead } from "@/lib/utils/headToHead";
 import { computeStreaks } from "@/lib/stats/streaks";
@@ -48,6 +52,7 @@ const [
   { data: allHistory },
   { data: allMatchEntries },
   { data: allSeasonsData },
+  { data: ownBadgeRows },
 ] = await Promise.all([
   supabase
     .from("players")
@@ -92,6 +97,10 @@ const [
     )
     .eq("player_id", id),
   supabase.from("view_player_stats_yearly").select("year"),
+  supabase
+    .from("match_players")
+    .select("match_id, team, match:matches!inner (date, result, field_id)")
+    .eq("player_id", id),
 ]);
 
 if (!playerStats) return Astro.redirect("/players");
@@ -335,17 +344,37 @@ const synergyMatches = (teammateRows ?? [])
 
 const synergyList = computeSynergy(synergyMatches);
 
-const badges = computeBadges({
+const ownBadge = (ownBadgeRows ?? []).map((r: any) => {
+  const m = Array.isArray(r.match) ? r.match[0] : r.match;
+  return { match_id: r.match_id, date: m?.date ?? "", team: r.team, result: m?.result ?? "", field_id: m?.field_id ?? null };
+});
+
+const badgeMetrics = {
   matchesPlayed: player.matches_played,
   wins: player.wins,
   points: player.points,
-  yearlyStats: yearlyStats ?? [],
-  totalClubSeasons,
+  longestWinStreak: streakInfo.longestWin,
+  bestDuoWins: computeBestDuoWins(id, ownBadge, (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }))),
+  comebackStreak: computeComebackStreak(ownBadge),
+  bestFieldWins: computeBestFieldWins(ownBadge),
+  nemesisWins: computeNemesisWins(id, ownBadge, (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }))),
+  clutchWinRate: clutch.delta >= 0 ? clutch.delta + win_pct : win_pct,
+  ironMan: computeIronMan(ownBadge, ownBadge.length),
+  underdog: outcomesAsc.length >= 2 && outcomesAsc[0] === "L" && outcomesAsc[outcomesAsc.length - 1] === "W",
+  socialButterfly: computeSocialButterfly((teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team })), 0),
+  totalClubSeasons: totalClubSeasons,
+  playedSeasons: (yearlyStats ?? []).filter((y: any) => y.matches_played >= 3).length,
   lightWins: statsClaro.wins,
   darkWins: statsOscuro.wins,
-  allHistory: allHistory ?? [],
-  getMatchData,
-});
+};
+
+const badges = computePlayerBadges(badgeMetrics);
+
+const progressionData = computeCumulativePoints(
+  ownBadge
+    .map((r) => ({ date: r.date, outcome: r.result === "draw" ? "D" : r.result === r.team ? "W" : "L" as "W" | "L" | "D" }))
+    .filter((m) => m.date),
+);
 
 const oldestMatch = allHistory?.[allHistory.length - 1];
 const oldestMatchData = getMatchData(oldestMatch?.matches);
@@ -459,27 +488,11 @@ const jsonLd = {
           />
         </a>
 
-        <div
-          class="flex flex-wrap content-start justify-center gap-1.5 overflow-visible lg:justify-end"
-        >
-          {
-            badges.length > 0 ? (
-              badges.map((badge) => (
-                <BadgeItem
-                  label={badge.label}
-                  icon={badge.icon}
-                  description={badge.description}
-                  style={badge.style}
-                />
-              ))
-            ) : (
-              <div class="text-base-content/30 flex flex-col items-center py-2">
-                <span class="text-xs font-bold tracking-widest uppercase">
-                  Sin medallas
-                </span>
-              </div>
-            )
-          }
+        <div class="flex flex-col items-center gap-3 lg:items-end">
+          <BadgeShowcase earned={badges.earned} />
+          <a href={`/players/${id}/badges`} class="text-xs font-bold tracking-widest uppercase opacity-40 transition-opacity hover:opacity-70">
+            Ver todas las medallas
+          </a>
         </div>
       </div>
     </div>
@@ -1052,6 +1065,15 @@ const jsonLd = {
       <div class="card bg-base-100 border-base-200 col-span-1 rounded-xl border p-4 shadow-md sm:col-span-2 lg:col-span-3">
         <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Sinergia (top compañeros)</div>
         <SynergyList entries={synergyList} />
+      </div>
+
+      <div class="col-span-1 sm:col-span-2 lg:col-span-3">
+        <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
+          <div class="p-4 sm:p-6">
+            <div class="mb-4 text-xs font-black tracking-widest uppercase opacity-50">Progresión de Puntos</div>
+            <ProgressionChart data={progressionData} />
+          </div>
+        </div>
       </div>
     </div>
   </section>
