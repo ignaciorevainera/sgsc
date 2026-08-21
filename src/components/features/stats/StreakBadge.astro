@@ -1,0 +1,34 @@
+---
+import { Icon } from "astro-icon/components";
+import type { StreakInfo } from "@/lib/stats/streaks";
+
+interface Props {
+  info: StreakInfo;
+}
+
+const { info } = Astro.props;
+
+const label =
+  info.currentType === "W" ? "Victorias" :
+  info.currentType === "L" ? "Derrotas" :
+  info.currentType === "D" ? "Empates" : "";
+
+const icon =
+  info.currentType === "W" ? "material-symbols:local-fire-department" :
+  info.currentType === "L" ? "material-symbols:arrow-downward" :
+  "material-symbols:balance";
+
+const color =
+  info.currentType === "W" ? "text-success" :
+  info.currentType === "L" ? "text-error" :
+  "text-warning";
+---
+
+{
+  info.currentLength > 0 && (
+    <span class:list={["badge badge-soft gap-1.5 py-3 text-xs font-black uppercase", color]}>
+      <Icon name={icon} size={14} aria-hidden="true" />
+      {info.currentLength} {label}
+    </span>
+  )
+}

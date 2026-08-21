@@ -1,0 +1,20 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  trend: "improving" | "declining" | "stable";
+}
+
+const { trend } = Astro.props;
+
+const config = {
+  improving: { icon: "material-symbols:trending-up", color: "text-success", label: "Mejorando" },
+  declining: { icon: "material-symbols:trending-down", color: "text-error", label: "En declive" },
+  stable: { icon: "material-symbols:trending-flat", color: "text-warning", label: "Estable" },
+}[trend];
+---
+
+<span class:list={["inline-flex items-center gap-1 text-sm font-bold", config.color]}>
+  <Icon name={config.icon} size={18} aria-hidden="true" />
+  {config.label}
+</span>
