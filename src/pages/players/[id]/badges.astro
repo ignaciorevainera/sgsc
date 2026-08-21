@@ -1,0 +1,94 @@
+---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
+import { createAstroSupabase } from "@/lib/supabase";
+import { computePlayerBadges } from "@/lib/gamification/badges";
+import {
+  computeBestDuoWins,
+  computeNemesisWins,
+  computeBestFieldWins,
+  computeComebackStreak,
+  computeIronMan,
+  computeSocialButterfly,
+} from "@/lib/gamification/metrics";
+import { computeStreaks } from "@/lib/stats/streaks";
+import { rollingWinRate } from "@/lib/stats/form";
+import { toOutcome } from "@/lib/stats/types";
+import { computeColorStats } from "@/lib/utils/colorStats";
+import BadgeGrid from "@/components/features/gamification/BadgeGrid.astro";
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+
+const supabase = createAstroSupabase(Astro);
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/players");
+
+const [
+  { data: player },
+  { data: stats },
+  { data: yearly },
+  { data: ownRows },
+  { data: coRows },
+  { data: activeCount },
+] = await Promise.all([
+  supabase.from("players").select("nickname").eq("id", id).maybeSingle(),
+  supabase.from("view_player_stats_all_time").select("matches_played, wins, points").eq("player_id", id).maybeSingle(),
+  supabase.from("view_player_stats_yearly").select("year, matches_played").eq("player_id", id),
+  supabase.from("match_players").select("match_id, team, match:matches!inner (date, result, field_id)").eq("player_id", id),
+  supabase.from("match_players").select("match_id, player_id, team").neq("player_id", id),
+  supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
+]);
+
+if (!player) return Astro.redirect("/players");
+
+const matchesPlayed = stats?.matches_played ?? 0;
+const wins = stats?.wins ?? 0;
+const points = stats?.points ?? 0;
+
+type OwnRow = { match_id: string; team: string; match: { date: string; result: string; field_id: string | null } | { date: string; result: string; field_id: string | null }[] };
+const toOwn = (r: OwnRow) => {
+  const m = Array.isArray(r.match) ? r.match[0] : r.match;
+  return { match_id: r.match_id, date: m?.date ?? "", team: r.team, result: m?.result ?? "", field_id: m?.field_id ?? null };
+};
+const own = (ownRows ?? []).map(toOwn);
+
+const outcomesAsc = [...own]
+  .sort((a, b) => a.date.localeCompare(b.date))
+  .map((r) => toOutcome(r.team, r.result));
+
+const { longestWin } = computeStreaks(outcomesAsc);
+const clutchWinRate = rollingWinRate(outcomesAsc, 5) ?? 0;
+const color = computeColorStats(own.map((r) => ({ team: r.team, match: { result: r.result } })));
+
+const seasonYears = [...new Set((yearly ?? []).map((y) => y.year))];
+const currentYear = seasonYears[0];
+const seasonMatchCount = own.filter((r) => r.date.startsWith(String(currentYear))).length;
+
+const coMapped = (coRows ?? []).map((c) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
+
+const metrics = {
+  matchesPlayed,
+  wins,
+  points,
+  longestWinStreak: longestWin,
+  bestDuoWins: computeBestDuoWins(id, own, coMapped),
+  comebackStreak: computeComebackStreak(own),
+  bestFieldWins: computeBestFieldWins(own),
+  nemesisWins: computeNemesisWins(id, own, coMapped),
+  clutchWinRate,
+  ironMan: computeIronMan(own, seasonMatchCount),
+  underdog: outcomesAsc.length >= 2 && outcomesAsc[0] === "L" && outcomesAsc[outcomesAsc.length - 1] === "W",
+  socialButterfly: computeSocialButterfly(coMapped, activeCount?.length ?? 0),
+  totalClubSeasons: seasonYears.length,
+  playedSeasons: (yearly ?? []).filter((y) => y.matches_played >= 3).length,
+  lightWins: color.light.wins,
+  darkWins: color.dark.wins,
+};
+
+const badges = computePlayerBadges(metrics);
+---
+
+<Main title={`${player.nickname} — Medallas | SGSC`}>
+  <Title title="Medallas" subtitle={player.nickname} />
+  <BadgeGrid badges={badges} />
+</Main>
