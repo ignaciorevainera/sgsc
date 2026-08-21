@@ -235,6 +235,42 @@ export type Database = {
           },
         ]
       }
+      view_player_streaks: {
+        Row: {
+          current_streak_length: number | null
+          current_streak_type: string | null
+          longest_loss_streak: number | null
+          longest_win_streak: number | null
+          player_id: string | null
+        }
+        Relationships: []
+      }
+      view_head_to_head: {
+        Row: {
+          a_win_rate: number | null
+          a_wins: number | null
+          b_wins: number | null
+          draws: number | null
+          last_5_outcomes: string[] | null
+          matches_against: number | null
+          matches_together: number | null
+          player_a_id: string | null
+          player_b_id: string | null
+          shared_teams: number | null
+        }
+        Relationships: []
+      }
+      view_field_dominance: {
+        Row: {
+          field_id: string | null
+          home_field: boolean | null
+          matches_at_field: number | null
+          player_id: string | null
+          win_rate: number | null
+          wins: number | null
+        }
+        Relationships: []
+      }
       view_totals_global: {
         Row: {
           total_matches: number | null
