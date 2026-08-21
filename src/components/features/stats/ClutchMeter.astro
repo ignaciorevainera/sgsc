@@ -1,0 +1,29 @@
+---
+import { Icon } from "astro-icon/components";
+import type { ClutchResult } from "@/lib/stats/clutch";
+
+interface Props {
+  clutch: ClutchResult;
+}
+
+const { clutch } = Astro.props;
+
+const meta = {
+  hot: { icon: "material-symbols:local-fire-department", color: "text-error", label: "En racha" },
+  cold: { icon: "material-symbols:ac-unit", color: "text-info", label: "En baja" },
+  neutral: { icon: "material-symbols:horizontal-rule", color: "text-warning", label: "Neutral" },
+}[clutch.state];
+
+const sign = clutch.delta > 0 ? "+" : "";
+---
+
+<div class="flex items-center gap-3">
+  <Icon name={meta.icon} size={28} class={meta.color} aria-hidden="true" />
+  <div class="flex-1">
+    <div class="flex items-baseline justify-between">
+      <span class:list={["text-xl font-black", meta.color]}>{sign}{clutch.delta}%</span>
+      <span class="text-xs font-bold uppercase opacity-50">{meta.label}</span>
+    </div>
+    <div class="text-base-content/50 text-xs">vs media de carrera</div>
+  </div>
+</div>

@@ -1,0 +1,31 @@
+---
+import type { Outcome } from "@/lib/stats/types";
+
+interface Props {
+  outcomes: Outcome[];
+}
+
+const { outcomes } = Astro.props;
+
+const shown = outcomes.slice(-10);
+
+const dotClass: Record<Outcome, string> = {
+  W: "bg-success",
+  D: "bg-warning",
+  L: "bg-error",
+};
+---
+
+<div class="flex items-center gap-1.5" aria-label="Forma reciente">
+  {
+    shown.map((o) => (
+      <span
+        class:list={["h-3 w-3 rounded-full", dotClass[o]]}
+        title={o === "W" ? "Victoria" : o === "D" ? "Empate" : "Derrota"}
+      />
+    ))
+  }
+  {shown.length === 0 && (
+    <span class="text-base-content/40 text-xs font-bold uppercase">Sin datos</span>
+  )}
+</div>
