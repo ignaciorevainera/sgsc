@@ -1,0 +1,28 @@
+---
+import type { CumulativePoint } from "@/lib/gamification/progression";
+
+interface Props {
+  data: CumulativePoint[];
+}
+
+const { data } = Astro.props;
+const labels = data.map((d) => d.date);
+const values = data.map((d) => d.points);
+---
+
+<div id="progression-chart" class="h-64 w-full"></div>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script is:inline define:vars={{ labels, values }}>
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.querySelector("#progression-chart");
+    if (el && typeof ApexCharts !== "undefined") {
+      new ApexCharts(el, {
+        chart: { type: "line", height: 256, toolbar: { show: false } },
+        series: [{ name: "Puntos", data: values }],
+        xaxis: { categories: labels },
+        dataLabels: { enabled: false },
+      }).render();
+    }
+  });
+</script>
