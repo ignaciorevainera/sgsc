@@ -1,0 +1,23 @@
+---
+import BadgeCard from "./BadgeCard.astro";
+import type { EarnedBadge } from "@/lib/gamification/badges";
+
+interface Props {
+  earned: EarnedBadge[];
+}
+
+const { earned } = Astro.props;
+const top3 = earned.slice(0, 3);
+---
+
+{
+  top3.length === 0 ? (
+    <p class="text-sm opacity-50">Sin medallas aún</p>
+  ) : (
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {top3.map((b) => (
+        <BadgeCard name={b.name} icon={b.icon} description={b.description} tier={b.tier} />
+      ))}
+    </div>
+  )
+}
