@@ -1,0 +1,292 @@
+---
+Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+
+import Main from "@/layouts/Main.astro";
+import Title from "@/components/shared/Title.astro";
+import ComparisonRow from "@/components/compare/ComparisonRow.astro";
+import RivalryTimeline from "@/components/features/stats/RivalryTimeline.astro";
+import { createAstroSupabase } from "@/lib/supabase";
+import { rivalryTier, narrativeHook } from "@/lib/stats/rivalry";
+import { Icon } from "astro-icon/components";
+
+const supabase = createAstroSupabase(Astro);
+
+const { data: players } = await supabase
+  .from("players")
+  .select("id, nickname")
+  .eq("is_active", true)
+  .eq("is_guest", false)
+  .order("nickname");
+
+const p1Id = Astro.url.searchParams.get("p1");
+const p2Id = Astro.url.searchParams.get("p2");
+
+let p1Stats = null;
+let p2Stats = null;
+let h2h = null;
+
+if (p1Id && p2Id && p1Id !== p2Id) {
+  const { data: basicInfo } = await supabase
+    .from("players")
+    .select("id, nickname")
+    .in("id", [p1Id, p2Id]);
+
+  const p1Basic = basicInfo?.find((p) => String(p.id) === p1Id);
+  const p2Basic = basicInfo?.find((p) => String(p.id) === p2Id);
+
+  const { data: history } = await supabase
+    .from("match_players")
+    .select("player_id, team, match:matches!inner (id, result)")
+    .in("player_id", [p1Id, p2Id]);
+
+  type MatchEntry = {
+    player_id: string;
+    team: string;
+    match: { id: string; result: string } | { id: string; result: string }[] | null;
+  };
+
+  const getMatchResult = (entry: MatchEntry): string | undefined => {
+    if (!entry.match) return;
+    const m = Array.isArray(entry.match) ? entry.match[0] : entry.match;
+    return m?.result;
+  };
+
+  const calculateStats = (playerId: string, matches: MatchEntry[]) => {
+    const myMatches = matches?.filter((m) => String(m.player_id) === String(playerId)) || [];
+    const played = myMatches.length;
+    let won = 0;
+    let drawn = 0;
+    myMatches.forEach((m) => {
+      const res = getMatchResult(m);
+      if (res === m.team) won++;
+      else if (res === "draw") drawn++;
+    });
+    const points = won * 3 + drawn * 1;
+    const winRate = played > 0 ? ((won / played) * 100).toFixed(0) : 0;
+    const effectiveness = played > 0 ? ((points / (played * 3)) * 100).toFixed(0) : 0;
+    return { matches_played: played, matches_won: won, points, win_rate: winRate, effectiveness };
+  };
+
+  if (p1Basic && history) p1Stats = { ...p1Basic, ...calculateStats(p1Id, history) };
+  if (p2Basic && history) p2Stats = { ...p2Basic, ...calculateStats(p2Id, history) };
+
+  const { data: h2hData } = await supabase
+    .from("view_head_to_head")
+    .select("matches_against, a_wins, b_wins, draws, shared_teams, a_win_rate, last_5_outcomes")
+    .eq("player_a_id", p1Id)
+    .eq("player_b_id", p2Id)
+    .maybeSingle();
+
+  if (h2hData) {
+    h2h = {
+      played_against: h2hData.matches_against ?? 0,
+      p1_wins: h2hData.a_wins ?? 0,
+      p2_wins: h2hData.b_wins ?? 0,
+      draws_against: h2hData.draws ?? 0,
+      shared_teams: h2hData.shared_teams ?? 0,
+      last_5_outcomes: h2hData.last_5_outcomes ?? [],
+      tier: rivalryTier(h2hData.matches_against ?? 0),
+      hook: narrativeHook(
+        h2hData.a_wins ?? 0,
+        h2hData.b_wins ?? 0,
+        p1Basic?.nickname ?? "A",
+        p2Basic?.nickname ?? "B",
+      ),
+    };
+  }
+}
+
+const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } as const;
+---
+
+<Main title="Versus | SGSC">
+  <Title title="Versus" subtitle="Comparativa Histórica" />
+
+  <div class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md">
+    <div class="p-4 sm:p-6">
+      <div class="flex flex-col items-center gap-4 sm:gap-6">
+        <div class="flex w-full flex-col items-center gap-2 sm:flex-row">
+          <div class="form-control w-full flex-1 sm:pr-4 sm:text-right">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend text-primary">Jugador 1</legend>
+              <div class="relative">
+                <Icon name="material-symbols:search" class="text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2" size={18} aria-hidden="true" />
+                <input id="p1-select" name="p1" type="text" list="players-datalist" value={p1Stats?.nickname || ""} placeholder="Elegir jugador..." class="select w-full rounded-xl pl-10 pr-4" autocomplete="off" aria-label="Buscar jugador 1" />
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="relative z-10 hidden shrink-0 items-center justify-center sm:flex">
+            <div class="bg-base-100 border-base-300 text-base-content/40 flex h-14 w-14 items-center justify-center rounded-full border-4 text-xl font-black shadow-lg sm:h-16 sm:w-16 sm:text-2xl">
+              VS
+            </div>
+          </div>
+
+          <div class="form-control w-full flex-1 sm:pl-4 sm:text-left">
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend text-secondary">Jugador 2</legend>
+              <div class="relative">
+                <Icon name="material-symbols:search" class="text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2" size={18} aria-hidden="true" />
+                <input id="p2-select" name="p2" type="text" list="players-datalist" value={p2Stats?.nickname || ""} placeholder="Elegir jugador..." class="select w-full rounded-xl pl-10 pr-4" autocomplete="off" aria-label="Buscar jugador 2" />
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <datalist id="players-datalist">
+          {players?.map((p) => (
+            <option value={p.nickname} data-id={p.id} />
+          ))}
+        </datalist>
+
+        <button
+          id="btn-compare"
+          type="button"
+          class="btn btn-primary md:btn-md btn-sm w-full rounded-xl shadow-md"
+          disabled={!p1Id || !p2Id || p1Id === p2Id}
+        >
+          <Icon name="material-symbols:compare-arrows" size={24} aria-hidden="true" />
+          Comparar Jugadores
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {
+    p1Stats && p2Stats ? (
+      <div class="space-y-8">
+        {
+          h2h && h2h.played_against >= 2 && (
+            <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
+              <div class="card-body p-4 text-center sm:p-8">
+                <div class="mb-2 flex items-center justify-center gap-2">
+                  <Icon name="material-symbols:swords" aria-hidden="true" />
+                  <span class="text-sm font-black uppercase">
+                    Rivalidad {h2h.tier ? tierLabel[h2h.tier] : ""}
+                  </span>
+                </div>
+                <RivalryTimeline outcomes={h2h.last_5_outcomes} />
+                {h2h.hook && (
+                  <p class="text-base-content/60 mt-4 text-sm font-bold italic">"{h2h.hook}"</p>
+                )}
+              </div>
+            </div>
+          )
+        }
+
+        <div class="card bg-base-100 border-base-200 relative overflow-hidden rounded-xl border shadow-md">
+          <div class="card-body p-4 text-center sm:p-8">
+            <h3 class="text-base-content/40 mb-6 text-xs font-black tracking-widest uppercase md:text-lg">
+              Historial
+            </h3>
+            <div class="mx-auto flex w-full max-w-lg items-end justify-between gap-4">
+              <div class="flex flex-1 flex-col items-center">
+                <div class="text-primary mb-2 text-5xl font-black sm:text-7xl" aria-label={`${h2h?.p1_wins ?? 0} victorias de ${p1Stats.nickname}`}>
+                  {h2h?.p1_wins ?? 0}
+                </div>
+                <span class="text-primary/80 w-full truncate text-xs font-bold uppercase">{p1Stats.nickname}</span>
+              </div>
+              <div class="flex flex-col items-center pb-4">
+                <span class="text-base-content/30 text-4xl font-bold">{h2h?.draws_against ?? 0}</span>
+                <span class="text-base-content/50 text-sm font-bold uppercase">Empates</span>
+              </div>
+              <div class="flex flex-1 flex-col items-center">
+                <div class="text-secondary mb-2 text-5xl font-black sm:text-7xl" aria-label={`${h2h?.p2_wins ?? 0} victorias de ${p2Stats.nickname}`}>
+                  {h2h?.p2_wins ?? 0}
+                </div>
+                <span class="text-secondary/80 w-full truncate text-xs font-bold uppercase">{p2Stats.nickname}</span>
+              </div>
+            </div>
+            <div class="badge badge-ghost badge-sm md:badge-lg mt-6 gap-2 self-center rounded-xl py-3 font-bold uppercase">
+              <Icon name="material-symbols:swords" aria-hidden="true" />
+              {h2h?.played_against ?? 0} Partidos disputados
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 border-base-200 flex flex-row items-center justify-between gap-4 rounded-xl border p-4 shadow-md">
+          <div class="flex shrink-0 items-center gap-3">
+            <div class="bg-base-200 text-base-content/60 rounded-full p-2" aria-hidden="true">
+              <Icon name="material-symbols:handshake" size={24} />
+            </div>
+            <div class="text-left">
+              <div class="font-bold">Equipos compartidos</div>
+              <div class="text-base-content/60 text-xs">Jugando juntos</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-black">{h2h?.shared_teams ?? 0}</div>
+            <div class="text-base-content/50 text-xs font-bold uppercase">veces</div>
+          </div>
+        </div>
+
+        <div class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md" role="table" aria-label="Comparativa de estadísticas entre jugadores">
+          <div class="bg-base-200 grid grid-cols-3 items-center py-3" role="row">
+            <div class="text-primary text-center font-black" role="columnheader">{p1Stats.nickname}</div>
+            <div class="text-base-content/60 text-center text-xs font-bold uppercase sm:text-sm md:text-lg" role="columnheader">Estadística</div>
+            <div class="text-secondary text-center font-black" role="columnheader">{p2Stats.nickname}</div>
+          </div>
+          <div class="divide-base-200 divide-y" role="rowgroup">
+            <ComparisonRow label="Puntos Históricos" val1={p1Stats.points} val2={p2Stats.points} />
+            <ComparisonRow label="Efectividad" val1={p1Stats.effectiveness + "%"} val2={p2Stats.effectiveness + "%"} num1={Number(p1Stats.effectiveness)} num2={Number(p2Stats.effectiveness)} />
+            <ComparisonRow label="Partidos Jugados" val1={p1Stats.matches_played} val2={p2Stats.matches_played} />
+            <ComparisonRow label="Victorias" val1={p1Stats.matches_won} val2={p2Stats.matches_won} />
+            <ComparisonRow label="% Victorias" val1={p1Stats.win_rate + "%"} val2={p2Stats.win_rate + "%"} num1={Number(p1Stats.win_rate)} num2={Number(p2Stats.win_rate)} />
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="card bg-base-100 rounded-xl p-12 text-center shadow-md">
+        <Icon name="material-symbols:compare-arrows" size={64} class="text-base-content/20 mx-auto mb-4" aria-hidden="true" />
+        <p class="text-base-content/60 font-bold">Selecciona dos jugadores y pulsa "Comparar"</p>
+      </div>
+    )
+  }
+</Main>
+
+<script is:inline>
+  const input1 = document.getElementById("p1-select") as HTMLInputElement | null;
+  const input2 = document.getElementById("p2-select") as HTMLInputElement | null;
+  const btn = document.getElementById("btn-compare") as HTMLButtonElement | null;
+  const datalist = document.getElementById("players-datalist") as HTMLDataListElement | null;
+
+  function getPlayerId(nickname) {
+    if (!datalist) return null;
+    for (const opt of datalist.querySelectorAll("option")) {
+      if (opt.value.toLowerCase() === nickname.toLowerCase()) {
+        return opt.getAttribute("data-id");
+      }
+    }
+    return null;
+  }
+
+  function checkValidity() {
+    if (!input1 || !input2 || !btn) return;
+    const id1 = getPlayerId(input1.value.trim());
+    const id2 = getPlayerId(input2.value.trim());
+    if (id1 && id2 && id1 !== id2) {
+      btn.removeAttribute("disabled");
+      btn.classList.remove("btn-disabled");
+    } else {
+      btn.setAttribute("disabled", "true");
+      btn.classList.add("btn-disabled");
+    }
+  }
+
+  input1?.addEventListener("input", checkValidity);
+  input2?.addEventListener("input", checkValidity);
+
+  btn?.addEventListener("click", function () {
+    if (!input1 || !input2) return;
+    const id1 = getPlayerId(input1.value.trim());
+    const id2 = getPlayerId(input2.value.trim());
+    if (id1 && id2) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("p1", id1);
+      url.searchParams.set("p2", id2);
+      window.location.href = url.toString();
+    }
+  });
+
+  checkValidity();
+</script>
