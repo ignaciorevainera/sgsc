@@ -86,6 +86,7 @@ const getPodiumClass = (index: number) => {
         >
 
         <th scope="col" class={`${responsiveClass}`}>Forma</th>
+        <th scope="col" class="text-base-content">Racha</th>
       </tr>
     </thead>
 
@@ -106,6 +107,8 @@ const getPodiumClass = (index: number) => {
               loss_pct: unknown;
               form_array: any[];
               points: unknown;
+              current_streak_type: string | null;
+              current_streak_length: number;
             },
             index: number,
           ) => (
@@ -163,6 +166,21 @@ const getPodiumClass = (index: number) => {
                       />
                     ))}
                 </div>
+              </td>
+              <td>
+                {
+                  player.current_streak_length > 0 ? (
+                    <span class:list={[
+                      "font-black",
+                      player.current_streak_type === "W" ? "text-success" : player.current_streak_type === "L" ? "text-error" : "text-warning",
+                    ]}>
+                      {player.current_streak_length}
+                      {player.current_streak_type === "W" ? "V" : player.current_streak_type === "L" ? "D" : "E"}
+                    </span>
+                  ) : (
+                    <span class="text-base-content/40">—</span>
+                  )
+                }
               </td>
             </tr>
           ),

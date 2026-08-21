@@ -40,6 +40,7 @@ if (seasons.length === 1) seasons.unshift(currentYear);
 const sortOptions = [
   { value: "points", label: "Puntos" },
   { value: "name", label: "Nombre" },
+  { value: "streak", label: "Racha" },
   { value: "matches", label: "Partidos Jugados" },
   { value: "wins", label: "Victorias" },
   { value: "draws", label: "Empates" },
@@ -63,6 +64,13 @@ if (season === "Histórico") {
 // Filtramos solo socios (no invitados)
 // AHORA ESTO FUNCIONARÁ PORQUE LA VISTA YA TIENE 'is_guest'
 const { data: rawPlayers, error } = await query.eq("is_guest", false);
+
+const { data: streaksData } = await supabase
+  .from("view_player_streaks")
+  .select("player_id, current_streak_type, current_streak_length");
+const streakByPlayer = new Map(
+  (streaksData ?? []).map((s) => [s.player_id, s]),
+);
 
 const hasError = !!error;
 const hasPlayersStats = !hasError && rawPlayers && rawPlayers.length > 0;
@@ -94,6 +102,9 @@ const players =
 
     // Fallback para histórico: usar % de victorias.
     effectiveness: p.effectiveness ?? p.win_rate ?? p.win_pct ?? 0,
+
+    current_streak_type: streakByPlayer.get(p.player_id)?.current_streak_type ?? null,
+    current_streak_length: streakByPlayer.get(p.player_id)?.current_streak_length ?? 0,
   })) || [];
 
 // 5. Filtro por mínimo de partidos
@@ -106,6 +117,8 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   switch (sort) {
     case "name":
       return a.nickname.localeCompare(b.nickname);
+    case "streak":
+      return b.current_streak_length - a.current_streak_length;
     case "matches":
       return b.matches - a.matches;
     case "wins":
