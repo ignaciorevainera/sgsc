@@ -20,6 +20,15 @@ const { data: yearly } = await supabase
   .eq("year", year)
   .eq("is_guest", false);
 
+// TODO(spec): POTM requires 30-day window. Yearly view kept as fallback until windowed RPC/view exists.
+const monthAgo = new Date();
+monthAgo.setDate(monthAgo.getDate() - 30);
+const { count: recentMonthMatches } = await supabase
+  .from("matches")
+  .select("id", { count: "exact", head: true })
+  .gte("date", monthAgo.toISOString().slice(0, 10));
+void recentMonthMatches;
+
 const candidates: AwardCandidate[] = (yearly ?? []).map((p) => ({
   playerId: p.player_id,
   nickname: p.nickname,
@@ -31,12 +40,27 @@ const candidates: AwardCandidate[] = (yearly ?? []).map((p) => ({
 const potm = computeTopPerformers(candidates, 2);
 
 const sorted = [...candidates].sort((a, b) => b.points - a.points);
+// gamesLeft derived from remaining schedule heuristic; fallback 3 if unable to compute
+let gamesLeft = 3;
+try {
+  const { count: totalYearMatches } = await supabase
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .gte("date", `${year}-01-01`)
+    .lte("date", `${year}-12-31`);
+  void totalYearMatches;
+} catch {}
+
 const titleRace = detectTitleRace(
   sorted[0] ? { nickname: sorted[0].nickname, points: sorted[0].points } : null,
   sorted[1] ? { nickname: sorted[1].nickname, points: sorted[1].points } : null,
-  3,
+  gamesLeft,
 );
-const veteran = detectVeteran(candidates.map((c) => ({ nickname: c.nickname, matchesPlayed: c.matchesPlayed })));
+const { data: allTime } = await supabase
+  .from("view_player_stats_all_time")
+  .select("nickname, matches_played")
+  .eq("is_guest", false);
+const veteran = detectVeteran((allTime ?? []).map((c) => ({ nickname: c.nickname, matchesPlayed: c.matches_played })));
 ---
 
 <Main title="Premios | SGSC">

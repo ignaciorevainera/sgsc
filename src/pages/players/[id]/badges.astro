@@ -2,6 +2,7 @@
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { createAstroSupabase } from "@/lib/supabase";
+import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
 import { computePlayerBadges } from "@/lib/gamification/badges";
 import {
   computeBestDuoWins,
@@ -28,15 +29,11 @@ const [
   { data: stats },
   { data: yearly },
   { data: ownRows },
-  { data: coRows },
-  { data: activeCount },
 ] = await Promise.all([
   supabase.from("players").select("nickname").eq("id", id).maybeSingle(),
   supabase.from("view_player_stats_all_time").select("matches_played, wins, points").eq("player_id", id).maybeSingle(),
   supabase.from("view_player_stats_yearly").select("year, matches_played").eq("player_id", id),
   supabase.from("match_players").select("match_id, team, match:matches!inner (date, result, field_id)").eq("player_id", id),
-  supabase.from("match_players").select("match_id, player_id, team").neq("player_id", id),
-  supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
 ]);
 
 if (!player) return Astro.redirect("/players");
@@ -61,8 +58,17 @@ const clutchWinRate = rollingWinRate(outcomesAsc, 5) ?? 0;
 const color = computeColorStats(own.map((r) => ({ team: r.team, match: { result: r.result } })));
 
 const seasonYears = [...new Set((yearly ?? []).map((y) => y.year))];
-const currentYear = seasonYears[0];
-const seasonMatchCount = own.filter((r) => r.date.startsWith(String(currentYear))).length;
+const currentYear = seasonYears.length > 0 ? Math.max(...seasonYears) : getCurrentYear();
+const ownCurrentYear = own.filter((r) => getYearFromDate(r.date) === currentYear);
+
+const ownMatchIds = own.map((r) => r.match_id);
+const [{ count: activeCount }, { data: coRows }, { count: seasonTotal }] = await Promise.all([
+  supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
+  ownMatchIds.length > 0
+    ? supabase.from("match_players").select("match_id, player_id, team").neq("player_id", id).in("match_id", ownMatchIds)
+    : Promise.resolve({ data: [] as { match_id: string; player_id: string; team: string }[], count: null } as any),
+  supabase.from("matches").select("id", { count: "exact", head: true }).gte("date", `${currentYear}-01-01`).lte("date", `${currentYear}-12-31`),
+]);
 
 const coMapped = (coRows ?? []).map((c) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
 
@@ -76,9 +82,9 @@ const metrics = {
   bestFieldWins: computeBestFieldWins(own),
   nemesisWins: computeNemesisWins(id, own, coMapped),
   clutchWinRate,
-  ironMan: computeIronMan(own, seasonMatchCount),
+  ironMan: computeIronMan(ownCurrentYear, seasonTotal ?? 0),
   underdog: outcomesAsc.length >= 2 && outcomesAsc[0] === "L" && outcomesAsc[outcomesAsc.length - 1] === "W",
-  socialButterfly: computeSocialButterfly(coMapped, activeCount?.length ?? 0),
+  socialButterfly: computeSocialButterfly(coMapped, activeCount ?? 0),
   totalClubSeasons: seasonYears.length,
   playedSeasons: (yearly ?? []).filter((y) => y.matches_played >= 3).length,
   lightWins: color.light.wins,

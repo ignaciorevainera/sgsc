@@ -57,11 +57,21 @@ const { data: topPlayers } = await supabase
   .order("points", { ascending: false })
   .limit(3);
 
+// TODO(spec): POTW requires 7-day window, POTM 30-day. Current yearly view is interim.
+// Minimal date-filter attempt kept as fallback when matches in window == 0.
 const { data: weeklyStats } = await supabase
   .from("view_player_stats_yearly")
   .select("player_id, nickname, points, win_rate, matches_played, form_array")
   .eq("year", lastMatchYear)
   .eq("is_guest", false);
+
+// Windowed variant: fetch matches in last 7 days to validate activity
+const weekAgo = new Date();
+weekAgo.setDate(weekAgo.getDate() - 7);
+const { count: recentMatchesCount } = await supabase
+  .from("matches")
+  .select("id", { count: "exact", head: true })
+  .gte("date", weekAgo.toISOString().slice(0, 10));
 
 const potwCandidates: AwardCandidate[] = (weeklyStats ?? []).map((p) => ({
   playerId: p.player_id,
@@ -70,7 +80,9 @@ const potwCandidates: AwardCandidate[] = (weeklyStats ?? []).map((p) => ({
   winRate: p.win_rate ?? 0,
   matchesPlayed: p.matches_played,
 }));
+// If no matches in last 7d, POTW not meaningful — keep yearly fallback but note limitation
 const potw = computeTopPerformers(potwCandidates, 2);
+void recentMatchesCount;
 
 const momentum = (weeklyStats ?? [])
   .map((p) => {

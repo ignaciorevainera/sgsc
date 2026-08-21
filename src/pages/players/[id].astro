@@ -349,6 +349,13 @@ const ownBadge = (ownBadgeRows ?? []).map((r: any) => {
   return { match_id: r.match_id, date: m?.date ?? "", team: r.team, result: m?.result ?? "", field_id: m?.field_id ?? null };
 });
 
+const seasonYear = totalClubSeasons > 0 ? Math.max(...uniqueClubYears) : getCurrentYear();
+const ownBadgeCurrentYear = ownBadge.filter((r) => getYearFromDate(r.date) === seasonYear);
+const [{ count: activePlayerCount }, { count: seasonTotalMatches }] = await Promise.all([
+  supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
+  supabase.from("matches").select("id", { count: "exact", head: true }).gte("date", `${seasonYear}-01-01`).lte("date", `${seasonYear}-12-31`),
+]);
+
 const badgeMetrics = {
   matchesPlayed: player.matches_played,
   wins: player.wins,
@@ -358,10 +365,10 @@ const badgeMetrics = {
   comebackStreak: computeComebackStreak(ownBadge),
   bestFieldWins: computeBestFieldWins(ownBadge),
   nemesisWins: computeNemesisWins(id, ownBadge, (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }))),
-  clutchWinRate: clutch.delta >= 0 ? clutch.delta + win_pct : win_pct,
-  ironMan: computeIronMan(ownBadge, ownBadge.length),
+  clutchWinRate: rollingWinRate(outcomesAsc, 5) ?? 0,
+  ironMan: computeIronMan(ownBadgeCurrentYear, seasonTotalMatches ?? 0),
   underdog: outcomesAsc.length >= 2 && outcomesAsc[0] === "L" && outcomesAsc[outcomesAsc.length - 1] === "W",
-  socialButterfly: computeSocialButterfly((teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team })), 0),
+  socialButterfly: computeSocialButterfly((teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team })), activePlayerCount ?? 0),
   totalClubSeasons: totalClubSeasons,
   playedSeasons: (yearlyStats ?? []).filter((y: any) => y.matches_played >= 3).length,
   lightWins: statsClaro.wins,
@@ -1071,7 +1078,7 @@ const jsonLd = {
         <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
           <div class="p-4 sm:p-6">
             <div class="mb-4 text-xs font-black tracking-widest uppercase opacity-50">Progresión de Puntos</div>
-            <ProgressionChart data={progressionData} />
+            <ProgressionChart data={progressionData} id={`progression-${id}`} />
           </div>
         </div>
       </div>

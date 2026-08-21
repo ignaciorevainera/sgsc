@@ -140,6 +140,8 @@ export const SPECIAL_BADGES: SpecialBadge[] = [
   { id: "underdog", name: "Underdog", icon: "material-symbols:pets", category: "especial", description: "Ganó remontando posiciones" },
   { id: "social-butterfly", name: "Social Butterfly", icon: "material-symbols:groups", category: "especial", description: "Jugó con todos los jugadores activos" },
   { id: "presentismo", name: "Presentismo Perfecto", icon: "material-symbols:event-available", category: "especial", description: "Jugó todas las temporadas" },
+  { id: "especialista-claro", name: "Especialista Claro", icon: "material-symbols:sunny", category: "especial", description: "Rinde mejor de claro" },
+  { id: "especialista-oscuro", name: "Especialista Oscuro", icon: "material-symbols:dark-mode", category: "especial", description: "Rinde mejor de oscuro" },
 ];
 
 export interface BadgeMetrics {

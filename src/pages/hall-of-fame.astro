@@ -114,8 +114,14 @@ const champions =
   championsData?.filter((p) => p.points === topPointsChampions) || [];
 
 const veteran = detectVeteran(safePlayers.map((p: any) => ({ nickname: p.nickname, matchesPlayed: p.matches_played })));
+const minYearByPlayer = new Map<string, number>();
+for (const row of yearlyData ?? []) {
+  const cur = minYearByPlayer.get(row.player_id);
+  if (cur === undefined || row.year < cur) minYearByPlayer.set(row.player_id, row.year);
+}
+const globalMinYear = years.length > 0 ? Math.min(...years) : getCurrentYear();
 const risingStar = detectRisingStar(
-  (yearlyData ?? []).map((p: any) => ({ nickname: p.nickname, firstSeason: p.year === Math.min(...(years ?? [])), points: p.points })),
+  (yearlyData ?? []).map((p: any) => ({ nickname: p.nickname, firstSeason: minYearByPlayer.get(p.player_id) === globalMinYear, points: p.points })),
 );
 
 const teamsByMatch = new Map();

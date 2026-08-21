@@ -1,45 +1,82 @@
-# Task 2 Report: Fuzzy Search Utility
+# Task 2: form.ts — Report
 
-## What was implemented
+## What you implemented
 
-- **`src/lib/ux/search.ts`** — 3 exports:
-  - `SearchItem` interface (`id`, `label`, `subtitle`, `href`, `type`)
-  - `fuzzyMatch(query, target)` — case-insensitive substring match
-  - `buildSearchIndex(players, matches, fields)` → `SearchItem[]` — flattens DB data
-  - `search(items, query)` → `SearchItem[]` — filters by fuzzyMatch, groups by type, max 5/type
-- **`tests/unit/lib/ux/search.test.ts`** — 3 describe blocks, 9 test cases
+- `src/lib/stats/form.ts` (20 lines) — `Trend` type (`"improving" | "declining" | "stable"`), `rollingWinRate(outcomes, window=5)` (null on empty, slices last window, counts W, rounds to percent), `computeTrend(outcomes, careerWinRate)` (stable on empty, computes recent via rollingWinRate, diff >=5 → improving, <=-5 → declining, else stable). Pure, no Supabase imports. Matches plan verbatim.
+- `tests/unit/lib/stats/form.test.ts` (30 lines, 7 tests) — plan code with import fix `../../../../`.
 
-## What was tested
+Depends on `Outcome` from `src/lib/stats/types.ts` (Task 1, already exists).
 
-| Suite | Tests | Status |
-|-------|-------|--------|
-| fuzzyMatch | 4 (substring match, no match, empty query, longer query) | PASS |
-| buildSearchIndex | 1 (flattens 2 players + 1 match + 1 field → 4 items, checks structure) | PASS |
-| search | 4 (filter by label, empty result, empty query returns all, max 5 per group) | PASS |
+## What you tested + results
 
-Full project suite: **7 files, 45 tests, all PASS**
+Created `tests/unit/lib/stats/form.test.ts` with 7 tests per plan:
+
+- `rollingWinRate` (3 tests):
+  - returns null for empty
+  - computes last-5 win rate (3W/5 → 60)
+  - uses shorter window when fewer matches (2W/3 → 67)
+- `computeTrend` (4 tests):
+  - improving when recent beats career by 5+ (100 vs 40)
+  - declining when recent below career by 5+ (0 vs 80)
+  - stable within ±5 (60 vs 58 → diff 2)
+  - stable for empty
+
+Results:
+- Targeted run `npx vitest run tests/unit/lib/stats/form.test.ts` → PASS (7/7)
+- Full suite `npx vitest run` → PASS (11 files, 69 tests) — no regressions
 
 ## TDD Evidence
 
-- **RED**: `npm test` → `Cannot find module '../../../src/lib/ux/search'` (test written, no source)
-- **GREEN**: After implementing `search.ts` → 9/9 pass (with 1 iteration: date format fix from `toLocaleDateString` to manual ISO split)
+### RED (actual output before implementation)
+
+After creating test file, before `src/lib/stats/form.ts` existed:
+
+```
+FAIL  tests/unit/lib/stats/form.test.ts [ tests/unit/lib/stats/form.test.ts ]
+Error: Cannot find module '../../../../src/lib/stats/form' imported from E:/Dev/proyectos/sgsc/tests/unit/lib/stats/form.test.ts
+  ❯ tests/unit/lib/stats/form.test.ts:2:1
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Duration  253ms
+```
+
+Matches plan expectation: FAIL — cannot resolve `.../form`.
+
+### GREEN (actual output after implementation)
+
+After creating `src/lib/stats/form.ts` per plan:
+
+```
+ RUN  v4.1.0 E:/Dev/proyectos/sgsc
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Duration  254ms
+```
+
+Full suite:
+
+```
+ Test Files  11 passed (11)
+      Tests  69 passed (69)
+   Duration  438ms
+```
 
 ## Files changed
 
-| File | Action |
-|------|--------|
-| `src/lib/ux/search.ts` | CREATE |
-| `tests/unit/lib/ux/search.test.ts` | CREATE |
+- Created: `src/lib/stats/form.ts` (20 lines, 2 exports) — plan code verbatim
+- Created: `tests/unit/lib/stats/form.test.ts` (30 lines, 7 tests) — plan code with import fix `../../../../` (plan says `../../../` but correct depth is 4 dots; consistent with Task 1 fixer)
 
-(Plus `progress.md`, `task-1-diff.txt`, `task-1-report.md`, `task-2-brief.md` auto-updated)
+Git commit: `feat(stats): add form trajectory helpers` adding those 2 files.
 
 ## Self-review findings
 
-1. One intentional deviation from spec: replaced `toLocaleDateString("es-AR")` with manual `date.split("-")` → fixes timezone-shift bug (date was rendering as day-before) and removes locale dependency for cross-platform reliability
-2. All exports, types, and function signatures match spec exactly
-3. No regressions — full suite green
-4. Code follows project conventions (no comments, explicit loops, Map for grouping)
+1. **Import path fix** — Plan's `../../../src/lib/stats/form` is off by one level for `tests/unit/lib/stats/` (needs `../../../../`). Fixed; logic otherwise exact to plan. Verified against existing `tests/unit/lib/stats/streaks.test.ts` which uses `../../../../`.
+2. **Implementation verbatim** — `rollingWinRate` and `computeTrend` match plan exactly (default window 5, Math.round, null/0 handling, ±5 thresholds). No comments added per global constraints.
+3. **Pure module** — No supabase imports, relative import of `Outcome` type, runs under vitest node env with globals.
+4. **No regressions** — Full suite 69 tests pass (62 prior + 7 new).
 
-## Issues
+## Issues or concerns
 
-None.
+None blocking.

@@ -26,9 +26,9 @@ const base: BadgeMetrics = {
 };
 
 describe("catalog", () => {
-  it("has 8 progressive and 6 special badges", () => {
+  it("has 8 progressive and 8 special badges", () => {
     expect(PROGRESSIVE_BADGES).toHaveLength(8);
-    expect(SPECIAL_BADGES).toHaveLength(6);
+    expect(SPECIAL_BADGES).toHaveLength(8);
   });
 
   it("every progressive badge has ascending thresholds", () => {
