@@ -7,6 +7,8 @@ import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { FieldFilters } from "@/lib/ux/types";
 import Alert from "@/components/shared/Alert.astro";
 import FieldCard from "@/components/FieldCard.astro";
+import EmptyState from "@/components/features/ux/EmptyState.astro";
+import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
@@ -117,22 +119,23 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
 
   {
     hasError && (
-      <Alert
-        type="error"
-        message="No se pudo cargar la información de las sedes. Por favor, intenta más tarde."
+      <ErrorRetry message="No se pudo cargar la información de las sedes. Por favor, intenta más tarde." />
+    )
+  }
+
+  {
+    !hasError && !hasFields && filters.city && (
+      <EmptyState
+        icon="material-symbols:location-off"
+        title="Sin sedes"
+        description={`No hay sedes registradas en "${filters.city}". Probá seleccionar otra ciudad.`}
       />
     )
   }
 
   {
-    !hasError && !hasFields && (
-      <Alert
-        type="info"
-        message={filters.city
-          ? `No hay sedes registradas en "${filters.city}".`
-          : "No hay sedes registradas en el sistema."
-        }
-      />
+    !hasError && !hasFields && !filters.city && (
+      <Alert type="info" message="No hay sedes registradas en el sistema." />
     )
   }
 

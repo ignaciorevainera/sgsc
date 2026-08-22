@@ -6,6 +6,8 @@ import { getYearFromDate } from "@/lib/utils/dateUtils";
 import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { MatchFilters } from "@/lib/ux/types";
 import Alert from "@/components/shared/Alert.astro";
+import EmptyState from "@/components/features/ux/EmptyState.astro";
+import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Pagination from "@/components/features/ux/Pagination.astro";
 import Main from "@/layouts/Main.astro";
@@ -134,22 +136,23 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
 
   {
     hasError && (
-      <Alert
-        type="error"
-        message="No se pudo cargar el historial de partidos. Por favor, intenta más tarde."
+      <ErrorRetry message="No se pudo cargar el historial de partidos. Por favor, intenta más tarde." />
+    )
+  }
+
+  {
+    !hasError && !hasMatches && hasActiveFilters && (
+      <EmptyState
+        icon="material-symbols:event-busy"
+        title="Sin partidos"
+        description="No se encontraron partidos con los filtros seleccionados. Probá ampliar el rango de fechas o cambiar la cancha."
       />
     )
   }
 
   {
-    !hasError && !hasMatches && (
-      <Alert
-        type="info"
-        message={hasActiveFilters
-          ? "No se encontraron partidos con los filtros seleccionados."
-          : "No se encontraron partidos registrados."
-        }
-      />
+    !hasError && !hasMatches && !hasActiveFilters && (
+      <Alert type="info" message="No se encontraron partidos registrados." />
     )
   }
 

@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabase";
 import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { PlayerFilters } from "@/lib/ux/types";
 import Alert from "@/components/shared/Alert.astro";
+import EmptyState from "@/components/features/ux/EmptyState.astro";
+import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Main from "@/layouts/Main.astro";
 import PlayerCard from "@/components/players/PlayerCard.astro";
@@ -125,22 +127,25 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
 
   {
     hasError && (
-      <Alert
-        type="error"
-        message="No se pudo conectar con el servidor. Por favor, intenta más tarde."
+      <ErrorRetry message="No se pudo conectar con el servidor. Por favor, intenta más tarde." />
+    )
+  }
+
+  {
+    !hasError && !hasPlayers && filters.search && (
+      <EmptyState
+        icon="material-symbols:person-search"
+        title="Sin resultados"
+        description={`No se encontraron jugadores que coincidan con "${filters.search}". Probá ajustar la búsqueda.`}
       />
     )
   }
 
   {
-    !hasError && !hasPlayers && (
+    !hasError && !hasPlayers && !filters.search && (
       <Alert
         type="warning"
-        message={
-          filters.search
-            ? `No se encontraron jugadores que coincidan con "${filters.search}".`
-            : "No hay jugadores registrados en el sistema."
-        }
+        message="No hay jugadores registrados en el sistema."
       />
     )
   }

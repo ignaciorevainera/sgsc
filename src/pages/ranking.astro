@@ -5,6 +5,8 @@ import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
 import { clearFilters } from "@/lib/ux/filters";
 import Alert from "@/components/shared/Alert.astro";
+import EmptyState from "@/components/features/ux/EmptyState.astro";
+import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import Main from "@/layouts/Main.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import StandingsTable from "@/components/ranking/StandingsTable.astro";
@@ -158,7 +160,6 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
     <ShareButtons
       url={`https://sgsc.vercel.app${Astro.url.pathname}${Astro.url.search}`}
       text="Tabla de posiciones SGSC"
-      client:load
     />
   </div>
 
@@ -262,19 +263,17 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   {/* Error de conexión */}
   {
     hasError && (
-      <Alert
-        type="error"
-        message="No se pudo cargar la clasificación. Por favor, intenta más tarde."
-      />
+      <ErrorRetry message="No se pudo cargar la clasificación. Por favor, intenta más tarde." />
     )
   }
 
   {/* Sin datos para la temporada */}
   {
     !hasError && !hasPlayersStats && (
-      <Alert
-        type="warning"
-        message={`No hay partidos registrados para la temporada ${season}.`}
+      <EmptyState
+        icon="material-symbols:leaderboard"
+        title="Sin datos"
+        description={`No hay partidos registrados para la temporada ${season}.`}
       />
     )
   }
