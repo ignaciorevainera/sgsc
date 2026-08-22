@@ -80,9 +80,9 @@ const isGroupActive = (group: { href: string }[]) =>
         role="menu"
       >
         {
-          navGroups.map((group, idx) => (
+          navGroups.map((group) => (
             <>
-              <li class="menu-title text-base-content/40 text-xs uppercase">{group.label}</li>
+              <li class="menu-title text-base-content/40 text-xs uppercase pt-4">{group.label}</li>
               {group.groups.map((link) => (
                 <li>
                   <a
@@ -93,9 +93,6 @@ const isGroupActive = (group: { href: string }[]) =>
                   </a>
                 </li>
               ))}
-              {idx < navGroups.length - 1 && (
-                <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
-              )}
             </>
           ))
         }

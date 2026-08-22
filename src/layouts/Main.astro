@@ -7,7 +7,6 @@ import ToastContainer from "@/components/shared/ToastContainer.astro";
 import { supabase } from "@/lib/supabase";
 import { buildSearchIndex } from "@/lib/ux/search";
 import BackToTop from "@/components/features/ux/BackToTop.astro";
-import BottomNav from "@/components/features/ux/BottomNav.astro";
 import SearchCommandPalette from "@/components/features/ux/SearchCommandPalette.astro";
 import SkipLink from "@/components/features/ux/SkipLink.astro";
 import KeyboardShortcutsModal from "@/components/features/ux/KeyboardShortcutsModal.astro";
@@ -132,18 +131,17 @@ const searchIndex = buildSearchIndex(
   <body class="bg-base-300 flex min-h-dvh flex-col">
     <SkipLink />
     <Header />
-    <SearchCommandPalette items={searchIndex} client:load />
+    <SearchCommandPalette items={searchIndex} />
     <main
       id="main-content"
-      class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 pt-8 pb-20 sm:pt-12 sm:pb-20 xl:pb-0`}
+      class={`mx-auto flex w-full ${mainWidthClass} flex-1 flex-col px-4 py-8 sm:py-12`}
     >
       <slot />
     </main>
     <ToastContainer toastType={toastType} toastMessage={toastMessage} />
-    <KeyboardShortcutsModal client:load />
+    <KeyboardShortcutsModal />
     <Footer />
-    <BackToTop client:load />
-    <BottomNav />
+    <BackToTop />
   </body>
 </html>
 

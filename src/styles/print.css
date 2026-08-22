@@ -3,13 +3,11 @@
   header,
   footer,
   nav,
-  .btm-nav,
   #back-to-top,
   dialog,
   .modal,
   .modal-backdrop,
   [role="banner"],
-  [aria-label="Navegación inferior"],
   [aria-label="Migas de pan"] {
     display: none !important;
   }
