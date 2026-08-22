@@ -13,7 +13,7 @@ const teamStyles = {
 ---
 
 <span
-  class={`badge badge-sm h-fit rounded-lg border py-1 font-medium ${teamStyles[team]}`}
+  class={`badge badge-sm h-fit max-w-36 rounded-lg border py-1 font-medium ${teamStyles[team]}`}
 >
-  {nickname}
+  <span class="truncate">{nickname}</span>
 </span>

@@ -105,7 +105,7 @@ const isGroupActive = (group: { href: string }[]) =>
   </div>
 
   <nav class="navbar-center hidden xl:flex" aria-label="Navegación principal">
-    <ul class="menu menu-horizontal px-1" role="menubar">
+    <ul class="menu menu-horizontal gap-2 px-1" role="menubar">
       {
         navGroups.map((group) => (
           <li>
@@ -316,5 +316,25 @@ const isGroupActive = (group: { href: string }[]) =>
     setTimeout(() => {
       (document.getElementById("search-input") as HTMLInputElement)?.focus();
     }, 100);
+  });
+
+  const navDetails = document.querySelectorAll<HTMLDetailsElement>(
+    "nav[aria-label='Navegación principal'] details"
+  );
+
+  navDetails.forEach((details) => {
+    details.addEventListener("toggle", () => {
+      if (!details.open) return;
+      navDetails.forEach((other) => {
+        if (other !== details) other.open = false;
+      });
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    const target = e.target as Node;
+    navDetails.forEach((details) => {
+      if (details.open && !details.contains(target)) details.open = false;
+    });
   });
 </script>

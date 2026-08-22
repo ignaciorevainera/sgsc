@@ -23,9 +23,9 @@ const icon = period === "week" ? "material-symbols:emoji-events" : "material-sym
         <h2 class="text-warning text-sm font-black tracking-widest uppercase">{label}</h2>
         <div class="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:justify-center">
           {winners.map((w) => (
-            <div class="flex flex-col items-center">
+            <div class="flex max-w-48 flex-col items-center">
               <Avatar initial={w.nickname.charAt(0).toUpperCase()} ring={true} />
-              <span class="mt-2 text-xl font-black">{w.nickname}</span>
+              <span class="mt-2 truncate text-xl font-black">{w.nickname}</span>
               <span class="text-base-content/60 text-xs font-bold uppercase">{w.score} pts</span>
             </div>
           ))}

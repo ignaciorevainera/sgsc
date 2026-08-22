@@ -11,16 +11,6 @@ const serializedItems = JSON.stringify(items);
 void serializedItems;
 ---
 
-<button
-  id="search-trigger"
-  type="button"
-  class="btn btn-ghost btn-circle"
-  aria-label="Buscar (Ctrl+K)"
-  title="Buscar (Ctrl+K)"
->
-  <Icon name="material-symbols:search" size={22} aria-hidden="true" />
-</button>
-
 <dialog id="search-modal" class="modal">
   <div class="modal-box w-full max-w-lg p-0">
     <div class="flex items-center gap-3 border-b border-base-200 px-4 py-3">
@@ -70,7 +60,6 @@ void serializedItems;
   }
 
   const modal = document.getElementById("search-modal") as HTMLDialogElement | null;
-  const trigger = document.getElementById("search-trigger") as HTMLButtonElement | null;
   const input = document.getElementById("search-input") as HTMLInputElement | null;
   const resultsDiv = document.getElementById("search-results") as HTMLElement | null;
   const empty = document.getElementById("search-empty") as HTMLElement | null;
@@ -135,11 +124,6 @@ void serializedItems;
 
     resultsDiv.innerHTML = html;
   }
-
-  trigger?.addEventListener("click", () => {
-    modal?.showModal();
-    setTimeout(() => input?.focus(), 100);
-  });
 
   let debounceTimer: ReturnType<typeof setTimeout>;
   input?.addEventListener("input", () => {
