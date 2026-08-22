@@ -26,6 +26,7 @@ islands as (
   select
     player_id,
     outcome,
+    rn,
     rn - row_number() over (partition by player_id, outcome order by rn) as grp
   from ranked
 ),
@@ -35,9 +36,8 @@ lengths as (
     i.outcome,
     i.grp,
     count(*) as len,
-    max(r.rn) as max_rn
+    max(i.rn) as max_rn
   from islands i
-  join ranked r on r.player_id = i.player_id and r.rn = i.rn
   group by i.player_id, i.outcome, i.grp
 )
 select
