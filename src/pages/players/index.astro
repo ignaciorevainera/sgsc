@@ -15,7 +15,7 @@ import PlayerCard from "@/components/players/PlayerCard.astro";
 import Title from "@/components/shared/Title.astro";
 
 const filters = getFilters(Astro.url, {
-  defaults: { search: "", sort: "name", active: false } as const,
+  defaults: { search: "", sort: "name" } as const,
 }) as unknown as PlayerFilters;
 
 const { data: players, error } = await supabase
@@ -24,23 +24,11 @@ const { data: players, error } = await supabase
   .eq("is_guest", false)
   .order("nickname", { ascending: true });
 
-const { data: playerStatuses } = await supabase
-  .from("players")
-  .select("id, is_active");
-
-const activePlayerIds = new Set(
-  (playerStatuses || []).filter((p) => p.is_active).map((p) => p.id)
-);
-
 let filtered = players || [];
 
 if (filters.search) {
   const q = filters.search.toLowerCase();
   filtered = filtered.filter((p) => p.nickname?.toLowerCase().includes(q) ?? false);
-}
-
-if (filters.active) {
-  filtered = filtered.filter((p) => p.player_id && activePlayerIds.has(p.player_id));
 }
 
 const sortBy = filters.sort;
@@ -58,8 +46,8 @@ if (sortBy !== "name") {
 const hasError = !!error;
 const hasPlayers = !hasError && filtered.length > 0;
 
-const hasActiveFilters = filters.search !== "" || filters.sort !== "name" || filters.active;
-const clearedUrl = clearFilters(Astro.url, ["search", "sort", "active"]);
+const hasActiveFilters = filters.search !== "" || filters.sort !== "name";
+const clearedUrl = clearFilters(Astro.url, ["search", "sort"]);
 const clearUrl = clearedUrl.pathname + clearedUrl.search;
 ---
 
@@ -87,7 +75,7 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
           type="text"
           value={filters.search}
           placeholder="Nombre o apodo..."
-          class="input input-bordered input-sm md:input-md w-full rounded-xl pl-10"
+          class="input input-sm md:input-md w-full rounded-xl pl-10"
           aria-label="Buscar jugador por nombre o apodo"
         />
       </div>
@@ -100,7 +88,7 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
       <select
         id="sort"
         name="sort"
-        class="select select-bordered select-sm md:select-md w-full rounded-xl"
+        class="select select-sm md:select-md w-full rounded-xl"
         aria-label="Ordenar jugadores"
       >
         <option value="name" selected={filters.sort === "name"}>Nombre</option>
@@ -108,20 +96,6 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
         <option value="wins" selected={filters.sort === "wins"}>Victorias</option>
         <option value="matches" selected={filters.sort === "matches"}>Partidos</option>
       </select>
-    </div>
-
-    <div class="form-control">
-      <label class="label cursor-pointer justify-start gap-3 p-0 py-1">
-        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Solo activos</span>
-        <input
-          id="active"
-          name="active"
-          type="checkbox"
-          class="toggle toggle-primary toggle-sm"
-          checked={filters.active}
-          value="true"
-        />
-      </label>
     </div>
   </FilterBar>
 
@@ -164,7 +138,6 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
 <script>
   const s = document.getElementById("search") as HTMLInputElement | null;
   const o = document.getElementById("sort") as HTMLSelectElement | null;
-  const a = document.getElementById("active") as HTMLInputElement | null;
 
   const update = () => {
     const url = new URL(window.location.href);
@@ -172,8 +145,6 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
     else url.searchParams.delete("search");
     if (o && o.value && o.value !== "name") url.searchParams.set("sort", o.value);
     else url.searchParams.delete("sort");
-    if (a && a.checked) url.searchParams.set("active", "true");
-    else url.searchParams.delete("active");
     window.location.href = url.toString();
   };
 
@@ -183,5 +154,4 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
     debounceTimer = setTimeout(update, 300);
   });
   o?.addEventListener("change", update);
-  a?.addEventListener("change", update);
 </script>
