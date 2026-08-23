@@ -17,6 +17,14 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 
+# local agent tooling & skills
+.agents/skills/
+skills-lock.json
+.superpowers/
+.playwright-mcp/
+docs/superpowers/
+dev-log.txt
+
 
 # environment variables
 .env
