@@ -4,6 +4,7 @@ export interface SearchItem {
   subtitle: string;
   href: string;
   type: "player" | "match" | "field" | "page";
+  meta?: { winner?: "light" | "dark" | "draw"; date?: string };
 }
 
 export const RECENTS_KEY = "sgsc:recent-searches";
@@ -54,6 +55,7 @@ interface MatchData {
   id: string;
   date: string;
   field?: string;
+  result?: string;
 }
 
 interface FieldData {
@@ -82,12 +84,14 @@ export function buildSearchIndex(
   for (const m of matches) {
     const [year, month, day] = m.date.split("-");
     const dateStr = `${day}/${month}/${year}`;
+    const winner = m.result === "light" || m.result === "dark" || m.result === "draw" ? m.result : undefined;
     items.push({
       id: m.id,
       label: dateStr,
       subtitle: m.field || "",
       href: "/matches",
       type: "match",
+      meta: { winner, date: m.date },
     });
   }
 
@@ -125,4 +129,21 @@ export function search(items: SearchItem[], query: string): SearchItem[] {
   }
 
   return result;
+}
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export function filterItems(items: SearchItem[], query: string): SearchItem[] {
+  if (!query) return items;
+
+  const q = query.toLowerCase();
+  const qNorm = normalize(query);
+
+  return items.filter((item) => {
+    const haystack = `${item.label} ${item.subtitle} ${item.meta?.date ?? ""}`.toLowerCase();
+    if (haystack.includes(q)) return true;
+    return qNorm.length >= 3 && normalize(haystack).includes(qNorm);
+  });
 }

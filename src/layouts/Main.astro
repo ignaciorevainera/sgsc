@@ -50,7 +50,7 @@ const { data: searchPlayers } = await supabase
 
 const { data: searchMatchFields } = await supabase
   .from("matches")
-  .select("id, date, fields(name)")
+  .select("id, date, result, fields(name)")
   .order("date", { ascending: false })
   .limit(50);
 
@@ -68,6 +68,7 @@ const searchIndex = buildSearchIndex(
   (searchMatchFields || []).map((m: any) => ({
     id: m.id,
     date: m.date,
+    result: m.result,
     field: Array.isArray(m.fields) ? m.fields[0]?.name : m.fields?.name,
   })),
   (searchFields || []) as any,

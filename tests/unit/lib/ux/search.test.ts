@@ -5,6 +5,7 @@ import {
   search,
   loadRecents,
   saveRecent,
+  filterItems,
   RECENTS_KEY,
   RECENTS_LIMIT,
   CURATED_SUGGESTIONS,
@@ -60,6 +61,7 @@ describe("buildSearchIndex", () => {
       subtitle: "La Canchita",
       href: "/matches",
       type: "match",
+      meta: { winner: undefined, date: "2025-06-15" },
     });
     expect(index[3]).toEqual({
       id: "f1",
@@ -128,6 +130,76 @@ describe("CURATED_SUGGESTIONS", () => {
     const hrefs = CURATED_SUGGESTIONS.map((s) => s.href);
     expect(hrefs).toEqual(["/ranking", "/players", "/fields"]);
     expect(CURATED_SUGGESTIONS.every((s) => s.type === "page")).toBe(true);
+  });
+});
+
+describe("filterItems (date + field matching)", () => {
+  const matches: SearchItem[] = [
+    {
+      id: "m1",
+      label: "15/06/2025",
+      subtitle: "La Canchita",
+      href: "/matches",
+      type: "match",
+      meta: { winner: "light", date: "2025-06-15" },
+    },
+    {
+      id: "m2",
+      label: "20/07/2025",
+      subtitle: "Estadio Central",
+      href: "/matches",
+      type: "match",
+      meta: { winner: "dark", date: "2025-07-20" },
+    },
+    { id: "p1", label: "Juan", subtitle: "10 PJ", href: "/players/1", type: "player" },
+  ];
+
+  it("finds match by formatted date", () => {
+    expect(filterItems(matches, "15/06")).toHaveLength(1);
+    expect(filterItems(matches, "15/06")[0].id).toBe("m1");
+  });
+
+  it("finds match by digits-only date query (normalized)", () => {
+    expect(filterItems(matches, "15062025").map((i) => i.id)).toEqual(["m1"]);
+    expect(filterItems(matches, "20072025").map((i) => i.id)).toEqual(["m2"]);
+  });
+
+  it("finds match by ISO date fragment", () => {
+    expect(filterItems(matches, "2025-06").map((i) => i.id)).toEqual(["m1"]);
+  });
+
+  it("finds match by field name", () => {
+    expect(filterItems(matches, "canchita").map((i) => i.id)).toEqual(["m1"]);
+    expect(filterItems(matches, "central").map((i) => i.id)).toEqual(["m2"]);
+  });
+
+  it("matches plain substrings regardless of digit length", () => {
+    expect(filterItems(matches, "10").map((i) => i.id)).toEqual(["p1"]);
+    expect(filterItems(matches, "juan").map((i) => i.id)).toEqual(["p1"]);
+  });
+
+  it("returns all items for empty query", () => {
+    expect(filterItems(matches, "")).toHaveLength(3);
+  });
+});
+
+describe("buildSearchIndex match winners", () => {
+  it("stores result as winner meta with raw date", () => {
+    const index = buildSearchIndex(
+      [],
+      [{ id: "m9", date: "2025-03-10", field: "Norte", result: "draw" }],
+      [],
+    );
+    expect(index[0].meta).toEqual({ winner: "draw", date: "2025-03-10" });
+  });
+
+  it("omits winner when result is unexpected", () => {
+    const index = buildSearchIndex(
+      [],
+      [{ id: "m8", date: "2025-03-09", field: "Sur", result: "weird" }],
+      [],
+    );
+    expect(index[0].meta).toEqual({ winner: undefined, date: "2025-03-09" });
   });
 });
 

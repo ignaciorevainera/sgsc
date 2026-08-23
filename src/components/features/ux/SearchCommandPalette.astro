@@ -46,15 +46,31 @@ const serializedItems = JSON.stringify(items);
 </dialog>
 
 <script>
-  import { loadRecents, saveRecent, CURATED_SUGGESTIONS, type SearchItem } from "@/lib/ux/search";
+  import { loadRecents, saveRecent, CURATED_SUGGESTIONS, filterItems, type SearchItem } from "@/lib/ux/search";
 
   function escapeHTML(str: string): string {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  function fuzzyMatch(query: string, target: string): boolean {
-    if (!query) return true;
-    return target.toLowerCase().includes(query.toLowerCase());
+  const WINNER_ICONS: Record<string, { svg: string; cls: string }> = {
+    light: {
+      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+      cls: "text-warning bg-warning/10",
+    },
+    dark: {
+      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+      cls: "text-neutral bg-neutral/10",
+    },
+    draw: {
+      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 9h8M8 15h8"/></svg>',
+      cls: "text-base-content/40 bg-base-200",
+    },
+  };
+
+  function matchIcon(item: SearchItem): string {
+    const w = item.meta?.winner ? WINNER_ICONS[item.meta.winner] : undefined;
+    if (!w) return "";
+    return `<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${w.cls}" title="${item.meta?.winner === "draw" ? "Empate" : `Ganó equipo ${item.meta?.winner === "light" ? "luz" : "sombra"}`}">${w.svg.replace("<svg", '<svg class="h-4 w-4"')}</div>`;
   }
 
   const modal = document.getElementById("search-modal") as HTMLDialogElement | null;
@@ -75,11 +91,14 @@ const serializedItems = JSON.stringify(items);
     const attrs = withData
       ? `data-id="${escapeHTML(item.id)}" data-label="${escapeHTML(item.label)}" data-subtitle="${escapeHTML(item.subtitle)}" data-href="${escapeHTML(item.href)}" data-type="${escapeHTML(item.type)}"`
       : "";
+    const icon =
+      item.type === "match"
+        ? matchIcon(item) ||
+          `<div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"><span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0))}</span></div>`
+        : `<div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"><span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0).toUpperCase())}</span></div>`;
     return `
       <a href="${escapeHTML(item.href)}" ${attrs} class="hover:bg-base-200 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors">
-        <div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-          <span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0).toUpperCase())}</span>
-        </div>
+        ${icon}
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium">${escapeHTML(item.label)}</div>
           <div class="text-base-content/60 truncate text-xs">${escapeHTML(item.subtitle)}</div>
@@ -122,12 +141,10 @@ const serializedItems = JSON.stringify(items);
 
     const grouped = new Map<string, import("@/lib/ux/search").SearchItem[]>();
 
-    for (const item of items) {
-      if (fuzzyMatch(query, item.label) || fuzzyMatch(query, item.subtitle)) {
-        const group = grouped.get(item.type) || [];
-        group.push(item);
-        grouped.set(item.type, group);
-      }
+    for (const item of filterItems(items, query)) {
+      const group = grouped.get(item.type) || [];
+      group.push(item);
+      grouped.set(item.type, group);
     }
 
     const found: import("@/lib/ux/search").SearchItem[] = [];
