@@ -8,10 +8,9 @@ interface Props {
 
 const { items } = Astro.props;
 const serializedItems = JSON.stringify(items);
-void serializedItems;
 ---
 
-<dialog id="search-modal" class="modal">
+<dialog id="search-modal" class="modal" data-items={JSON.stringify(items)}>
   <div class="modal-box w-full max-w-lg p-0">
     <div class="flex items-center gap-3 border-b border-base-200 px-4 py-3">
       <Icon
@@ -47,9 +46,7 @@ void serializedItems;
 </dialog>
 
 <script>
-  import { loadRecents, saveRecent, CURATED_SUGGESTIONS } from "@/lib/ux/search";
-  // @ts-ignore Astro template expression — replaced at build time
-  const items: import("@/lib/ux/search").SearchItem[] = {serializedItems};
+  import { loadRecents, saveRecent, CURATED_SUGGESTIONS, type SearchItem } from "@/lib/ux/search";
 
   function escapeHTML(str: string): string {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -64,6 +61,8 @@ void serializedItems;
   const input = document.getElementById("search-input") as HTMLInputElement | null;
   const resultsDiv = document.getElementById("search-results") as HTMLElement | null;
   const empty = document.getElementById("search-empty") as HTMLElement | null;
+
+  const items: SearchItem[] = JSON.parse(modal?.dataset.items || "[]");
 
   const typeLabels: Record<string, string> = {
     page: "Sugerencias",
@@ -162,7 +161,7 @@ void serializedItems;
       label: anchor.dataset.label || "",
       subtitle: anchor.dataset.subtitle || "",
       href: anchor.dataset.href || anchor.getAttribute("href") || "#",
-      type: (anchor.dataset.type as import("@/lib/ux/search").SearchItem["type"]) || "page",
+      type: (anchor.dataset.type as SearchItem["type"]) || "page",
     });
   });
 
@@ -172,15 +171,19 @@ void serializedItems;
     debounceTimer = setTimeout(() => renderResults(input?.value || ""), 300);
   });
 
+  function openModal() {
+    if (!modal || modal.open) return;
+    modal.showModal();
+    renderResults("");
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  document.getElementById("header-search-btn")?.addEventListener("click", openModal);
+
   document.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
-      modal?.showModal();
-      setTimeout(() => {
-        input?.focus();
-        if (input) input.value = "";
-        renderResults("");
-      }, 100);
+      openModal();
     }
     if (e.key === "Escape" && modal?.open) {
       modal.close();

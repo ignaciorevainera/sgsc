@@ -308,13 +308,6 @@ const isGroupActive = (group: { href: string }[]) =>
     });
   }
 
-  document.getElementById("header-search-btn")?.addEventListener("click", () => {
-    (document.getElementById("search-modal") as HTMLDialogElement)?.showModal();
-    setTimeout(() => {
-      (document.getElementById("search-input") as HTMLInputElement)?.focus();
-    }, 100);
-  });
-
   const navDetails = document.querySelectorAll<HTMLDetailsElement>(
     "nav[aria-label='Navegación principal'] details"
   );
