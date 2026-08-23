@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { fuzzyMatch, buildSearchIndex, search } from "../../../../src/lib/ux/search";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  fuzzyMatch,
+  buildSearchIndex,
+  search,
+  loadRecents,
+  saveRecent,
+  RECENTS_KEY,
+  RECENTS_LIMIT,
+  CURATED_SUGGESTIONS,
+  type SearchItem,
+} from "../../../../src/lib/ux/search";
 
 describe("fuzzyMatch", () => {
   it("returns true when query is substring of target (case insensitive)", () => {
@@ -106,5 +116,85 @@ describe("search", () => {
 
     const results = search(items, "player");
     expect(results.length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("CURATED_SUGGESTIONS", () => {
+  it("contains exactly 3 curated pages", () => {
+    expect(CURATED_SUGGESTIONS).toHaveLength(3);
+  });
+
+  it("points to ranking, players and fields pages", () => {
+    const hrefs = CURATED_SUGGESTIONS.map((s) => s.href);
+    expect(hrefs).toEqual(["/ranking", "/players", "/fields"]);
+    expect(CURATED_SUGGESTIONS.every((s) => s.type === "page")).toBe(true);
+  });
+});
+
+describe("recents (localStorage)", () => {
+  let store: Map<string, string>;
+
+  beforeEach(() => {
+    store = new Map();
+    vi.stubGlobal(
+      "localStorage",
+      {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const item = (id: string): SearchItem => ({
+    id,
+    label: `Item ${id}`,
+    subtitle: "",
+    href: `/players/${id}`,
+    type: "player",
+  });
+
+  it("returns empty array when nothing stored or storage unavailable", () => {
+    expect(loadRecents()).toEqual([]);
+    vi.unstubAllGlobals();
+    expect(loadRecents()).toEqual([]);
+  });
+
+  it("saves a recent item", () => {
+    saveRecent(item("1"));
+    expect(loadRecents()).toHaveLength(1);
+    expect(loadRecents()[0].id).toBe("1");
+  });
+
+  it("dedupes by id keeping the newest first", () => {
+    saveRecent(item("1"));
+    saveRecent(item("2"));
+    saveRecent(item("1"));
+    const recents = loadRecents();
+    expect(recents.map((r) => r.id)).toEqual(["1", "2"]);
+  });
+
+  it(`caps at ${RECENTS_LIMIT} items (${RECENTS_KEY})`, () => {
+    saveRecent(item("1"));
+    saveRecent(item("2"));
+    saveRecent(item("3"));
+    saveRecent(item("4"));
+    const recents = loadRecents();
+    expect(recents).toHaveLength(RECENTS_LIMIT);
+    expect(recents.map((r) => r.id)).toEqual(["4", "3", "2"]);
+  });
+
+  it("ignores corrupt JSON in storage", () => {
+    store.set(RECENTS_KEY, "{not json");
+    expect(loadRecents()).toEqual([]);
+  });
+
+  it("ignores non-array JSON in storage", () => {
+    store.set(RECENTS_KEY, '{"id":"x"}');
+    expect(loadRecents()).toEqual([]);
   });
 });

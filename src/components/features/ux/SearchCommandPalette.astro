@@ -47,6 +47,7 @@ void serializedItems;
 </dialog>
 
 <script>
+  import { loadRecents, saveRecent, CURATED_SUGGESTIONS } from "@/lib/ux/search";
   // @ts-ignore Astro template expression — replaced at build time
   const items: import("@/lib/ux/search").SearchItem[] = {serializedItems};
 
@@ -64,12 +65,59 @@ void serializedItems;
   const resultsDiv = document.getElementById("search-results") as HTMLElement | null;
   const empty = document.getElementById("search-empty") as HTMLElement | null;
 
+  const typeLabels: Record<string, string> = {
+    page: "Sugerencias",
+    player: "Jugadores",
+    match: "Partidos",
+    field: "Canchas",
+  };
+
+  function itemHTML(item: import("@/lib/ux/search").SearchItem, withData = true): string {
+    const attrs = withData
+      ? `data-id="${escapeHTML(item.id)}" data-label="${escapeHTML(item.label)}" data-subtitle="${escapeHTML(item.subtitle)}" data-href="${escapeHTML(item.href)}" data-type="${escapeHTML(item.type)}"`
+      : "";
+    return `
+      <a href="${escapeHTML(item.href)}" ${attrs} class="hover:bg-base-200 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors">
+        <div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+          <span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0).toUpperCase())}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-medium">${escapeHTML(item.label)}</div>
+          <div class="text-base-content/60 truncate text-xs">${escapeHTML(item.subtitle)}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  function groupHTML(type: string, typeItems: import("@/lib/ux/search").SearchItem[]): string {
+    let html = `<div class="text-base-content/40 px-2 py-1 text-xs font-bold uppercase">${typeLabels[type] || type}</div>`;
+    for (const item of typeItems.slice(0, 5)) {
+      html += itemHTML(item);
+    }
+    return html;
+  }
+
+  function renderEmpty() {
+    if (!resultsDiv || !empty) return;
+    empty.classList.add("hidden");
+
+    let html = "";
+    const recents = loadRecents();
+    if (recents.length > 0) {
+      html += `<div class="text-base-content/40 px-2 pt-1 pb-1 text-xs font-bold uppercase">Recientes</div>`;
+      for (const item of recents) html += itemHTML(item);
+      html += `<div class="divider my-1"></div>`;
+    }
+    for (const item of CURATED_SUGGESTIONS.slice(0, 3)) html += itemHTML(item);
+
+    resultsDiv.innerHTML = html;
+  }
+
   function renderResults(query: string) {
     if (!resultsDiv || !empty) return;
 
     if (!query) {
-      resultsDiv.innerHTML = '<div class="px-4 py-6 text-center text-sm text-base-content/40">Escribe para buscar...</div>';
-      empty.classList.add("hidden");
+      renderEmpty();
       return;
     }
 
@@ -98,32 +146,25 @@ void serializedItems;
 
     empty.classList.add("hidden");
 
-    const typeLabels: Record<string, string> = {
-      player: "Jugadores",
-      match: "Partidos",
-      field: "Canchas",
-    };
-
     let html = "";
     for (const [type, typeItems] of grouped) {
-      html += `<div class="text-base-content/40 px-2 py-1 text-xs font-bold uppercase">${typeLabels[type] || type}</div>`;
-      for (const item of typeItems.slice(0, 5)) {
-        html += `
-          <a href="${escapeHTML(item.href)}" class="hover:bg-base-200 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors">
-            <div class="bg-base-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-              <span class="text-base-content/60 text-xs font-bold">${escapeHTML(item.label.charAt(0).toUpperCase())}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium">${escapeHTML(item.label)}</div>
-              <div class="text-base-content/60 truncate text-xs">${escapeHTML(item.subtitle)}</div>
-            </div>
-          </a>
-        `;
-      }
+      html += groupHTML(type, typeItems);
     }
 
     resultsDiv.innerHTML = html;
   }
+
+  resultsDiv?.addEventListener("click", (e) => {
+    const anchor = (e.target as HTMLElement).closest("a[data-id]") as HTMLAnchorElement | null;
+    if (!anchor || !anchor.dataset.id) return;
+    saveRecent({
+      id: anchor.dataset.id,
+      label: anchor.dataset.label || "",
+      subtitle: anchor.dataset.subtitle || "",
+      href: anchor.dataset.href || anchor.getAttribute("href") || "#",
+      type: (anchor.dataset.type as import("@/lib/ux/search").SearchItem["type"]) || "page",
+    });
+  });
 
   let debounceTimer: ReturnType<typeof setTimeout>;
   input?.addEventListener("input", () => {

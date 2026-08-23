@@ -3,7 +3,39 @@ export interface SearchItem {
   label: string;
   subtitle: string;
   href: string;
-  type: "player" | "match" | "field";
+  type: "player" | "match" | "field" | "page";
+}
+
+export const RECENTS_KEY = "sgsc:recent-searches";
+export const RECENTS_LIMIT = 3;
+
+export const CURATED_SUGGESTIONS: SearchItem[] = [
+  { id: "page-ranking", label: "Ranking", subtitle: "Tabla de posiciones", href: "/ranking", type: "page" },
+  { id: "page-players", label: "Jugadores", subtitle: "Plantel completo", href: "/players", type: "page" },
+  { id: "page-fields", label: "Canchas", subtitle: "Sedes y estadios", href: "/fields", type: "page" },
+];
+
+export function loadRecents(): SearchItem[] {
+  try {
+    if (typeof localStorage === "undefined") return [];
+    const raw = localStorage.getItem(RECENTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveRecent(item: SearchItem): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const recents = loadRecents().filter((r) => r.id !== item.id);
+    recents.unshift(item);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(recents.slice(0, RECENTS_LIMIT)));
+  } catch {
+    /* storage lleno o bloqueado — ignorar */
+  }
 }
 
 export function fuzzyMatch(query: string, target: string): boolean {
