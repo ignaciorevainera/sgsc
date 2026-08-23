@@ -13,10 +13,25 @@
   --font-sans: "Sora Variable", sans-serif;
 }
 
+/* Oculta la barra de desplazamiento vertical sin perder el scroll */
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
 [role="button"] {
   cursor: pointer;
 }
 
 .font-countdown {
   font-family: "Roboto Mono Variable", monospace;
+}
+
+/* Aplana sombras solo durante la captura de imagen para compartir */
+.share-capture-flat,
+.share-capture-flat * {
+  box-shadow: none !important;
 }

@@ -407,9 +407,10 @@ const jsonLd = {
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   <Breadcrumb pathname={Astro.url.pathname} playerNickname={player.nickname} />
   <!-- Banner Principal del Jugador -->
-  <div
-    class="card bg-base-100 border-base-200 mb-10 min-h-[200px] rounded-xl border shadow-xl"
-  >
+  <div id="player-share-card">
+    <div
+      class="card bg-base-100 border-base-200 mb-10 min-h-[200px] rounded-xl border shadow-xl"
+    >
     <div
       class="flex h-full flex-col items-center gap-8 p-6 md:p-10 lg:flex-row lg:items-start"
     >
@@ -483,7 +484,7 @@ const jsonLd = {
         class="border-base-200 mt-2 flex min-w-52 flex-col items-center gap-3 border-t pt-6 lg:mt-0 lg:h-auto lg:items-end lg:self-stretch lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8"
       >
         <a
-          href="/badges"
+          href={`/badges/search?player=${id}`}
           class="flex items-center gap-1.5 text-xs font-black tracking-widest uppercase opacity-40 transition-opacity hover:opacity-70"
         >
           <Icon name="material-symbols:rewarded-ads" size={14} />
@@ -507,9 +508,8 @@ const jsonLd = {
 
   <div class="flex justify-end mb-4">
     <ShareButtons
-      url={`https://sgsc.vercel.app/players/${id}`}
-      text={`Mira las estadísticas de ${player.nickname} en SGSC`}
-      client:load
+      targetSelector="#player-share-card"
+      filename={`sgsc-${player.nickname}`}
     />
   </div>
 
@@ -1012,6 +1012,7 @@ const jsonLd = {
         </div>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- Métricas avanzadas -->

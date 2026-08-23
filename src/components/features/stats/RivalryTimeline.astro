@@ -16,9 +16,9 @@ const dotClass: Record<string, string> = {
   outcomes.length === 0 ? (
     <p class="text-sm opacity-50">Sin enfrentamientos aún</p>
   ) : (
-    <div class="flex flex-wrap items-center gap-1.5" aria-label="Línea de tiempo de enfrentamientos">
+    <div class="flex flex-wrap items-center justify-center gap-2" aria-label="Línea de tiempo de enfrentamientos">
       {outcomes.map((o) => (
-        <span class:list={["h-3 w-3 rounded-full", dotClass[o] ?? "bg-base-300"]} />
+        <span class:list={["h-4 w-4 rounded-full", dotClass[o] ?? "bg-base-300"]} />
       ))}
     </div>
   )

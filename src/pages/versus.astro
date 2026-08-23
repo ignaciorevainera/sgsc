@@ -6,7 +6,7 @@ import Title from "@/components/shared/Title.astro";
 import ComparisonRow from "@/components/compare/ComparisonRow.astro";
 import RivalryTimeline from "@/components/features/stats/RivalryTimeline.astro";
 import { createAstroSupabase } from "@/lib/supabase";
-import { rivalryTier, narrativeHook } from "@/lib/stats/rivalry";
+import { formatDate } from "@/lib/utils/dateUtils";
 import { Icon } from "astro-icon/components";
 
 const supabase = createAstroSupabase(Astro);
@@ -24,6 +24,14 @@ const p2Id = Astro.url.searchParams.get("p2");
 let p1Stats = null;
 let p2Stats = null;
 let h2h = null;
+let sharedStats: {
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  lastDate: string;
+  winRate: number;
+} | null = null;
 
 if (p1Id && p2Id && p1Id !== p2Id) {
   const { data: basicInfo } = await supabase
@@ -36,19 +44,22 @@ if (p1Id && p2Id && p1Id !== p2Id) {
 
   const { data: history } = await supabase
     .from("match_players")
-    .select("player_id, team, match:matches!inner (id, result)")
+    .select("player_id, team, match:matches!inner (id, result, date)")
     .in("player_id", [p1Id, p2Id]);
 
   type MatchEntry = {
     player_id: string;
     team: string;
-    match: { id: string; result: string } | { id: string; result: string }[] | null;
+    match:
+      | { id: string; result: string; date: string }
+      | { id: string; result: string; date: string }[]
+      | null;
   };
 
-  const getMatchResult = (entry: MatchEntry): string | undefined => {
-    if (!entry.match) return;
+  const getMatchInfo = (entry: MatchEntry) => {
+    if (!entry.match) return undefined;
     const m = Array.isArray(entry.match) ? entry.match[0] : entry.match;
-    return m?.result;
+    return { id: m?.id, result: m?.result, date: m?.date };
   };
 
   const calculateStats = (playerId: string, matches: MatchEntry[]) => {
@@ -57,9 +68,9 @@ if (p1Id && p2Id && p1Id !== p2Id) {
     let won = 0;
     let drawn = 0;
     myMatches.forEach((m) => {
-      const res = getMatchResult(m);
-      if (res === m.team) won++;
-      else if (res === "draw") drawn++;
+      const info = getMatchInfo(m);
+      if (info?.result === m.team) won++;
+      else if (info?.result === "draw") drawn++;
     });
     const points = won * 3 + drawn * 1;
     const winRate = played > 0 ? ((won / played) * 100).toFixed(0) : 0;
@@ -69,6 +80,33 @@ if (p1Id && p2Id && p1Id !== p2Id) {
 
   if (p1Basic && history) p1Stats = { ...p1Basic, ...calculateStats(p1Id, history) };
   if (p2Basic && history) p2Stats = { ...p2Basic, ...calculateStats(p2Id, history) };
+
+  // Estadísticas cuando juegan juntos (mismo equipo en el mismo partido)
+  const p1Entries = (history ?? []).filter((e) => String(e.player_id) === String(p1Id));
+  const p2ByMatch = new Map<string, MatchEntry>();
+  (history ?? []).forEach((e) => {
+    if (String(e.player_id) === String(p2Id)) {
+      const info = getMatchInfo(e);
+      if (info?.id) p2ByMatch.set(info.id, e);
+    }
+  });
+
+  sharedStats = p1Entries.reduce(
+    (acc, e) => {
+      const mate = p2ByMatch.get(getMatchInfo(e)?.id ?? "");
+      if (!mate || mate.team !== e.team) return acc;
+      const info = getMatchInfo(e);
+      acc.played += 1;
+      if (info?.result === e.team) acc.won += 1;
+      else if (info?.result === "draw") acc.drawn += 1;
+      if (info?.date && info.date > acc.lastDate) acc.lastDate = info.date;
+      return acc;
+    },
+    { played: 0, won: 0, drawn: 0, lastDate: "" },
+  );
+  sharedStats.lost = sharedStats.played - sharedStats.won - sharedStats.drawn;
+  sharedStats.winRate =
+    sharedStats.played > 0 ? Math.round((sharedStats.won / sharedStats.played) * 100) : 0;
 
   const { data: h2hData } = await supabase
     .from("view_head_to_head")
@@ -85,18 +123,10 @@ if (p1Id && p2Id && p1Id !== p2Id) {
       draws_against: h2hData.draws ?? 0,
       shared_teams: h2hData.shared_teams ?? 0,
       last_5_outcomes: h2hData.last_5_outcomes ?? [],
-      tier: rivalryTier(h2hData.matches_against ?? 0),
-      hook: narrativeHook(
-        h2hData.a_wins ?? 0,
-        h2hData.b_wins ?? 0,
-        p1Basic?.nickname ?? "A",
-        p2Basic?.nickname ?? "B",
-      ),
     };
   }
 }
 
-const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } as const;
 ---
 
 <Main title="Versus | SGSC">
@@ -109,10 +139,16 @@ const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } 
           <div class="form-control w-full flex-1 sm:pr-4 sm:text-right">
             <fieldset class="fieldset w-full">
               <legend class="fieldset-legend text-primary">Jugador 1</legend>
-              <div class="relative">
-                <Icon name="material-symbols:search" class="text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2" size={18} aria-hidden="true" />
-                <input id="p1-select" name="p1" type="text" list="players-datalist" value={p1Stats?.nickname || ""} placeholder="Elegir jugador..." class="select w-full rounded-xl pl-10 pr-4" autocomplete="off" aria-label="Buscar jugador 1" />
-              </div>
+              <select id="p1-select" name="p1" class="select w-full rounded-xl" aria-label="Seleccionar jugador 1">
+                <option disabled selected value="">Elegir jugador...</option>
+                {
+                  players?.map((p) => (
+                    <option value={p.id} selected={String(p.id) === p1Id}>
+                      {p.nickname}
+                    </option>
+                  ))
+                }
+              </select>
             </fieldset>
           </div>
 
@@ -125,19 +161,19 @@ const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } 
           <div class="form-control w-full flex-1 sm:pl-4 sm:text-left">
             <fieldset class="fieldset w-full">
               <legend class="fieldset-legend text-secondary">Jugador 2</legend>
-              <div class="relative">
-                <Icon name="material-symbols:search" class="text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2" size={18} aria-hidden="true" />
-                <input id="p2-select" name="p2" type="text" list="players-datalist" value={p2Stats?.nickname || ""} placeholder="Elegir jugador..." class="select w-full rounded-xl pl-10 pr-4" autocomplete="off" aria-label="Buscar jugador 2" />
-              </div>
+              <select id="p2-select" name="p2" class="select w-full rounded-xl" aria-label="Seleccionar jugador 2">
+                <option disabled selected value="">Elegir jugador...</option>
+                {
+                  players?.map((p) => (
+                    <option value={p.id} selected={String(p.id) === p2Id}>
+                      {p.nickname}
+                    </option>
+                  ))
+                }
+              </select>
             </fieldset>
           </div>
         </div>
-
-        <datalist id="players-datalist">
-          {players?.map((p) => (
-            <option value={p.nickname} data-id={p.id} />
-          ))}
-        </datalist>
 
         <button
           id="btn-compare"
@@ -155,25 +191,6 @@ const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } 
   {
     p1Stats && p2Stats ? (
       <div class="space-y-8">
-        {
-          h2h && h2h.played_against >= 2 && (
-            <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
-              <div class="card-body p-4 text-center sm:p-8">
-                <div class="mb-2 flex items-center justify-center gap-2">
-                  <Icon name="material-symbols:swords" aria-hidden="true" />
-                  <span class="text-sm font-black uppercase">
-                    Rivalidad {h2h.tier ? tierLabel[h2h.tier] : ""}
-                  </span>
-                </div>
-                <RivalryTimeline outcomes={h2h.last_5_outcomes} />
-                {h2h.hook && (
-                  <p class="text-base-content/60 mt-4 text-sm font-bold italic">"{h2h.hook}"</p>
-                )}
-              </div>
-            </div>
-          )
-        }
-
         <div class="card bg-base-100 border-base-200 relative overflow-hidden rounded-xl border shadow-md">
           <div class="card-body p-4 text-center sm:p-8">
             <h3 class="text-base-content/40 mb-6 text-xs font-black tracking-widest uppercase md:text-lg">
@@ -201,23 +218,82 @@ const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } 
               <Icon name="material-symbols:swords" aria-hidden="true" />
               {h2h?.played_against ?? 0} Partidos disputados
             </div>
+
+            {
+              h2h && h2h.last_5_outcomes?.length > 0 && (
+                <div class="mt-6 flex flex-col items-center gap-3">
+                  <div class="text-sm font-black uppercase tracking-wide">
+                    Últimos Encuentros
+                  </div>
+                  <RivalryTimeline outcomes={h2h.last_5_outcomes} />
+                  <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-bold">
+                    <span class="flex items-center gap-1.5">
+                      <span class="bg-primary h-3 w-3 rounded-full" aria-hidden="true" />
+                      {p1Stats.nickname} ganó
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="bg-secondary h-3 w-3 rounded-full" aria-hidden="true" />
+                      {p2Stats.nickname} ganó
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="bg-warning h-3 w-3 rounded-full" aria-hidden="true" />
+                      Empate
+                    </span>
+                  </div>
+                </div>
+              )
+            }
           </div>
         </div>
 
-        <div class="card bg-base-100 border-base-200 flex flex-row items-center justify-between gap-4 rounded-xl border p-4 shadow-md">
-          <div class="flex shrink-0 items-center gap-3">
+        <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md sm:p-6">
+          <div class="flex items-center gap-3">
             <div class="bg-base-200 text-base-content/60 rounded-full p-2" aria-hidden="true">
               <Icon name="material-symbols:handshake" size={24} />
             </div>
             <div class="text-left">
-              <div class="font-bold">Equipos compartidos</div>
-              <div class="text-base-content/60 text-xs">Jugando juntos</div>
+              <div class="font-bold">Juntos en Equipo</div>
+              <div class="text-base-content/60 text-xs">Cuando comparten plantel</div>
+              <div class="text-base-content/40 text-xs">
+                {p1Stats.nickname} &amp; {p2Stats.nickname}
+              </div>
             </div>
           </div>
-          <div class="text-right">
-            <div class="text-2xl font-black">{h2h?.shared_teams ?? 0}</div>
-            <div class="text-base-content/50 text-xs font-bold uppercase">veces</div>
+
+          <div class="mt-5 grid grid-cols-3 gap-3 text-center">
+            <div class="flex flex-col">
+              <span class="text-3xl font-black sm:text-4xl">{sharedStats.played}</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Partidos</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-success text-3xl font-black sm:text-4xl">{sharedStats.won}</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Victorias</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-warning text-3xl font-black sm:text-4xl">{sharedStats.drawn}</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Empates</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-error text-3xl font-black sm:text-4xl">{sharedStats.lost}</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Derrotas</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-primary text-3xl font-black sm:text-4xl">{sharedStats.winRate}%</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Efectividad</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-2xl font-black sm:text-3xl">{sharedStats.played > 0 ? Math.round((sharedStats.drawn / sharedStats.played) * 100) : 0}%</span>
+              <span class="text-base-content/50 text-xs font-bold uppercase">Empate %</span>
+            </div>
           </div>
+
+          {
+            sharedStats.played > 0 && sharedStats.lastDate && (
+              <p class="text-base-content/50 mt-4 text-center text-xs font-bold">
+                Última vez juntos: {formatDate(sharedStats.lastDate, "medium")}
+              </p>
+            )
+          }
         </div>
 
         <div class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md" role="table" aria-label="Comparativa de estadísticas entre jugadores">
@@ -245,45 +321,28 @@ const tierLabel = { casual: "Casual", rival: "Rival", legendary: "Legendaria" } 
 </Main>
 
 <script is:inline>
-  const input1 = document.getElementById("p1-select") as HTMLInputElement | null;
-  const input2 = document.getElementById("p2-select") as HTMLInputElement | null;
-  const btn = document.getElementById("btn-compare") as HTMLButtonElement | null;
-  const datalist = document.getElementById("players-datalist") as HTMLDataListElement | null;
-
-  function getPlayerId(nickname) {
-    if (!datalist) return null;
-    for (const opt of datalist.querySelectorAll("option")) {
-      if (opt.value.toLowerCase() === nickname.toLowerCase()) {
-        return opt.getAttribute("data-id");
-      }
-    }
-    return null;
-  }
+  const s1 = document.getElementById("p1-select");
+  const s2 = document.getElementById("p2-select");
+  const btn = document.getElementById("btn-compare");
 
   function checkValidity() {
-    if (!input1 || !input2 || !btn) return;
-    const id1 = getPlayerId(input1.value.trim());
-    const id2 = getPlayerId(input2.value.trim());
-    if (id1 && id2 && id1 !== id2) {
-      btn.removeAttribute("disabled");
-      btn.classList.remove("btn-disabled");
-    } else {
-      btn.setAttribute("disabled", "true");
-      btn.classList.add("btn-disabled");
-    }
+    if (!s1 || !s2 || !btn) return;
+    const ok = s1.value && s2.value && s1.value !== s2.value;
+    btn.disabled = !ok;
+    btn.classList.toggle("btn-disabled", !ok);
   }
 
-  input1?.addEventListener("input", checkValidity);
-  input2?.addEventListener("input", checkValidity);
+  s1?.addEventListener("change", checkValidity);
+  s2?.addEventListener("change", checkValidity);
 
   btn?.addEventListener("click", function () {
-    if (!input1 || !input2) return;
-    const id1 = getPlayerId(input1.value.trim());
-    const id2 = getPlayerId(input2.value.trim());
-    if (id1 && id2) {
+    if (!s1 || !s2) return;
+    const v1 = s1.value;
+    const v2 = s2.value;
+    if (v1 && v2 && v1 !== v2) {
       const url = new URL(window.location.href);
-      url.searchParams.set("p1", id1);
-      url.searchParams.set("p2", id2);
+      url.searchParams.set("p1", v1);
+      url.searchParams.set("p2", v2);
       window.location.href = url.toString();
     }
   });

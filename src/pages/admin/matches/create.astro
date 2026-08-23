@@ -93,7 +93,7 @@ if (Astro.request.method === "POST") {
             type="date"
             name="date"
             id="inputDate"
-            class="input input-bordered w-full rounded-xl"
+            class="input w-full rounded-xl"
             required
           />
         </fieldset>
@@ -104,7 +104,7 @@ if (Astro.request.method === "POST") {
           <select
             name="field_id"
             id="inputField"
-            class="select select-bordered w-full rounded-xl"
+            class="select w-full rounded-xl"
             required
           >
             <option disabled selected value="">Selecciona una cancha</option>
@@ -601,3 +601,6 @@ if (Astro.request.method === "POST") {
     form.submit(); // Esto envía el POST real al servidor
   });
 </script>
+
+
+

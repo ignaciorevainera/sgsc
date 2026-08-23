@@ -10,6 +10,11 @@ export default defineConfig({
   site: "https://sgsc.vercel.app",
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      watch: {
+        ignored: ["**/.vercel/**", "**/dist/**"],
+      },
+    },
   },
   integrations: [sitemap(), icon()],
   output: "server",

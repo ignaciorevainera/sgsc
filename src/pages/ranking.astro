@@ -3,8 +3,6 @@ Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
-import { clearFilters } from "@/lib/ux/filters";
-import Alert from "@/components/shared/Alert.astro";
 import EmptyState from "@/components/features/ux/EmptyState.astro";
 import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import Main from "@/layouts/Main.astro";
@@ -12,6 +10,7 @@ import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import StandingsTable from "@/components/ranking/StandingsTable.astro";
 import Title from "@/components/shared/Title.astro";
 import ShareButtons from "@/components/features/ux/ShareButtons.astro";
+import { Icon } from "astro-icon/components";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -32,7 +31,10 @@ const defaultYear =
 const sort = Astro.url.searchParams.get("sort") || "points";
 const season = Astro.url.searchParams.get("season") || defaultYear;
 const mode = Astro.url.searchParams.get("mode") || "simple";
-const minMatches = Number(Astro.url.searchParams.get("min_matches")) || 0;
+// Mínimo de partidos: solo enteros positivos mayores a 1; cualquier otro valor se ignora
+const minMatchesParam = Number(Astro.url.searchParams.get("min_matches"));
+const minMatches =
+  Number.isInteger(minMatchesParam) && minMatchesParam > 1 ? minMatchesParam : 0;
 
 // Construimos las opciones del selector incluyendo "Histórico"
 const seasons = [...availableYears.map(String), "Histórico"];
@@ -158,8 +160,8 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
 
   <div class="flex justify-end mb-4">
     <ShareButtons
-      url={`https://sgsc.vercel.app${Astro.url.pathname}${Astro.url.search}`}
-      text="Tabla de posiciones SGSC"
+      targetSelector="#ranking-table-card"
+      filename="sgsc-clasificacion"
     />
   </div>
 
@@ -180,7 +182,7 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
         <select
           id="season"
           name="season"
-          class="select select-bordered select-sm md:select-md w-full rounded-xl"
+          class="select select-sm md:select-md w-full rounded-xl"
           aria-label="Seleccionar temporada"
         >
           {
@@ -204,7 +206,7 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
         <select
           id="sort"
           name="sort"
-          class="select select-bordered select-sm md:select-md w-full rounded-xl"
+          class="select select-sm md:select-md w-full rounded-xl"
           aria-label="Seleccionar criterio de ordenamiento"
         >
           {
@@ -249,15 +251,26 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
       <input
         id="min_matches"
         name="min_matches"
-        type="number"
-        min="0"
-        max="50"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="3"
         value={minMatches || ""}
         placeholder="Sin mínimo"
-        class="input input-bordered input-sm md:input-md w-full rounded-xl"
-        aria-label="Filtrar por mínimo de partidos jugados"
+        class="input input-sm md:input-md w-full rounded-xl"
+        aria-label="Filtrar por mínimo de partidos jugados, entero mayor a 1"
       />
     </div>
+
+    {/* Reset de filtros */}
+    <a
+      href="/ranking"
+      class="btn btn-ghost btn-sm md:btn-md w-full shrink-0 gap-1.5 self-end rounded-xl sm:w-auto sm:self-center"
+      aria-label="Limpiar todos los filtros"
+    >
+      <Icon name="material-symbols:restart-alt" size={18} aria-hidden="true" />
+      Limpiar
+    </a>
   </div>
 
   {/* Error de conexión */}
@@ -282,10 +295,12 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   {
     hasPlayersStats && (
       <div class="space-y-6">
-        <StandingsTable
-          players={sortedPlayers}
-          showDetails={mode === "detailed"}
-        />
+        <div id="ranking-table-card">
+          <StandingsTable
+            players={sortedPlayers}
+            showDetails={mode === "detailed"}
+          />
+        </div>
         <StandingsLegend />
       </div>
     )
@@ -305,7 +320,8 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
     if (s) url.searchParams.set("season", s.value);
     if (o) url.searchParams.set("sort", o.value);
     if (m) url.searchParams.set("mode", m.checked ? "detailed" : "simple");
-    if (mm && mm.value) url.searchParams.set("min_matches", mm.value);
+    const mv = parseInt(mm?.value ?? "", 10);
+    if (!isNaN(mv) && mv > 1) url.searchParams.set("min_matches", String(mv));
     else url.searchParams.delete("min_matches");
     window.location.href = url.toString();
   };
@@ -314,6 +330,9 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   o?.addEventListener("change", update);
   m?.addEventListener("change", update);
   mm?.addEventListener("input", () => {
+    // Solo dígitos, sin ceros a la izquierda, máximo 3 caracteres
+    const clean = mm.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 3);
+    if (clean !== mm.value) mm.value = clean;
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(update, 500);
   });

@@ -37,7 +37,7 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         name="nickname"
         required={requiredNickname}
         value={values.nickname || ""}
-        class="input input-bordered w-full rounded-xl"
+        class="input w-full rounded-xl"
         placeholder="Ej: Messi"
       />
     </fieldset>
@@ -50,7 +50,7 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         type="text"
         name="first_name"
         value={values.first_name || ""}
-        class="input input-bordered w-full rounded-xl"
+        class="input w-full rounded-xl"
         placeholder="Lionel"
       />
     </fieldset>
@@ -63,7 +63,7 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         type="text"
         name="last_name"
         value={values.last_name || ""}
-        class="input input-bordered w-full rounded-xl"
+        class="input w-full rounded-xl"
         placeholder="Messi"
       />
     </fieldset>
@@ -76,7 +76,7 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         type="date"
         name="birth_date"
         value={values.birth_date || ""}
-        class="input input-bordered w-full rounded-xl"
+        class="input w-full rounded-xl"
       />
     </fieldset>
   </div>
@@ -86,7 +86,7 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
       <legend class="fieldset-legend">Pie Habil</legend>
       <select
         name="preferred_foot"
-        class="select select-bordered w-full rounded-xl"
+        class="select w-full rounded-xl"
       >
         <option value="" selected={!values.preferred_foot}>
           No especificado
@@ -125,3 +125,5 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
     </label>
   </div>
 </div>
+
+

@@ -8,10 +8,6 @@ import Alert from "@/components/shared/Alert.astro";
 import LiveMatchCounter from "@/components/index/LiveMatchCounter.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@/components/MatchCard.astro";
-import { computeTopPerformers } from "@/lib/gamification/awards";
-import type { AwardCandidate } from "@/lib/gamification/awards";
-import { rollingWinRate } from "@/lib/stats/form";
-import AwardBanner from "@/components/features/gamification/AwardBanner.astro";
 
 // --- CONSULTAS A SUPABASE ---
 
@@ -56,41 +52,6 @@ const { data: topPlayers } = await supabase
   .eq("is_guest", false) // Excluir jugadores invitados
   .order("points", { ascending: false })
   .limit(3);
-
-// TODO(spec): POTW requires 7-day window, POTM 30-day. Current yearly view is interim.
-// Minimal date-filter attempt kept as fallback when matches in window == 0.
-const { data: weeklyStats } = await supabase
-  .from("view_player_stats_yearly")
-  .select("player_id, nickname, points, win_rate, matches_played, form_array")
-  .eq("year", lastMatchYear)
-  .eq("is_guest", false);
-
-// Windowed variant: fetch matches in last 7 days to validate activity
-const weekAgo = new Date();
-weekAgo.setDate(weekAgo.getDate() - 7);
-const { count: recentMatchesCount } = await supabase
-  .from("matches")
-  .select("id", { count: "exact", head: true })
-  .gte("date", weekAgo.toISOString().slice(0, 10));
-
-const potwCandidates: AwardCandidate[] = (weeklyStats ?? []).map((p) => ({
-  playerId: p.player_id,
-  nickname: p.nickname,
-  points: p.points,
-  winRate: p.win_rate ?? 0,
-  matchesPlayed: p.matches_played,
-}));
-// If no matches in last 7d, POTW not meaningful — keep yearly fallback but note limitation
-const potw = computeTopPerformers(potwCandidates, 2);
-void recentMatchesCount;
-
-const momentum = (weeklyStats ?? [])
-  .map((p) => {
-    const form = (p.form_array ?? []).map((f) => (f === "W" ? "W" : f === "D" ? "D" : "L") as "W" | "D" | "L");
-    return { nickname: p.nickname, player_id: p.player_id, rate: rollingWinRate(form, 5) ?? 0 };
-  })
-  .sort((a, b) => b.rate - a.rate)
-  .slice(0, 3);
 
 // Variable de error general para la página
 const hasConnectionError = !!matchesCountError;
@@ -162,27 +123,6 @@ const features = [
   </section>
 
   <section class="container mx-auto space-y-12 pb-12">
-    <AwardBanner winners={potw} period="week" />
-
-    {
-      momentum.length > 0 && (
-        <div class="card bg-base-100 border-base-200 mb-6 rounded-xl border p-6 shadow-md">
-          <h2 class="text-primary mb-4 text-lg font-black uppercase">Momentum</h2>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {momentum.map((m, i) => (
-              <a href={`/players/${m.player_id}`} class="hover:bg-base-200 flex items-center justify-between rounded-xl border border-base-200 p-4 transition-colors">
-                <div class="flex items-center gap-3">
-                  <span class="text-base-content/50 text-sm font-bold">#{i + 1}</span>
-                  <span class="font-bold">{m.nickname}</span>
-                </div>
-                <span class="text-success text-lg font-black">{m.rate}%</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
     {/* Alerta de error de conexión */}
     {
       hasConnectionError && (

@@ -1,96 +1,9 @@
 ---
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
-import { createAstroSupabase } from "@/lib/supabase";
-import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
-import { computePlayerBadges } from "@/lib/gamification/badges";
-import {
-  computeBestDuoWins,
-  computeNemesisWins,
-  computeBestFieldWins,
-  computeComebackStreak,
-  computeIronMan,
-  computeSocialButterfly,
-} from "@/lib/gamification/metrics";
-import { computeStreaks } from "@/lib/stats/streaks";
-import { rollingWinRate } from "@/lib/stats/form";
-import { toOutcome } from "@/lib/stats/types";
-import { computeColorStats } from "@/lib/utils/colorStats";
-import BadgeGrid from "@/components/features/gamification/BadgeGrid.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 import { Icon } from "astro-icon/components";
-
-const supabase = createAstroSupabase(Astro);
-const playerId = Astro.url.searchParams.get("player");
-
-const { data: players } = await supabase
-  .from("players")
-  .select("id, nickname")
-  .eq("is_active", true)
-  .eq("is_guest", false)
-  .order("nickname");
-
-let result = null;
-let selectedNickname = "";
-
-if (playerId) {
-  const [{ data: stats }, { data: yearly }, { data: ownRows }, { data: p }] = await Promise.all([
-    supabase.from("view_player_stats_all_time").select("matches_played, wins, points").eq("player_id", playerId).maybeSingle(),
-    supabase.from("view_player_stats_yearly").select("year, matches_played").eq("player_id", playerId),
-    supabase.from("match_players").select("match_id, team, match:matches!inner (date, result, field_id)").eq("player_id", playerId),
-    supabase.from("players").select("nickname").eq("id", playerId).maybeSingle(),
-  ]);
-
-  selectedNickname = p?.nickname ?? "";
-
-  const own = (ownRows ?? []).map((r: any) => {
-    const m = Array.isArray(r.match) ? r.match[0] : r.match;
-    return { match_id: r.match_id, date: m?.date ?? "", team: r.team, result: m?.result ?? "", field_id: m?.field_id ?? null };
-  });
-
-  const outcomes = [...own]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((r) => toOutcome(r.team, r.result));
-
-  const { longestWin } = computeStreaks(outcomes);
-  const clutchWinRate = rollingWinRate(outcomes, 5) ?? 0;
-  const color = computeColorStats(own.map((r) => ({ team: r.team, match: { result: r.result } })));
-
-  const seasonYears = [...new Set((yearly ?? []).map((y: any) => y.year))];
-  const currentYear = seasonYears.length > 0 ? Math.max(...seasonYears) : getCurrentYear();
-  const ownCurrentYear = own.filter((r) => getYearFromDate(r.date) === currentYear);
-
-  const ownMatchIds = own.map((r) => r.match_id);
-  const [{ count: activeCount }, { data: coRows }, { count: seasonTotal }] = await Promise.all([
-    supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
-    ownMatchIds.length > 0
-      ? supabase.from("match_players").select("match_id, player_id, team").neq("player_id", playerId).in("match_id", ownMatchIds)
-      : Promise.resolve({ data: [] as { match_id: string; player_id: string; team: string }[], count: null } as any),
-    supabase.from("matches").select("id", { count: "exact", head: true }).gte("date", `${currentYear}-01-01`).lte("date", `${currentYear}-12-31`),
-  ]);
-
-  const coMapped = (coRows ?? []).map((c) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
-
-  result = computePlayerBadges({
-    matchesPlayed: stats?.matches_played ?? 0,
-    wins: stats?.wins ?? 0,
-    points: stats?.points ?? 0,
-    longestWinStreak: longestWin,
-    bestDuoWins: computeBestDuoWins(playerId, own, coMapped),
-    comebackStreak: computeComebackStreak(own),
-    bestFieldWins: computeBestFieldWins(own),
-    nemesisWins: computeNemesisWins(playerId, own, coMapped),
-    clutchWinRate,
-    ironMan: computeIronMan(ownCurrentYear, seasonTotal ?? 0),
-    underdog: outcomes.length >= 2 && outcomes[0] === "L" && outcomes[outcomes.length - 1] === "W",
-    socialButterfly: computeSocialButterfly(coMapped, activeCount ?? 0),
-    totalClubSeasons: seasonYears.length || 1,
-    playedSeasons: (yearly ?? []).filter((y: any) => y.matches_played >= 3).length || 1,
-    lightWins: color.light.wins,
-    darkWins: color.dark.wins,
-  });
-}
 
 // Definición de tipos para las medallas
 type TierKey = "bronze" | "silver" | "gold" | "platinum" | "sapphire" | "ruby" | "emerald" | "diamond";
@@ -320,9 +233,11 @@ const specialBadges: SpecialBadge[] = [
 <Main title="Medallas | SGSC">
   <Title title="Medallas" subtitle="Sistema de Reconocimientos" />
 
-  <div role="tablist" id="panel-tabs" class="tabs tabs-box mb-6">
-    <button type="button" role="tab" data-tab="catalogo" class="tab tab-active">Catálogo</button>
-    <button type="button" role="tab" data-tab="buscar" class="tab">Buscar jugador</button>
+  <div class="mb-8 flex justify-center">
+    <a href="/badges/search" class="btn btn-primary rounded-xl">
+      <Icon name="material-symbols:search" size={20} />
+      Buscar medallas por jugador
+    </a>
   </div>
 
   <div id="panel-catalogo">
@@ -336,8 +251,8 @@ const specialBadges: SpecialBadge[] = [
           <h2 class="mb-2 text-lg font-black">¿Cómo funcionan las medallas?</h2>
           <p class="text-base-content/70 text-sm leading-relaxed">
             Las medallas reconocen los logros de los jugadores del club. Existen dos tipos:
-            <strong>medallas progresivas</strong> que se obtienen al alcanzar ciertos umbrales 
-            (partidos, victorias, puntos) y <strong>medallas especiales</strong> que se desbloquean 
+            <strong>medallas progresivas</strong> que se obtienen al alcanzar ciertos umbrales
+            (partidos, victorias, puntos) y <strong>medallas especiales</strong> que se desbloquean
             al cumplir condiciones específicas. Las medallas se muestran en tu perfil de jugador.
           </p>
         </div>
@@ -442,71 +357,4 @@ const specialBadges: SpecialBadge[] = [
       </div>
     </section>
   </div>
-
-  <div id="panel-buscar" style="display:none">
-    <form method="GET" action="/badges" class="card bg-base-100 border-base-200 mb-8 rounded-xl border p-4 shadow-md">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label for="player" class="text-xs font-bold uppercase opacity-60">Buscar jugador</label>
-        <input id="player" name="player" list="players-datalist" class="select w-full rounded-xl" placeholder="Elegir jugador..." />
-        <datalist id="players-datalist">
-          {players?.map((p) => (
-            <option value={p.nickname} data-id={p.id} />
-          ))}
-        </datalist>
-        <button type="submit" class="btn btn-primary rounded-xl">Ver medallas</button>
-      </div>
-    </form>
-
-    {result && (
-      <>
-        <p class="mb-4 text-base-content/60 text-sm font-bold uppercase">Medallas de {selectedNickname}</p>
-        <BadgeGrid badges={result} />
-      </>
-    )}
-
-    {!playerId && (
-      <p class="text-base-content/60 text-center text-sm">Selecciona un jugador para ver sus medallas.</p>
-    )}
-  </div>
 </Main>
-
-<script is:inline>
-  const input = document.getElementById("player");
-  const datalist = document.getElementById("players-datalist");
-  const form = input?.closest("form");
-  form?.addEventListener("submit", (e) => {
-    if (!input || !datalist) return;
-    const v = input.value.trim();
-    for (const opt of datalist.querySelectorAll("option")) {
-      if (opt.value.toLowerCase() === v.toLowerCase()) {
-        const id = opt.getAttribute("data-id");
-        if (id) {
-          e.preventDefault();
-          window.location.href = `/badges?player=${id}`;
-        }
-        return;
-      }
-    }
-  });
-
-  const tabButtons = document.querySelectorAll("#panel-tabs .tab");
-  const panels = {
-    catalogo: document.getElementById("panel-catalogo"),
-    buscar: document.getElementById("panel-buscar"),
-  };
-  tabButtons.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabButtons.forEach((t) => t.classList.remove("tab-active"));
-      tab.classList.add("tab-active");
-      Object.entries(panels).forEach(([key, panel]) => {
-        if (!panel) return;
-        panel.style.display = key === tab.dataset.tab ? "" : "none";
-      });
-    });
-  });
-
-  if (window.location.search.includes("player=")) {
-    const buscarTab = document.querySelector('#panel-tabs [data-tab="buscar"]');
-    if (buscarTab) buscarTab.click();
-  }
-</script>

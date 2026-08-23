@@ -1,92 +1,129 @@
 ---
 import { Icon } from "astro-icon/components";
-import { buildShareUrl } from "@/lib/ux/share";
 
 interface Props {
-  url: string;
-  text: string;
-  variant?: "compact" | "full";
+  targetSelector: string;
+  filename: string;
 }
 
-const { url, text, variant = "compact" } = Astro.props;
-const whatsappUrl = buildShareUrl("whatsapp", url, text);
-const twitterUrl = buildShareUrl("twitter", url, text);
-const isFull = variant === "full";
+const { targetSelector, filename } = Astro.props;
 ---
 
-<div class="flex items-center gap-2" data-share-container data-share-url={url} data-share-text={text}>
-  <a
-    href={whatsappUrl}
-    target="_blank"
-    rel="noopener noreferrer"
-    class={`btn btn-circle border-none text-success-content hover:opacity-90 ${isFull ? "btn-md gap-1 px-3" : "btn-sm"} bg-success`}
-    aria-label="Compartir por WhatsApp"
-    title="WhatsApp"
-    data-share-action="whatsapp"
-  >
-    <Icon name="material-symbols:chat-bubble" size={18} aria-hidden="true" />
-    {isFull && <span class="text-xs font-bold">WhatsApp</span>}
-  </a>
-
-  <a
-    href={twitterUrl}
-    target="_blank"
-    rel="noopener noreferrer"
-    class={`btn btn-circle border-none text-info-content hover:opacity-90 ${isFull ? "btn-md gap-1 px-3" : "btn-sm"} bg-info`}
-    aria-label="Compartir en X"
-    title="X / Twitter"
-    data-share-action="twitter"
-  >
-    <Icon name="material-symbols:alternate-email" size={18} aria-hidden="true" />
-    {isFull && <span class="text-xs font-bold">X</span>}
-  </a>
-
+<div
+  class="flex items-center gap-2"
+  data-share-container
+  data-share-target={targetSelector}
+  data-share-filename={filename}
+>
   <button
     type="button"
-    class={`btn btn-circle btn-ghost border-base-300 border ${isFull ? "btn-md" : "btn-sm"}`}
-    aria-label="Copiar enlace"
-    title="Copiar enlace"
-    data-share-action="copy"
+    class="btn btn-primary btn-sm rounded-xl gap-1.5 font-bold shadow-md"
+    data-share-action="image"
+    aria-label="Copiar imagen para compartir"
   >
-    <Icon name="material-symbols:content-copy" size={18} aria-hidden="true" />
+    <Icon name="material-symbols:image" size={18} aria-hidden="true" />
+    <span>Copiar imagen</span>
   </button>
 
-  <span class="share-feedback hidden text-xs font-bold text-success ml-1" role="status" aria-live="polite">
-    ¡Copiado!
+  <span
+    class="share-feedback hidden text-success text-xs font-bold"
+    role="status"
+    aria-live="polite">
   </span>
 </div>
 
 <script>
+  import {
+    copyImageToClipboard,
+    writeImageToClipboardWithPromise,
+    pngWithPadding,
+  } from "@/lib/ux/share";
+
   document.querySelectorAll("[data-share-container]").forEach((container) => {
     const el = container as HTMLElement;
     if (el.dataset.bound === "true") return;
     el.dataset.bound = "true";
 
-    const copyBtn = el.querySelector("[data-share-action='copy']") as HTMLElement | null;
-    const waLink = el.querySelector("[data-share-action='whatsapp']") as HTMLElement | null;
-    const twLink = el.querySelector("[data-share-action='twitter']") as HTMLElement | null;
+    const btn = el.querySelector("[data-share-action='image']") as HTMLButtonElement | null;
     const feedback = el.querySelector(".share-feedback") as HTMLElement | null;
 
-    copyBtn?.addEventListener("click", async () => {
-      const shareUrl = el.dataset.shareUrl || window.location.href;
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-      } catch {
-        return;
-      }
-      if (feedback) {
-        feedback.classList.remove("hidden");
-        setTimeout(() => feedback.classList.add("hidden"), 2000);
-      }
-      (window as unknown as { va?: { track?: (e: string, d: unknown) => void } }).va?.track?.("share_clicked", { action: "copy", url: shareUrl });
-    });
-
-    const trackShare = (action: string) => {
-      const shareUrl = el.dataset.shareUrl || window.location.href;
-      (window as unknown as { va?: { track?: (e: string, d: unknown) => void } }).va?.track?.("share_clicked", { action, url: shareUrl });
+    const showFeedback = (message: string) => {
+      if (!feedback) return;
+      feedback.textContent = message;
+      feedback.classList.remove("hidden");
+      setTimeout(() => feedback.classList.add("hidden"), 2500);
     };
 
-    waLink?.addEventListener("click", () => trackShare("whatsapp"));
-    twLink?.addEventListener("click", () => trackShare("twitter"));
+    const downloadFallback = (blob: Blob, name: string) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${name}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    btn?.addEventListener("click", () => {
+      const selector = el.dataset.shareTarget;
+      const filenameAttr = el.dataset.shareFilename || "sgsc-compartir";
+      const target = selector ? document.querySelector<HTMLElement>(selector) : null;
+      if (!target || !btn || btn.disabled) return;
+
+      btn.disabled = true;
+
+      // Captura + margen. Se inicia YA dentro del gesto del usuario;
+      // ClipboardItem acepta la promesa y resuelve después (patrón Safari).
+      const capture: Promise<Blob> = (async () => {
+        const { toBlob } = await import("html-to-image");
+        const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
+        // La sombra se recorta mal en el borde de la captura: se aplana solo durante el render
+        target.classList.add("share-capture-flat");
+        try {
+          const raw = await toBlob(target, {
+            pixelRatio: 2,
+            backgroundColor: bg,
+            filter: (node: HTMLElement) =>
+              !(node instanceof HTMLElement && node.hasAttribute("data-share-container")),
+          });
+          if (!raw) throw new Error("capture-failed");
+          return pngWithPadding(raw, bg, 32);
+        } finally {
+          target.classList.remove("share-capture-flat");
+        }
+      })();
+
+      const finish = async () => {
+        let copied = await writeImageToClipboardWithPromise(capture);
+
+        if (!copied) {
+          try {
+            copied = await copyImageToClipboard(await capture);
+          } catch {
+            copied = false;
+          }
+        }
+
+        if (!copied) {
+          try {
+            downloadFallback(await capture, filenameAttr);
+            showFeedback("Imagen descargada");
+          } catch (err) {
+            console.error("[share] no se pudo generar la imagen:", err);
+            showFeedback("No se pudo generar la imagen");
+          }
+        } else {
+          showFeedback("¡Imagen copiada!");
+        }
+
+        (window as unknown as { va?: { track?: (e: string, d: unknown) => void } }).va?.track?.(
+          "share_clicked",
+          { action: "image", copied },
+        );
+
+        btn.disabled = false;
+      };
+
+      void finish();
+    });
   });
 </script>

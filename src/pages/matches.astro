@@ -99,7 +99,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         name="from"
         type="date"
         value={filters.from}
-        class="input input-bordered input-sm md:input-md w-full rounded-xl"
+        class="input input-sm md:input-md w-full rounded-xl"
         aria-label="Fecha desde"
       />
     </div>
@@ -112,7 +112,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         name="to"
         type="date"
         value={filters.to}
-        class="input input-bordered input-sm md:input-md w-full rounded-xl"
+        class="input input-sm md:input-md w-full rounded-xl"
         aria-label="Fecha hasta"
       />
     </div>
@@ -123,7 +123,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
       <select
         id="field_id"
         name="field_id"
-        class="select select-bordered select-sm md:select-md w-full rounded-xl"
+        class="select select-sm md:select-md w-full rounded-xl"
         aria-label="Filtrar por cancha"
       >
         <option value="" selected={!filters.field_id}>Todas</option>
@@ -218,3 +218,6 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   to?.addEventListener("change", update);
   fieldId?.addEventListener("change", update);
 </script>
+
+
+

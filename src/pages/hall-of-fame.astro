@@ -8,8 +8,6 @@ import Alert from "@/components/shared/Alert.astro";
 import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
-import { detectRisingStar, detectVeteran, detectTitleRace } from "@/lib/gamification/narratives";
-import NarrativeCard from "@/components/features/gamification/NarrativeCard.astro";
 
 // 1. Datos
 const { data: players, error } = await supabase
@@ -84,12 +82,6 @@ const topUndefeated = getTop5(
 const currentYear = getCurrentYear();
 const lastSeason = currentYear - 1;
 
-const { data: yearlyData } = await supabase
-  .from("view_player_stats_yearly")
-  .select("year, player_id, nickname, points, matches_played")
-  .eq("is_guest", false);
-const years = [...new Set((yearlyData ?? []).map((y: any) => y.year))];
-
 // 1. Buscamos los datos de la temporada pasada + partidos para duplas en paralelo
 const [{ data: championsData }, { data: allMatchPlayers }] = await Promise.all([
   supabase
@@ -112,17 +104,6 @@ const [{ data: championsData }, { data: allMatchPlayers }] = await Promise.all([
 const topPointsChampions = championsData?.[0]?.points;
 const champions =
   championsData?.filter((p) => p.points === topPointsChampions) || [];
-
-const veteran = detectVeteran(safePlayers.map((p: any) => ({ nickname: p.nickname, matchesPlayed: p.matches_played })));
-const minYearByPlayer = new Map<string, number>();
-for (const row of yearlyData ?? []) {
-  const cur = minYearByPlayer.get(row.player_id);
-  if (cur === undefined || row.year < cur) minYearByPlayer.set(row.player_id, row.year);
-}
-const globalMinYear = years.length > 0 ? Math.min(...years) : getCurrentYear();
-const risingStar = detectRisingStar(
-  (yearlyData ?? []).map((p: any) => ({ nickname: p.nickname, firstSeason: minYearByPlayer.get(p.player_id) === globalMinYear, points: p.points })),
-);
 
 const teamsByMatch = new Map();
 const duoStats = new Map();
@@ -331,18 +312,6 @@ const categories = [
         type="info"
         message="Aún no hay suficientes datos para mostrar el Salón de la Fama."
       />
-    )
-  }
-
-  {
-    (veteran || risingStar) && (
-      <div class="mb-8">
-        <h2 class="text-primary mb-4 text-xl font-black uppercase">Historias de la Temporada</h2>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {veteran && <NarrativeCard narrative={veteran} />}
-          {risingStar && <NarrativeCard narrative={risingStar} />}
-        </div>
-      </div>
     )
   }
 

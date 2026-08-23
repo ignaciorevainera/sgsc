@@ -211,7 +211,7 @@ if (Astro.request.method === "POST") {
             <input
               type="date"
               name="date"
-              class="input input-bordered w-full rounded-xl"
+              class="input w-full rounded-xl"
               required
               value={match.date}
             />
@@ -225,7 +225,7 @@ if (Astro.request.method === "POST") {
             <select
               name="field_id"
               required
-              class="select select-bordered w-full rounded-xl"
+              class="select w-full rounded-xl"
             >
               {
                 fields?.map((f) => (
@@ -245,7 +245,7 @@ if (Astro.request.method === "POST") {
             <select
               name="result"
               required
-              class="select select-bordered w-full rounded-xl font-bold"
+              class="select w-full rounded-xl font-bold"
             >
               <option value="light" selected={match.result === "light"}>
                 Claro
@@ -267,7 +267,7 @@ if (Astro.request.method === "POST") {
             <input
               type="url"
               name="video_url"
-              class="input input-bordered w-full rounded-xl"
+              class="input w-full rounded-xl"
               placeholder="https://..."
               value={match.video_url}
             />
@@ -390,3 +390,4 @@ if (Astro.request.method === "POST") {
     </div>
   </form>
 </Main>
+
