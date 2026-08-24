@@ -29,7 +29,7 @@ La página principal de la competencia. Un ranking dinámico que ordena a los ju
 
 ### 👤 Perfiles de Jugador Estilo "Ficha Técnica"
 Cada jugador tiene su propia página de perfil con estadísticas profundas, diseñada con un estilo premium que recuerda a los videojuegos de fútbol (como el Ultimate Team).
-* **Características:** * Gráficos históricos de rendimiento (ApexCharts).
+* **Características:** * Gráficos históricos de rendimiento (Chart.js).
   * Estadísticas de "Mejor Socio" y "Némesis" (contra quién pierde más).
   * Análisis de rendimiento por color de camiseta (Claro vs Oscuro).
   * **Vitrina de Logros:** Sistema de medallas dinámicas por trayectoria, rachas de victorias ("On Fire 🔥") y fidelidad.

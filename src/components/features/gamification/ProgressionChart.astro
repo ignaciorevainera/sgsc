@@ -7,23 +7,115 @@ interface Props {
 }
 
 const { data, id = "progression-chart" } = Astro.props;
-const labels = data.map((d) => d.date);
+
+const fullDates = data.map((d) => d.date);
+const monthFmt = new Intl.DateTimeFormat("es", { month: "short", timeZone: "UTC" });
+const firstYear = data[0]?.date?.slice(0, 4);
+const rawLabels = data.map((d) => {
+  const [y, m] = d.date.split("-").map(Number);
+  const name = monthFmt.format(new Date(Date.UTC(y, m - 1, 1))).replace(".", "");
+  return y.toString() === firstYear ? name : `${name} ${y}`;
+});
+const labels = rawLabels.map((l, i) => (i > 0 && l === rawLabels[i - 1] ? "" : l));
 const values = data.map((d) => d.points);
 ---
 
-<div id={id} class="h-64 w-full"></div>
+<div id={id} class="h-48 w-full sm:h-64">
+  <canvas
+    id={`${id}-canvas`}
+    data-labels={JSON.stringify(labels)}
+    data-values={JSON.stringify(values)}
+    data-dates={JSON.stringify(fullDates)}
+  >
+  </canvas>
+</div>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script is:inline define:vars={{ labels, values, id }}>
-  document.addEventListener("DOMContentLoaded", () => {
-    const el = document.querySelector(`#${CSS.escape(id)}`);
-    if (el && typeof ApexCharts !== "undefined") {
-      new ApexCharts(el, {
-        chart: { type: "line", height: 256, toolbar: { show: false } },
-        series: [{ name: "Puntos", data: values }],
-        xaxis: { categories: labels },
-        dataLabels: { enabled: false },
-      }).render();
-    }
+<script>
+  import { Chart } from "chart.js/auto";
+  import type { ChartConfiguration } from "chart.js";
+  import { getChartTheme, onThemeChange, withAlpha, CHART_FONT } from "@/lib/ux/chartTheme";
+
+  Chart.defaults.font.family = CHART_FONT;
+
+  const buildChart = (canvas: HTMLCanvasElement): Chart | null => {
+    const labels = JSON.parse(canvas.dataset.labels ?? "[]");
+    const values = JSON.parse(canvas.dataset.values ?? "[]");
+    const fullDates = JSON.parse(canvas.dataset.dates ?? "[]");
+    if (!canvas || labels.length === 0) return null;
+
+    const theme = getChartTheme();
+
+    const config: ChartConfiguration<"line"> = {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Puntos",
+            data: values,
+            borderColor: theme.secondary,
+            borderWidth: 3,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: true,
+            backgroundColor: (context) => {
+              const { ctx, chartArea } = context.chart;
+              if (!chartArea) return withAlpha(theme.secondary, 0.15);
+              const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+              gradient.addColorStop(0, withAlpha(theme.secondary, 0.05));
+              gradient.addColorStop(1, withAlpha(theme.secondary, 0.4));
+              return gradient;
+            },
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => fullDates[items[0].dataIndex] ?? "",
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: theme.gridColor, drawOnChartArea: false },
+            border: { color: theme.gridColor },
+            ticks: { color: theme.textColor, maxRotation: 0, autoSkipPadding: 16 },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: theme.gridColor },
+            border: { display: false },
+            ticks: { color: theme.textColor, precision: 0 },
+          },
+        },
+      },
+    };
+    return new Chart(canvas, config);
+  };
+
+  const charts = new Map<HTMLCanvasElement, Chart>();
+
+  document.querySelectorAll<HTMLElement>("[id^='progression-']").forEach((container) => {
+    const canvas = container.querySelector<HTMLCanvasElement>("canvas");
+    if (!canvas || charts.has(canvas)) return;
+    const chart = buildChart(canvas);
+    if (chart) charts.set(canvas, chart);
+  });
+
+  onThemeChange(() => {
+    charts.forEach((chart, canvas) => {
+      const rebuilt = buildChart(canvas);
+      if (rebuilt) {
+        chart.destroy();
+        charts.set(canvas, rebuilt);
+      }
+    });
   });
 </script>
