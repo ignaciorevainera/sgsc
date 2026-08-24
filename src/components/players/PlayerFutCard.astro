@@ -18,12 +18,12 @@ const initials = getInitials(nickname);
 const winRate = getWinRate(wins, matchesPlayed);
 const Tag = href ? "a" : "div";
 const isList = variant === "list";
-const widthClass = isList ? "max-w-72" : "max-w-60";
+const widthClass = isList ? "w-72" : "w-60";
 const hintLabel = isList ? "Ver perfil" : "Ver ficha";
 ---
 
 <Tag
-  class={`hover-3d mx-auto w-full ${widthClass}`}
+  class={`hover-3d mx-auto ${widthClass}`}
   data-testid="player-fut-card"
   href={href}
   aria-label={href ? `Ver perfil de ${nickname}` : undefined}
