@@ -10,7 +10,7 @@ import EmptyState from "@/components/features/ux/EmptyState.astro";
 import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Main from "@/layouts/Main.astro";
-import PlayerCard from "@/components/players/PlayerCard.astro";
+import PlayerFutCard from "@/components/players/PlayerFutCard.astro";
 import SearchInput from "@/components/ui/SearchInput.astro";
 import Title from "@/components/shared/Title.astro";
 
@@ -120,7 +120,14 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
     hasPlayers && (
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((player) => (
-          <PlayerCard player={player} />
+          <PlayerFutCard
+            variant="list"
+            href={`/players/${player.player_id}`}
+            nickname={player.nickname}
+            points={player.points}
+            matchesPlayed={player.matches_played}
+            wins={player.wins}
+          />
         ))}
       </div>
     )

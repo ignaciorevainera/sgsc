@@ -30,10 +30,10 @@ import ClutchMeter from "@/components/features/stats/ClutchMeter.astro";
 import SynergyList from "@/components/features/stats/SynergyList.astro";
 import TrendArrow from "@/components/features/stats/TrendArrow.astro";
 import { Icon } from "astro-icon/components";
-import Avatar from "@/components/Avatar.astro";
 import Main from "@/layouts/Main.astro";
 import StatCard from "@/components/players/StatCard.astro";
 import InfoCard from "@/components/players/InfoCard.astro";
+import PlayerFutCard from "@/components/players/PlayerFutCard.astro";
 import BadgeItem from "@/components/players/BadgeItem.astro";
 import Breadcrumb from "@/components/features/ux/Breadcrumb.astro";
 import ShareButtons from "@/components/features/ux/ShareButtons.astro";
@@ -421,25 +421,20 @@ const jsonLd = {
       class="flex h-full flex-col items-center gap-8 p-6 md:p-10 lg:flex-row lg:items-start"
     >
       <div class="flex grow flex-col items-center gap-6 md:flex-row">
-        <div class="shrink-0">
-          <div class="text-4xl md:text-5xl">
-            <Avatar
-              initial={player.nickname.charAt(0).toUpperCase()}
-              ring={true}
-              size="xl"
-            />
-          </div>
+        <div class="w-full shrink-0 md:w-auto">
+          <PlayerFutCard
+            nickname={player.nickname}
+            points={player.points}
+            matchesPlayed={player.matches_played}
+            wins={player.wins}
+          />
         </div>
 
         <div class="text-center md:text-left">
-          <h1
-            class="text-base-content text-3xl leading-none font-black tracking-tighter md:text-5xl"
-          >
-            {player.nickname}
-          </h1>
+          <h1 class="sr-only">{player.nickname}</h1>
 
           <div
-            class="mt-4 flex flex-wrap justify-center gap-3 md:justify-start"
+            class="mt-4 flex flex-col items-center gap-2 md:items-start"
           >
             {/* Badges de información personal */}
             {
