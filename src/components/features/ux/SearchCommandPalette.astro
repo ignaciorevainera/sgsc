@@ -1,6 +1,7 @@
 ---
-import { Icon } from "astro-icon/components";
 import type { SearchItem } from "@/lib/ux/search";
+import SearchInput from "@/components/ui/SearchInput.astro";
+import { Icon } from "astro-icon/components";
 
 interface Props {
   items: SearchItem[];
@@ -12,23 +13,16 @@ const serializedItems = JSON.stringify(items);
 
 <dialog id="search-modal" class="modal" data-items={JSON.stringify(items)}>
   <div class="modal-box w-full max-w-lg p-0">
-    <div class="flex items-center gap-3 border-b border-base-200 px-4 py-3">
-      <Icon
-        name="material-symbols:search"
-        class="text-base-content/40 shrink-0"
-        size={22}
-        aria-hidden="true"
-      />
-      <input
-        id="search-input"
-        type="text"
-        placeholder="Buscar jugadores, partidos, canchas..."
-        class="w-full bg-transparent text-base outline-none"
-        autocomplete="off"
-        aria-label="Buscar en SGSC"
-      />
+    <SearchInput
+      id="search-input"
+      type="text"
+      placeholder="Buscar jugadores, partidos, canchas..."
+      ariaLabel="Buscar en SGSC"
+      iconClass="h-6 w-6"
+      class="input-ghost h-auto rounded-b-none border-b border-base-200 px-4 py-4 focus:outline-none focus-within:outline-none"
+    >
       <kbd class="kbd kbd-sm text-base-content/40">Esc</kbd>
-    </div>
+    </SearchInput>
     <div id="search-results" class="max-h-80 overflow-y-auto p-2"></div>
     <div id="search-empty" class="hidden p-8 text-center">
       <Icon

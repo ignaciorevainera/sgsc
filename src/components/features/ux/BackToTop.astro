@@ -6,7 +6,7 @@ import { Icon } from "astro-icon/components";
 <button
   type="button"
   id="back-to-top"
-  class="btn btn-circle btn-primary fixed right-4 bottom-[4.5rem] xl:bottom-4 z-40 hidden shadow-lg"
+  class="btn btn-circle btn-primary fixed right-4 bottom-[4.5rem] xl:bottom-4 z-40 flex shadow-lg invisible opacity-0 translate-y-4 scale-90 pointer-events-none motion-reduce:transition-none transition-all duration-300 ease-out"
   aria-label="Volver arriba"
   title="Volver arriba"
 >
@@ -16,15 +16,24 @@ import { Icon } from "astro-icon/components";
 <script>
   const btn = document.getElementById("back-to-top") as HTMLButtonElement | null;
 
-  const toggleVisibility = () => {
+  const setVisible = (visible: boolean) => {
     if (!btn) return;
-    if (window.scrollY > 400) {
-      btn.classList.remove("hidden");
-      btn.classList.add("flex");
+    btn.classList.toggle("invisible", !visible);
+    btn.classList.toggle("opacity-0", !visible);
+    btn.classList.toggle("translate-y-4", !visible);
+    btn.classList.toggle("scale-90", !visible);
+    btn.classList.toggle("pointer-events-none", !visible);
+    if (visible) {
+      btn.classList.add("translate-y-0", "scale-100", "opacity-100", "visible");
+      btn.setAttribute("tabindex", "0");
     } else {
-      btn.classList.add("hidden");
-      btn.classList.remove("flex");
+      btn.classList.remove("translate-y-0", "scale-100", "opacity-100", "visible");
+      btn.setAttribute("tabindex", "-1");
     }
+  };
+
+  const toggleVisibility = () => {
+    setVisible(window.scrollY > 400);
   };
 
   btn?.addEventListener("click", () => {

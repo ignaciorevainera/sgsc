@@ -26,6 +26,7 @@ const navGroups = [
     groups: [
       { href: "/ranking", label: "Clasificación" },
       { href: "/players", label: "Jugadores" },
+      { href: "/matches", label: "Partidos" },
       { href: "/fields", label: "Canchas" },
     ],
   },
@@ -42,7 +43,6 @@ const navGroups = [
     groups: [
       { href: "/badges", label: "Medallas" },
       { href: "/hall-of-fame", label: "Salón de la Fama" },
-      { href: "/matches", label: "Partidos" },
     ],
   },
 ];
@@ -76,7 +76,7 @@ const isGroupActive = (group: { href: string }[]) =>
       <ul
         tabindex="-1"
         id="mobile-menu"
-        class="menu dropdown-content bg-base-100 z-10 mt-4 w-64 rounded-xl p-2 shadow-md"
+        class="menu dropdown-content bg-base-100 z-10 mt-5 w-64 rounded-xl p-2 shadow-md"
         role="menu"
       >
         {
@@ -107,10 +107,15 @@ const isGroupActive = (group: { href: string }[]) =>
         navGroups.map((group) => (
           <li>
             <details>
-              <summary class={isGroupActive(group.groups) ? "text-primary font-bold" : ""}>
+              <summary
+                class:list={[
+                  "flex h-10 cursor-pointer list-none items-center rounded-field px-3",
+                  isGroupActive(group.groups) ? "text-primary font-bold" : "",
+                ]}
+              >
                 {group.label}
               </summary>
-              <ul class="bg-base-100 rounded-xl p-2 shadow-md">
+              <ul class="menu dropdown-content mt-5 w-max rounded-xl bg-base-100 shadow-md">
                 {group.groups.map((link) => (
                   <li>
                     <a
@@ -146,7 +151,7 @@ const isGroupActive = (group: { href: string }[]) =>
           </button>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-50 mt-4 w-56 rounded-xl border p-2 shadow-md"
+            class="menu menu-sm dropdown-content bg-base-100 border-base-200 z-50 mt-5 w-56 rounded-xl border shadow-md"
             role="menu"
             aria-label="Opciones de administrador"
           >
@@ -164,7 +169,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
 
-            <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
+            <div class="divider m-0" aria-hidden="true"></div>
 
             <li class="menu-title text-base-content/60 text-xs uppercase">
               Accesos Rápidos
@@ -211,7 +216,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
 
-            <li class="p-0" aria-hidden="true"><div class="divider m-0"></div></li>
+            <div class="divider m-0" aria-hidden="true"></div>
 
             <li>
               <form

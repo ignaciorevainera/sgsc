@@ -1,0 +1,45 @@
+---
+// src/components/ui/SearchInput.astro
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  id?: string;
+  name?: string;
+  type?: "search" | "text";
+  value?: string;
+  placeholder?: string;
+  ariaLabel: string;
+  iconClass?: string;
+  class?: string;
+}
+
+const {
+  id,
+  name,
+  type = "search",
+  value = "",
+  placeholder = "",
+  ariaLabel,
+  iconClass = "h-[1em]",
+  class: className = "",
+} = Astro.props;
+---
+
+<label class={`input w-full rounded-xl ${className}`}>
+  <Icon
+    name="material-symbols:search"
+    class={`${iconClass} shrink-0 opacity-50`}
+    aria-hidden="true"
+  />
+  <input
+    id={id}
+    name={name}
+    type={type}
+    value={value}
+    placeholder={placeholder}
+    class="grow"
+    autocomplete="off"
+    aria-label={ariaLabel}
+  />
+  <slot />
+</label>

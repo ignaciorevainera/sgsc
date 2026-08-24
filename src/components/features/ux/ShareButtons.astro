@@ -21,8 +21,14 @@ const { targetSelector, filename } = Astro.props;
     data-share-action="image"
     aria-label="Copiar imagen para compartir"
   >
-    <Icon name="material-symbols:image" size={18} aria-hidden="true" />
-    <span>Copiar imagen</span>
+    <span data-share-icon class="inline-flex">
+      <Icon name="material-symbols:image" size={18} aria-hidden="true" />
+    </span>
+    <span
+      data-share-loading
+      class="loading loading-spinner hidden"
+      aria-hidden="true"></span>
+    <span data-share-label>Copiar imagen</span>
   </button>
 
   <span
@@ -33,6 +39,7 @@ const { targetSelector, filename } = Astro.props;
 </div>
 
 <script>
+  import { toBlob } from "html-to-image";
   import {
     copyImageToClipboard,
     writeImageToClipboardWithPromise,
@@ -46,6 +53,19 @@ const { targetSelector, filename } = Astro.props;
 
     const btn = el.querySelector("[data-share-action='image']") as HTMLButtonElement | null;
     const feedback = el.querySelector(".share-feedback") as HTMLElement | null;
+    const icon = el.querySelector("[data-share-icon]") as HTMLElement | null;
+    const spinner = el.querySelector("[data-share-loading]") as HTMLElement | null;
+    const label = el.querySelector("[data-share-label]") as HTMLElement | null;
+
+    const setLoading = (loading: boolean) => {
+      if (!btn) return;
+      btn.disabled = loading;
+      btn.setAttribute("aria-busy", loading ? "true" : "false");
+      btn.classList.toggle("btn-disabled", loading);
+      icon?.classList.toggle("hidden", loading);
+      spinner?.classList.toggle("hidden", !loading);
+      if (label) label.textContent = loading ? "Copiando..." : "Copiar imagen";
+    };
 
     const showFeedback = (message: string) => {
       if (!feedback) return;
@@ -69,12 +89,11 @@ const { targetSelector, filename } = Astro.props;
       const target = selector ? document.querySelector<HTMLElement>(selector) : null;
       if (!target || !btn || btn.disabled) return;
 
-      btn.disabled = true;
+      setLoading(true);
 
       // Captura + margen. Se inicia YA dentro del gesto del usuario;
       // ClipboardItem acepta la promesa y resuelve después (patrón Safari).
       const capture: Promise<Blob> = (async () => {
-        const { toBlob } = await import("html-to-image");
         const bg = getComputedStyle(document.body).backgroundColor || "#ffffff";
         // La sombra se recorta mal en el borde de la captura: se aplana solo durante el render
         target.classList.add("share-capture-flat");
@@ -120,7 +139,7 @@ const { targetSelector, filename } = Astro.props;
           { action: "image", copied },
         );
 
-        btn.disabled = false;
+        setLoading(false);
       };
 
       void finish();

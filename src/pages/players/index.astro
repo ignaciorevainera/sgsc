@@ -2,7 +2,6 @@
 // src/pages/players/index.astro
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
-import { Icon } from "astro-icon/components";
 import { supabase } from "@/lib/supabase";
 import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { PlayerFilters } from "@/lib/ux/types";
@@ -12,6 +11,7 @@ import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
 import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Main from "@/layouts/Main.astro";
 import PlayerCard from "@/components/players/PlayerCard.astro";
+import SearchInput from "@/components/ui/SearchInput.astro";
 import Title from "@/components/shared/Title.astro";
 
 const filters = getFilters(Astro.url, {
@@ -62,23 +62,15 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
       <label for="search" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Buscar</span>
       </label>
-      <div class="relative">
-        <Icon
-          name="material-symbols:search"
-          class="text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2"
-          size={18}
-          aria-hidden="true"
-        />
-        <input
-          id="search"
-          name="search"
-          type="text"
-          value={filters.search}
-          placeholder="Nombre o apodo..."
-          class="input input-sm md:input-md w-full rounded-xl pl-10"
-          aria-label="Buscar jugador por nombre o apodo"
-        />
-      </div>
+      <SearchInput
+        id="search"
+        name="search"
+        type="search"
+        value={filters.search}
+        placeholder="Nombre o apodo..."
+        ariaLabel="Buscar jugador por nombre o apodo"
+        class="input-sm md:input-md"
+      />
     </div>
 
     <div class="form-control">

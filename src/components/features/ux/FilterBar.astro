@@ -12,16 +12,13 @@ const { hasActiveFilters, clearUrl } = Astro.props;
 <div class="bg-base-100 border-base-200 mb-6 flex flex-col gap-3 rounded-xl border p-4 shadow-md">
   <div class="flex flex-wrap items-end gap-4">
     <slot />
-  </div>
-
-  {
-    hasActiveFilters && clearUrl && (
-      <div class="border-base-200 flex justify-end border-t pt-3">
-        <a href={clearUrl} class="btn btn-ghost btn-sm gap-2 rounded-xl">
+    {
+      hasActiveFilters && clearUrl && (
+        <a href={clearUrl} class="btn btn-soft btn-error btn-sm md:btn-md gap-2 rounded-xl">
           <Icon name="material-symbols:filter-list-off" size={18} aria-hidden="true" />
           Limpiar filtros
         </a>
-      </div>
-    )
-  }
+      )
+    }
+  </div>
 </div>
