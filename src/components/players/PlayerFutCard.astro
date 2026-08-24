@@ -8,15 +8,26 @@ interface Props {
   points: number;
   matchesPlayed: number;
   wins: number;
+  href?: string;
+  variant?: "profile" | "list";
 }
 
-const { nickname, points, matchesPlayed, wins } = Astro.props;
+const { nickname, points, matchesPlayed, wins, href, variant = "profile" } = Astro.props;
 
 const initials = getInitials(nickname);
 const winRate = getWinRate(wins, matchesPlayed);
+const Tag = href ? "a" : "div";
+const isList = variant === "list";
+const widthClass = isList ? "max-w-72" : "max-w-60";
+const hintLabel = isList ? "Ver perfil" : "Ver ficha";
 ---
 
-<div class="hover-3d mx-auto w-full max-w-60" data-testid="player-fut-card">
+<Tag
+  class={`hover-3d mx-auto w-full ${widthClass}`}
+  data-testid="player-fut-card"
+  href={href}
+  aria-label={href ? `Ver perfil de ${nickname}` : undefined}
+>
   <figure
     class="bg-base-100 border-base-200 group relative flex h-full flex-col items-center rounded-xl border p-4 pb-5 shadow-md"
   >
@@ -55,21 +66,27 @@ const winRate = getWinRate(wins, matchesPlayed);
         <dd class="text-base-content text-xl font-black">{matchesPlayed}</dd>
       </div>
       <div>
-        <dt class="text-success text-xs font-bold uppercase">G</dt>
+        <dt class="text-success text-xs font-bold uppercase">{isList ? "Gan" : "G"}</dt>
         <dd class="text-success text-xl font-black">{wins}</dd>
       </div>
       <div>
-        <dt class="text-primary text-xs font-bold uppercase">%</dt>
-        <dd class="text-primary text-xl font-black">{winRate}</dd>
+        <dt class={`text-xs font-bold uppercase ${isList ? "text-warning" : "text-primary"}`}>
+          {isList ? "Pts" : "%"}
+        </dt>
+        <dd class={`text-xl font-black ${isList ? "text-warning" : "text-primary"}`}>
+          {isList ? points : winRate}
+        </dd>
       </div>
     </dl>
 
-    <span
-      class="text-primary mt-3 flex items-center gap-1 text-xs font-bold tracking-widest uppercase opacity-0 transition-opacity duration-200 group-hover:opacity-70"
-    >
-      Ver ficha
-      <Icon name="material-symbols:arrow-forward" size={12} aria-hidden="true" />
-    </span>
+    {
+      href && (
+        <span class="text-primary mt-3 flex items-center gap-1 text-xs font-bold tracking-widest uppercase opacity-0 transition-opacity duration-200 group-hover:opacity-70">
+          {hintLabel}
+          <Icon name="material-symbols:arrow-forward" size={12} aria-hidden="true" />
+        </span>
+      )
+    }
   </figure>
   <div></div>
   <div></div>
@@ -79,4 +96,4 @@ const winRate = getWinRate(wins, matchesPlayed);
   <div></div>
   <div></div>
   <div></div>
-</div>
+</Tag>
