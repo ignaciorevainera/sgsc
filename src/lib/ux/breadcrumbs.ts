@@ -1,6 +1,7 @@
 export interface BreadcrumbItem {
   label: string;
   href?: string;
+  icon?: string;
 }
 
 const routeLabels: Record<string, string> = {
@@ -17,33 +18,48 @@ const routeLabels: Record<string, string> = {
   admin: "Admin",
 };
 
-export function buildBreadcrumbs(pathname: string, playerNickname?: string): BreadcrumbItem[] {
-  const crumbs: BreadcrumbItem[] = [{ label: "Inicio", href: "/" }];
+const routeIcons: Record<string, string> = {
+  players: "material-symbols:group",
+  ranking: "material-symbols:leaderboard",
+  matches: "material-symbols:sports-soccer",
+  compare: "material-symbols:swords",
+  versus: "material-symbols:swords",
+  teams: "material-symbols:diversity-3",
+  "teams-builder": "material-symbols:build",
+  fields: "material-symbols:stadium",
+  badges: "material-symbols:military-tech",
+  "hall-of-fame": "material-symbols:workspace-premium",
+  admin: "material-symbols:shield-person",
+};
 
-  // Remove leading/trailing slashes and split
+const homeIcon = "material-symbols:home";
+const playerIcon = "material-symbols:person";
+
+export function buildBreadcrumbs(pathname: string, playerNickname?: string): BreadcrumbItem[] {
+  const crumbs: BreadcrumbItem[] = [{ label: "Inicio", href: "/", icon: homeIcon }];
+
   const segments = pathname.replace(/^\/|\/$/g, "").split("/").filter(Boolean);
 
   if (segments.length === 0) return crumbs;
 
-  // Handle /players/[id] → Jugadores > Nickname
   if (segments[0] === "players" && segments.length === 2) {
-    crumbs.push({ label: "Jugadores", href: "/players" });
-    crumbs.push({ label: playerNickname || segments[1] });
+    crumbs.push({ label: "Jugadores", href: "/players", icon: routeIcons.players });
+    crumbs.push({ label: playerNickname || segments[1], icon: playerIcon });
     return crumbs;
   }
 
-  // Handle admin sub-routes
   if (segments[0] === "admin") {
-    crumbs.push({ label: "Admin", href: "/admin" });
+    crumbs.push({ label: "Admin", href: "/admin", icon: routeIcons.admin });
     if (segments[1]) {
       const label = routeLabels[segments[1]] || segments[1];
-      crumbs.push({ label });
+      const icon = routeIcons[segments[1]];
+      crumbs.push(icon ? { label, icon } : { label });
     }
     return crumbs;
   }
 
-  // Default: map first segment
   const firstLabel = routeLabels[segments[0]] || segments[0];
-  crumbs.push({ label: firstLabel });
+  const firstIcon = routeIcons[segments[0]];
+  crumbs.push(firstIcon ? { label: firstLabel, icon: firstIcon } : { label: firstLabel });
   return crumbs;
 }
