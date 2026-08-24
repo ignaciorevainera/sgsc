@@ -17,7 +17,7 @@ import Title from "@/components/shared/Title.astro";
 const MATCHES_PER_PAGE = 20;
 
 const filters = getFilters<MatchFilters>(Astro.url, {
-  defaults: { from: "", to: "", field_id: "", page: 1 },
+  defaults: { year: "", from: "", to: "", field_id: "", page: 1 },
 });
 
 const { data: matches, error } = await supabase
@@ -45,6 +45,19 @@ const { data: fieldsList } = await supabase
 
 let filtered = matches || [];
 
+// Años existentes (siempre sobre el total, para las opciones del selector)
+const yearOf = (m: { date: string }): string | null => {
+  const y = getYearFromDate(m.date);
+  return y === null ? null : String(y);
+};
+
+const allYears = [...new Set(filtered.map(yearOf).filter((y): y is string => y !== null))].sort(
+  (a, b) => Number(b) - Number(a),
+);
+
+if (filters.year) {
+  filtered = filtered.filter((m) => yearOf(m) === filters.year);
+}
 if (filters.from) {
   filtered = filtered.filter((m) => m.date >= filters.from);
 }
@@ -63,7 +76,8 @@ const paginatedMatches = filtered.slice(startIdx, startIdx + MATCHES_PER_PAGE);
 const hasError = !!error;
 const hasMatches = !hasError && paginatedMatches.length > 0;
 
-const hasActiveFilters = filters.from !== "" || filters.to !== "" || filters.field_id !== "";
+const hasActiveFilters =
+  filters.year !== "" || filters.from !== "" || filters.to !== "" || filters.field_id !== "";
 
 let matchesByYear: Record<string, typeof filtered> = {};
 let years: string[] = [];
@@ -79,7 +93,7 @@ if (!hasActiveFilters) {
   years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
 }
 
-const clearFilterUrl = clearFilters(Astro.url, ["from", "to", "field_id", "page"]);
+const clearFilterUrl = clearFilters(Astro.url, ["year", "from", "to", "field_id", "page"]);
 const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
 ---
 
@@ -90,6 +104,22 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   />
 
   <FilterBar hasActiveFilters={hasActiveFilters} clearUrl={clearUrl}>
+    <div class="form-control">
+      <label for="year" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Año</span>
+      </label>
+      <select
+        id="year"
+        name="year"
+        class="select select-sm md:select-md w-full rounded-xl"
+        aria-label="Filtrar por año"
+      >
+        <option value="" selected={!filters.year}>Todos</option>
+        {allYears.map((y) => (
+          <option value={y} selected={filters.year === y}>{y}</option>
+        ))}
+      </select>
+    </div>
     <div class="form-control">
       <label for="from" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Desde</span>
@@ -159,6 +189,9 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   {
     hasActiveFilters && hasMatches && (
       <>
+        <p class="text-base-content/60 mb-4 text-sm font-bold uppercase" role="status">
+          {`${filtered.length} ${filtered.length === 1 ? "partido encontrado" : "partidos encontrados"}${filters.year ? ` en ${filters.year}` : ""}`}
+        </p>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {paginatedMatches.map((match: any) => (
             <MatchCard match={match} />
@@ -200,12 +233,15 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
 </Main>
 
 <script>
+  const year = document.getElementById("year") as HTMLSelectElement | null;
   const from = document.getElementById("from") as HTMLInputElement | null;
   const to = document.getElementById("to") as HTMLInputElement | null;
   const fieldId = document.getElementById("field_id") as HTMLSelectElement | null;
 
   const update = () => {
     const url = new URL(window.location.href);
+    if (year && year.value) url.searchParams.set("year", year.value);
+    else url.searchParams.delete("year");
     if (from && from.value) url.searchParams.set("from", from.value);
     else url.searchParams.delete("from");
     if (to && to.value) url.searchParams.set("to", to.value);
@@ -216,6 +252,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
     window.location.href = url.toString();
   };
 
+  year?.addEventListener("change", update);
   from?.addEventListener("change", update);
   to?.addEventListener("change", update);
   fieldId?.addEventListener("change", update);

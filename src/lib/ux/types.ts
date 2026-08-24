@@ -10,6 +10,7 @@ export interface PlayerFilters {
 
 export interface MatchFilters {
   [key: string]: unknown;
+  year: string;
   from: string;
   to: string;
   field_id: string;
