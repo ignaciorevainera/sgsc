@@ -7,29 +7,33 @@ interface Props {
   name: string;
   icon: string;
   description: string;
+  howToGet?: string | null;
   tier: TierKey | null;
   progress?: number | null;
+  locked?: boolean;
 }
 
-const { name, icon, description, tier, progress } = Astro.props;
+const { name, icon, description, howToGet, tier, progress, locked } = Astro.props;
 const style = tier ? TIER_STYLES[tier].style : "bg-base-200 text-base-content border-base-300";
-const tierName = tier ? TIER_STYLES[tier].name : "Especial";
+const tierName = locked ? "Bloqueada" : tier ? TIER_STYLES[tier].name : "Especial";
 ---
 
-<div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
-  <div class="flex items-start gap-3">
-    <div class:list={["shrink-0 rounded-lg border p-2.5", style]}>
-      <Icon name={icon} size={24} />
-    </div>
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="font-black">{name}</h3>
-        <span class:list={["badge badge-sm rounded-lg border font-bold uppercase", style]}>{tierName}</span>
+<div class="tooltip tooltip-top min-w-0 h-full w-full text-pretty" data-tip={howToGet || name}>
+  <div class:list={["card bg-base-100 border-base-200 flex h-full flex-col rounded-xl border p-4 shadow-md select-none", locked && "saturate-50 opacity-70"]}>
+    <div class="flex flex-1 items-start gap-3">
+      <div class:list={["shrink-0 rounded-lg border p-2.5", style]}>
+        <Icon name={icon} size={24} />
       </div>
-      <p class="text-base-content/70 mt-1 text-sm">{description}</p>
-      {progress !== null && progress !== undefined && (
-        <progress class="progress progress-primary mt-3 w-full" value={progress} max="100"></progress>
-      )}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="min-w-0 truncate font-black">{name}</h3>
+          <span class:list={["badge badge-sm shrink-0 rounded-lg border font-bold uppercase", style]}>{tierName}</span>
+        </div>
+        <p class="text-base-content/70 mt-1 text-sm">{description}</p>
+      </div>
     </div>
+    {progress !== null && progress !== undefined && (
+      <progress class="progress progress-primary mt-3 w-full" value={progress} max="100"></progress>
+    )}
   </div>
 </div>

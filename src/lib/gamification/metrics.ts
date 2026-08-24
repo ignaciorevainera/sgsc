@@ -16,11 +16,11 @@ function won(own: OwnMatchRow): boolean {
   return own.result === own.team;
 }
 
-export function computeBestDuoWins(
+function duoWinCounts(
   playerId: string,
   ownRows: OwnMatchRow[],
   coRows: CoPlayerRow[],
-): number {
+): Map<string, number> {
   const ownByMatch = new Map(ownRows.map((r) => [r.match_id, r]));
   const wins = new Map<string, number>();
 
@@ -33,7 +33,31 @@ export function computeBestDuoWins(
     wins.set(c.player_id, (wins.get(c.player_id) ?? 0) + 1);
   }
 
-  return Math.max(0, ...wins.values());
+  return wins;
+}
+
+export function computeBestDuoWins(
+  playerId: string,
+  ownRows: OwnMatchRow[],
+  coRows: CoPlayerRow[],
+): number {
+  return Math.max(0, ...duoWinCounts(playerId, ownRows, coRows).values());
+}
+
+export function computeBestDuoPartner(
+  playerId: string,
+  ownRows: OwnMatchRow[],
+  coRows: CoPlayerRow[],
+): string | null {
+  let best: string | null = null;
+  let max = 0;
+  for (const [partnerId, count] of duoWinCounts(playerId, ownRows, coRows)) {
+    if (count > max) {
+      max = count;
+      best = partnerId;
+    }
+  }
+  return best;
 }
 
 export function computeNemesisWins(

@@ -34,14 +34,14 @@ interface SpecialBadge {
 
 // Estilos base de cada rango
 const tierStyles: Record<TierKey, { name: string; style: string }> = {
-  bronze: { name: "Bronce", style: "bg-orange-50 text-orange-900 border-orange-300" },
-  silver: { name: "Plata", style: "bg-slate-50 text-slate-700 border-slate-300" },
-  gold: { name: "Oro", style: "bg-yellow-50 text-yellow-800 border-yellow-400" },
-  platinum: { name: "Platino", style: "bg-cyan-50 text-cyan-800 border-cyan-300" },
-  sapphire: { name: "Zafiro", style: "bg-blue-50 text-blue-800 border-blue-400" },
-  ruby: { name: "Rubí", style: "bg-rose-50 text-rose-800 border-rose-400" },
-  emerald: { name: "Esmeralda", style: "bg-emerald-50 text-emerald-800 border-emerald-400" },
-  diamond: { name: "Diamante", style: "bg-sky-50 text-sky-800 border-sky-400" },
+  bronze: { name: "Bronce", style: "bg-orange-50 text-orange-900 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800" },
+  silver: { name: "Plata", style: "bg-slate-50 text-slate-700 border-slate-300 dark:bg-slate-800/70 dark:text-slate-300 dark:border-slate-600" },
+  gold: { name: "Oro", style: "bg-yellow-50 text-yellow-800 border-yellow-400 dark:bg-yellow-950/60 dark:text-yellow-300 dark:border-yellow-700" },
+  platinum: { name: "Platino", style: "bg-cyan-50 text-cyan-800 border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-700" },
+  sapphire: { name: "Zafiro", style: "bg-blue-50 text-blue-800 border-blue-400 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700" },
+  ruby: { name: "Rubí", style: "bg-rose-50 text-rose-800 border-rose-400 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-700" },
+  emerald: { name: "Esmeralda", style: "bg-emerald-50 text-emerald-800 border-emerald-400 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700" },
+  diamond: { name: "Diamante", style: "bg-sky-50 text-sky-800 border-sky-400 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-700" },
 };
 
 // Orden de rangos (de menor a mayor)
@@ -138,7 +138,7 @@ const progressiveBadges: BadgeCategory[] = [
   },
   {
     id: "comeback",
-    name: "Comeback",
+    name: "Remontada",
     icon: "material-symbols:restart-alt",
     description: "Premia levantarse tras una derrota.",
     metric: "Victorias seguidas tras derrota",
@@ -169,7 +169,7 @@ const specialBadges: SpecialBadge[] = [
     icon: "material-symbols:calendar-month",
     description: "Participación en todas las temporadas del club.",
     howToGet: "Jugar al menos 3 partidos en cada temporada desde la fundación del club.",
-    style: "bg-purple-50 text-purple-800 border-purple-400",
+    style: "bg-purple-50 text-purple-800 border-purple-400 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-700",
   },
   {
     id: "especialista-claro",
@@ -177,7 +177,7 @@ const specialBadges: SpecialBadge[] = [
     icon: "material-symbols:sunny",
     description: "Mayor rendimiento con la camiseta clara.",
     howToGet: "Tener más victorias jugando de claro que de oscuro.",
-    style: "bg-orange-50 text-orange-800 border-orange-300",
+    style: "bg-orange-50 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800",
   },
   {
     id: "especialista-oscuro",
@@ -185,7 +185,7 @@ const specialBadges: SpecialBadge[] = [
     icon: "material-symbols:dark-mode",
     description: "Mayor rendimiento con la camiseta oscura.",
     howToGet: "Tener más victorias jugando de oscuro que de claro.",
-    style: "bg-indigo-50 text-indigo-800 border-indigo-300",
+    style: "bg-indigo-50 text-indigo-800 border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-700",
   },
   {
     id: "racha",
@@ -193,7 +193,7 @@ const specialBadges: SpecialBadge[] = [
     icon: "material-symbols:local-fire-department",
     description: "Racha ganadora activa.",
     howToGet: "Ganar los últimos 3 partidos consecutivos.",
-    style: "bg-red-50 text-red-700 border-red-400",
+    style: "bg-red-50 text-red-700 border-red-400 dark:bg-red-950/60 dark:text-red-300 dark:border-red-700",
   },
   {
     id: "nemesis",
@@ -201,31 +201,31 @@ const specialBadges: SpecialBadge[] = [
     icon: "material-symbols:swords",
     description: "Dominio sobre un rival específico.",
     howToGet: "Vencer al mismo rival 5 o más veces.",
-    style: "bg-red-50 text-red-700 border-red-400",
+    style: "bg-red-50 text-red-700 border-red-400 dark:bg-red-950/60 dark:text-red-300 dark:border-red-700",
   },
   {
     id: "clutch-king",
-    name: "Rey del Clutch",
+    name: "Sangre Fría",
     icon: "material-symbols:whatshot",
     description: "Rendimiento máximo en los últimos partidos.",
     howToGet: "Lograr 80%+ de victorias en los últimos 5 partidos.",
-    style: "bg-amber-50 text-amber-800 border-amber-400",
+    style: "bg-amber-50 text-amber-800 border-amber-400 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700",
   },
   {
     id: "iron-man",
-    name: "Iron Man",
+    name: "Hombre de Hierro",
     icon: "material-symbols:shield",
     description: "Presencia total en la temporada.",
     howToGet: "Jugar todos los partidos de la temporada actual.",
-    style: "bg-cyan-50 text-cyan-800 border-cyan-400",
+    style: "bg-cyan-50 text-cyan-800 border-cyan-400 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-700",
   },
   {
     id: "underdog",
-    name: "Underdog",
+    name: "El Tapado",
     icon: "material-symbols:pets",
     description: "Remontada de temporada completa.",
     howToGet: "Perder el primer partido de la temporada y ganar el último.",
-    style: "bg-purple-50 text-purple-800 border-purple-400",
+    style: "bg-purple-50 text-purple-800 border-purple-400 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-700",
   },
 ];
 ---
@@ -268,7 +268,7 @@ const specialBadges: SpecialBadge[] = [
 
       <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {progressiveBadges.map((badge) => (
-          <div class="card bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md">
+          <div class="card bg-base-100 border-base-200 flex h-full flex-col overflow-hidden rounded-xl border shadow-md">
             <!-- Header -->
             <div class="bg-base-200/50 flex items-center gap-3 px-4 py-3">
               <div class="bg-primary/10 text-primary rounded-lg p-2">
@@ -281,7 +281,7 @@ const specialBadges: SpecialBadge[] = [
             </div>
 
             <!-- Descripción -->
-            <div class="border-base-200 border-b px-4 py-3">
+            <div class="border-base-200 flex-1 border-b px-4 py-3">
               <p class="text-base-content/70 text-sm">{badge.description}</p>
             </div>
 

@@ -1,5 +1,7 @@
 ---
-import BadgeCard from "./BadgeCard.astro";
+import { Icon } from "astro-icon/components";
+import { TIER_STYLES } from "@/lib/gamification/types";
+import type { TierKey } from "@/lib/gamification/types";
 import type { EarnedBadge } from "@/lib/gamification/badges";
 
 interface Props {
@@ -8,15 +10,37 @@ interface Props {
 
 const { earned } = Astro.props;
 const top3 = earned.slice(0, 3);
+
+const styleFor = (tier: TierKey | null) =>
+  tier ? TIER_STYLES[tier].style : "bg-base-200 text-base-content border-base-300";
+const tierName = (tier: TierKey | null) =>
+  tier ? TIER_STYLES[tier].name : "Especial";
 ---
 
 {
   top3.length === 0 ? (
     <p class="text-sm opacity-50">Sin medallas aún</p>
   ) : (
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="grid w-full grid-cols-2 gap-2 sm:grid-cols-3">
       {top3.map((b) => (
-        <BadgeCard name={b.name} icon={b.icon} description={b.description} tier={b.tier} />
+        <div class="tooltip tooltip-top min-w-0" data-tip={b.description}>
+          <div
+            class:list={[
+              "bg-base-100 border-base-200 flex items-center gap-2 rounded-lg border p-2 shadow-sm select-none",
+              styleFor(b.tier),
+            ]}
+          >
+            <div class="shrink-0">
+              <Icon name={b.icon} size={18} />
+            </div>
+            <div class="min-w-0 leading-tight">
+              <p class="truncate text-xs font-black">{b.name}</p>
+              <span class="text-base-content/60 block text-[10px] font-bold uppercase">
+                {tierName(b.tier)}
+              </span>
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   )

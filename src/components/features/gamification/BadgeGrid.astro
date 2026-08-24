@@ -1,6 +1,8 @@
 ---
 import BadgeCard from "./BadgeCard.astro";
 import type { PlayerBadges } from "@/lib/gamification/badges";
+import { TIER_STYLES } from "@/lib/gamification/types";
+import type { TierKey } from "@/lib/gamification/types";
 
 interface Props {
   badges: PlayerBadges;
@@ -9,7 +11,6 @@ interface Props {
 const { badges } = Astro.props;
 
 const groups = [
-  { id: "all", label: "Todas" },
   { id: "trayectoria", label: "Trayectoria" },
   { id: "rachas", label: "Rachas" },
   { id: "duplas", label: "Duplas" },
@@ -18,33 +19,46 @@ const groups = [
 ---
 
 <div class="space-y-4">
-  <div role="tablist" class="tabs tabs-box justify-center" id="badge-tabs">
-    {groups.map((g, i) => (
-      <button
-        role="tab"
-        type="button"
-        class:list={["tab", i === 0 && "tab-active"]}
-        data-group={g.id}
-      >
+  <form class="flex flex-wrap justify-center gap-2" id="badge-filter">
+    <button type="reset" class="btn btn-ghost btn-sm md:btn-md rounded-xl">
+      Todas
+    </button>
+    {groups.map((g) => (
+      <label class="btn btn-sm md:btn-md has-checked:btn-primary cursor-pointer rounded-xl">
+        <input type="checkbox" class="sr-only" name="badge-group" value={g.id} aria-label={g.label} />
         {g.label}
-      </button>
+      </label>
     ))}
-  </div>
+  </form>
 
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" id="badge-grid">
     {badges.earned.map((b) => (
-      <div data-group-item={b.category}>
-        <BadgeCard name={b.name} icon={b.icon} description={b.description} tier={b.tier} />
+      <div class="h-full" data-group-item={b.category}>
+        <BadgeCard name={b.name} icon={b.icon} description={b.description} howToGet={b.howToGet} tier={b.tier} />
       </div>
     ))}
     {badges.progress.map((p) => (
-      <div data-group-item={p.category}>
+      <div class="h-full" data-group-item={p.category}>
         <BadgeCard
           name={p.name}
           icon={p.icon}
-          description={`${p.current} / ${p.nextThreshold} para ${p.nextTier}`}
-          tier={null}
+          description={`${p.current} / ${p.nextThreshold} para ${TIER_STYLES[p.nextTier as TierKey].name}`}
+          howToGet={p.howToGet}
+          tier={p.nextTier as TierKey}
           progress={p.progress}
+          locked
+        />
+      </div>
+    ))}
+    {badges.locked.map((b) => (
+      <div class="h-full" data-group-item="especial">
+        <BadgeCard
+          name={b.name}
+          icon={b.icon}
+          description={b.description}
+          howToGet={b.howToGet}
+          tier={null}
+          locked
         />
       </div>
     ))}
@@ -52,18 +66,28 @@ const groups = [
 </div>
 
 <script>
-  const tabs = document.querySelectorAll<HTMLButtonElement>("#badge-tabs .tab");
+  const form = document.getElementById("badge-filter") as HTMLFormElement | null;
+  const boxes = form?.querySelectorAll<HTMLInputElement>("input[name='badge-group']");
   const items = document.querySelectorAll<HTMLElement>("[data-group-item]");
 
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("tab-active"));
-      tab.classList.add("tab-active");
-      const group = tab.dataset.group;
-      items.forEach((item) => {
-        const match = group === "all" || item.dataset.groupItem === group;
-        item.style.display = match ? "" : "none";
-      });
+  const applyFilter = () => {
+    if (!boxes || !items) return;
+    const active = new Set(
+      Array.from(boxes)
+        .filter((b) => b.checked)
+        .map((b) => b.value),
+    );
+    items.forEach((item) => {
+      const match = active.size === 0 || active.has(item.dataset.groupItem ?? "");
+      item.style.display = match ? "" : "none";
     });
+  };
+
+  boxes?.forEach((box) => {
+    box.addEventListener("change", applyFilter);
+  });
+
+  form?.addEventListener("reset", () => {
+    requestAnimationFrame(applyFilter);
   });
 </script>

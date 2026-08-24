@@ -6,6 +6,7 @@ import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
 import { computePlayerBadges } from "@/lib/gamification/badges";
 import {
   computeBestDuoWins,
+  computeBestDuoPartner,
   computeNemesisWins,
   computeBestFieldWins,
   computeComebackStreak,
@@ -72,12 +73,18 @@ const [{ count: activeCount }, { data: coRows }, { count: seasonTotal }] = await
 
 const coMapped = (coRows ?? []).map((c) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
 
+const duoPartnerId = computeBestDuoPartner(id, own, coMapped);
+const { data: duoPartnerRow } = duoPartnerId
+  ? await supabase.from("players").select("nickname").eq("id", duoPartnerId).maybeSingle()
+  : { data: null };
+
 const metrics = {
   matchesPlayed,
   wins,
   points,
   longestWinStreak: longestWin,
   bestDuoWins: computeBestDuoWins(id, own, coMapped),
+  bestDuoPartner: duoPartnerRow?.nickname ?? null,
   comebackStreak: computeComebackStreak(own),
   bestFieldWins: computeBestFieldWins(own),
   nemesisWins: computeNemesisWins(id, own, coMapped),

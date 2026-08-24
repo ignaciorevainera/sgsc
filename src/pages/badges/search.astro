@@ -6,6 +6,7 @@ import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
 import { computePlayerBadges } from "@/lib/gamification/badges";
 import {
   computeBestDuoWins,
+  computeBestDuoPartner,
   computeNemesisWins,
   computeBestFieldWins,
   computeComebackStreak,
@@ -72,12 +73,16 @@ if (playerId) {
 
   const coMapped = (coRows ?? []).map((c: { match_id: string; player_id: string; team: string }) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
 
+  const duoPartnerId = computeBestDuoPartner(playerId, own, coMapped);
+  const duoPartnerName = players?.find((p) => p.id === duoPartnerId)?.nickname ?? null;
+
   result = computePlayerBadges({
     matchesPlayed: stats?.matches_played ?? 0,
     wins: stats?.wins ?? 0,
     points: stats?.points ?? 0,
     longestWinStreak: longestWin,
     bestDuoWins: computeBestDuoWins(playerId, own, coMapped),
+    bestDuoPartner: duoPartnerName,
     comebackStreak: computeComebackStreak(own),
     bestFieldWins: computeBestFieldWins(own),
     nemesisWins: computeNemesisWins(playerId, own, coMapped),
@@ -105,13 +110,17 @@ if (playerId) {
 
   <form method="GET" action="/badges/search" class="card bg-base-100 border-base-200 mb-8 rounded-xl border p-4 shadow-md">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <label for="player" class="text-xs font-bold uppercase opacity-60">Buscar jugador</label>
-      <input id="player" name="player" list="players-datalist" class="input w-full rounded-xl" placeholder="Elegir jugador..." />
-      <datalist id="players-datalist">
-        {players?.map((p) => (
-          <option value={p.nickname} data-id={p.id} />
-        ))}
-      </datalist>
+      <label for="player" class="text-xs font-bold uppercase opacity-60">Jugador</label>
+      <select id="player" name="player" class="select w-full rounded-xl" aria-label="Seleccionar jugador">
+        <option disabled selected={!playerId} value="">Elegir jugador...</option>
+        {
+          players?.map((p) => (
+            <option value={p.id} selected={String(p.id) === playerId}>
+              {p.nickname}
+            </option>
+          ))
+        }
+      </select>
       <button type="submit" class="btn btn-primary rounded-xl">Ver medallas</button>
     </div>
   </form>
@@ -127,23 +136,3 @@ if (playerId) {
     <p class="text-base-content/60 text-center text-sm">Selecciona un jugador para ver sus medallas.</p>
   )}
 </Main>
-
-<script is:inline>
-  const input = document.getElementById("player");
-  const datalist = document.getElementById("players-datalist");
-  const form = input?.closest("form");
-  form?.addEventListener("submit", (e) => {
-    if (!input || !datalist) return;
-    const v = input.value.trim();
-    for (const opt of datalist.querySelectorAll("option")) {
-      if (opt.value.toLowerCase() === v.toLowerCase()) {
-        const id = opt.getAttribute("data-id");
-        if (id) {
-          e.preventDefault();
-          window.location.href = `/badges/search?player=${id}`;
-        }
-        return;
-      }
-    }
-  });
-</script>

@@ -1,5 +1,5 @@
 import type { TierKey } from "./types";
-import { tierIndex } from "./types";
+import { tierIndex, TIER_STYLES } from "./types";
 
 export type BadgeCategory =
   | "trayectoria"
@@ -16,7 +16,7 @@ export interface ProgressiveBadge {
   id: string;
   name: string;
   icon: string;
-  category: BadgeCategory;
+  category: Exclude<BadgeCategory, "especial">;
   tiers: { tier: TierKey; threshold: number }[];
 }
 
@@ -112,7 +112,7 @@ export const PROGRESSIVE_BADGES: ProgressiveBadge[] = [
   },
   {
     id: "comeback",
-    name: "Comeback",
+    name: "Remontada",
     icon: "material-symbols:restart-alt",
     category: "comeback",
     tiers: [
@@ -135,10 +135,10 @@ export const PROGRESSIVE_BADGES: ProgressiveBadge[] = [
 
 export const SPECIAL_BADGES: SpecialBadge[] = [
   { id: "nemesis", name: "Némesis", icon: "material-symbols:swords", category: "especial", description: "Vencer al mismo rival 5+ veces" },
-  { id: "clutch-king", name: "Rey del Clutch", icon: "material-symbols:whatshot", category: "especial", description: "80%+ victorias en últimos 5" },
-  { id: "iron-man", name: "Iron Man", icon: "material-symbols:shield", category: "especial", description: "Jugó todos los partidos de la temporada" },
-  { id: "underdog", name: "Underdog", icon: "material-symbols:pets", category: "especial", description: "Ganó remontando posiciones" },
-  { id: "social-butterfly", name: "Social Butterfly", icon: "material-symbols:groups", category: "especial", description: "Jugó con todos los jugadores activos" },
+  { id: "clutch-king", name: "Sangre Fría", icon: "material-symbols:whatshot", category: "especial", description: "80%+ victorias en últimos 5" },
+  { id: "iron-man", name: "Hombre de Hierro", icon: "material-symbols:shield", category: "especial", description: "Jugó todos los partidos de la temporada" },
+  { id: "underdog", name: "El Tapado", icon: "material-symbols:pets", category: "especial", description: "Ganó remontando posiciones" },
+  { id: "social-butterfly", name: "Alma de la Fiesta", icon: "material-symbols:groups", category: "especial", description: "Jugó con todos los jugadores activos" },
   { id: "presentismo", name: "Presentismo Perfecto", icon: "material-symbols:event-available", category: "especial", description: "Jugó todas las temporadas" },
   { id: "especialista-claro", name: "Especialista Claro", icon: "material-symbols:sunny", category: "especial", description: "Rinde mejor de claro" },
   { id: "especialista-oscuro", name: "Especialista Oscuro", icon: "material-symbols:dark-mode", category: "especial", description: "Rinde mejor de oscuro" },
@@ -150,6 +150,7 @@ export interface BadgeMetrics {
   points: number;
   longestWinStreak: number;
   bestDuoWins: number;
+  bestDuoPartner?: string | null;
   comebackStreak: number;
   bestFieldWins: number;
   nemesisWins: number;
@@ -168,6 +169,7 @@ export interface EarnedBadge {
   name: string;
   icon: string;
   description: string;
+  howToGet: string;
   tier: TierKey | null;
   category: BadgeCategory;
 }
@@ -181,11 +183,32 @@ export interface BadgeProgress {
   nextTier: TierKey;
   nextThreshold: number;
   progress: number;
+  howToGet: string;
 }
+
+const METRIC_LABELS: Record<Exclude<BadgeCategory, "especial">, string> = {
+  trayectoria: "partidos jugados",
+  ganador: "victorias totales",
+  leyenda: "puntos históricos",
+  rachas: "victorias consecutivas",
+  duplas: "victorias con el mismo compañero",
+  consistencia: "partidos en la temporada",
+  comeback: "victorias seguidas tras una derrota",
+  field: "victorias en una misma cancha",
+};
 
 export interface PlayerBadges {
   earned: EarnedBadge[];
   progress: BadgeProgress[];
+  locked: LockedBadge[];
+}
+
+export interface LockedBadge {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  howToGet: string;
 }
 
 function metricValue(metrics: BadgeMetrics, category: BadgeCategory): number {
@@ -213,7 +236,6 @@ function metricValue(metrics: BadgeMetrics, category: BadgeCategory): number {
 export function computePlayerBadges(metrics: BadgeMetrics): PlayerBadges {
   const earned: EarnedBadge[] = [];
   const progress: BadgeProgress[] = [];
-
   for (const badge of PROGRESSIVE_BADGES) {
     const value = metricValue(metrics, badge.category);
     const tiers = [...badge.tiers].sort(
@@ -232,12 +254,17 @@ export function computePlayerBadges(metrics: BadgeMetrics): PlayerBadges {
       }
     }
 
+    const metricLabel = METRIC_LABELS[badge.category];
+    const duoWith = badge.category === "duplas" && metrics.bestDuoPartner ? `victorias con ${metrics.bestDuoPartner}` : metricLabel;
+
     if (earnedTier) {
+      const earnedThreshold = tiers.find((t) => t.tier === earnedTier)?.threshold ?? 0;
       earned.push({
         id: badge.id,
         name: badge.name,
         icon: badge.icon,
-        description: `${badge.name} (${earnedTier})`,
+        description: `${badge.name} (${TIER_STYLES[earnedTier].name})`,
+        howToGet: `${earnedThreshold}+ ${duoWith}`,
         tier: earnedTier,
         category: badge.category,
       });
@@ -253,33 +280,51 @@ export function computePlayerBadges(metrics: BadgeMetrics): PlayerBadges {
         nextTier: next.tier,
         nextThreshold: next.threshold,
         progress: Math.min(100, Math.round((value / next.threshold) * 100)),
+        howToGet: `${next.threshold} ${duoWith} para ${TIER_STYLES[next.tier].name}`,
       });
     }
   }
 
   if (metrics.nemesisWins >= 5) {
-    earned.push({ id: "nemesis", name: "Némesis", icon: "material-symbols:swords", description: "Vencer al mismo rival 5+ veces", tier: null, category: "especial" });
+    const d = "Vencer al mismo rival 5+ veces";
+    earned.push({ id: "nemesis", name: "Némesis", icon: "material-symbols:swords", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.clutchWinRate >= 80) {
-    earned.push({ id: "clutch-king", name: "Rey del Clutch", icon: "material-symbols:whatshot", description: "80%+ victorias en últimos 5", tier: null, category: "especial" });
+    const d = "80%+ victorias en últimos 5";
+    earned.push({ id: "clutch-king", name: "Sangre Fría", icon: "material-symbols:whatshot", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.ironMan) {
-    earned.push({ id: "iron-man", name: "Iron Man", icon: "material-symbols:shield", description: "Jugó todos los partidos de la temporada", tier: null, category: "especial" });
+    const d = "Jugó todos los partidos de la temporada";
+    earned.push({ id: "iron-man", name: "Hombre de Hierro", icon: "material-symbols:shield", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.underdog) {
-    earned.push({ id: "underdog", name: "Underdog", icon: "material-symbols:pets", description: "Ganó remontando posiciones", tier: null, category: "especial" });
+    const d = "Ganó remontando posiciones";
+    earned.push({ id: "underdog", name: "El Tapado", icon: "material-symbols:pets", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.socialButterfly) {
-    earned.push({ id: "social-butterfly", name: "Social Butterfly", icon: "material-symbols:groups", description: "Jugó con todos los jugadores activos", tier: null, category: "especial" });
+    const d = "Jugó con todos los jugadores activos";
+    earned.push({ id: "social-butterfly", name: "Alma de la Fiesta", icon: "material-symbols:groups", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.totalClubSeasons > 1 && metrics.playedSeasons === metrics.totalClubSeasons) {
-    earned.push({ id: "presentismo", name: "Presentismo Perfecto", icon: "material-symbols:event-available", description: "Jugó todas las temporadas", tier: null, category: "especial" });
+    const d = "Jugó todas las temporadas";
+    earned.push({ id: "presentismo", name: "Presentismo Perfecto", icon: "material-symbols:event-available", description: d, howToGet: d, tier: null, category: "especial" });
   }
   if (metrics.lightWins > metrics.darkWins) {
-    earned.push({ id: "especialista-claro", name: "Especialista Claro", icon: "material-symbols:sunny", description: "Rinde mejor de claro", tier: null, category: "especial" });
+    const d = "Rinde mejor de claro";
+    earned.push({ id: "especialista-claro", name: "Especialista Claro", icon: "material-symbols:sunny", description: d, howToGet: d, tier: null, category: "especial" });
   } else if (metrics.darkWins > metrics.lightWins) {
-    earned.push({ id: "especialista-oscuro", name: "Especialista Oscuro", icon: "material-symbols:dark-mode", description: "Rinde mejor de oscuro", tier: null, category: "especial" });
+    const d = "Rinde mejor de oscuro";
+    earned.push({ id: "especialista-oscuro", name: "Especialista Oscuro", icon: "material-symbols:dark-mode", description: d, howToGet: d, tier: null, category: "especial" });
   }
 
-  return { earned, progress };
+  const earnedIds = new Set(earned.map((b) => b.id));
+  const locked: LockedBadge[] = SPECIAL_BADGES.filter((s) => !earnedIds.has(s.id)).map((s) => ({
+    id: s.id,
+    name: s.name,
+    icon: s.icon,
+    description: s.description,
+    howToGet: s.description,
+  }));
+
+  return { earned, progress, locked };
 }
