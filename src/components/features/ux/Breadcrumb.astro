@@ -11,7 +11,7 @@ const { pathname, playerNickname } = Astro.props;
 const items = buildBreadcrumbs(pathname, playerNickname);
 ---
 
-<nav class="breadcrumbs text-sm" aria-label="Migas de pan">
+<nav class="breadcrumbs mb-4 text-sm" aria-label="Migas de pan">
   <ul>
     {
       items.map((item) =>
