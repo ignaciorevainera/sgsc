@@ -164,11 +164,13 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
             <MatchCard match={match} />
           ))}
         </div>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          currentUrl={Astro.url}
-        />
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            currentUrl={Astro.url}
+          />
+        )}
       </>
     )
   }

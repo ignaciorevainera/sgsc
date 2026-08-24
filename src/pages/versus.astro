@@ -91,7 +91,14 @@ if (p1Id && p2Id && p1Id !== p2Id) {
     }
   });
 
-  sharedStats = p1Entries.reduce(
+  const shared = p1Entries.reduce<{
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    lastDate: string;
+    winRate: number;
+  }>(
     (acc, e) => {
       const mate = p2ByMatch.get(getMatchInfo(e)?.id ?? "");
       if (!mate || mate.team !== e.team) return acc;
@@ -102,11 +109,12 @@ if (p1Id && p2Id && p1Id !== p2Id) {
       if (info?.date && info.date > acc.lastDate) acc.lastDate = info.date;
       return acc;
     },
-    { played: 0, won: 0, drawn: 0, lastDate: "" },
+    { played: 0, won: 0, drawn: 0, lost: 0, lastDate: "", winRate: 0 },
   );
-  sharedStats.lost = sharedStats.played - sharedStats.won - sharedStats.drawn;
-  sharedStats.winRate =
-    sharedStats.played > 0 ? Math.round((sharedStats.won / sharedStats.played) * 100) : 0;
+  shared.lost = shared.played - shared.won - shared.drawn;
+  shared.winRate =
+    shared.played > 0 ? Math.round((shared.won / shared.played) * 100) : 0;
+  sharedStats = shared;
 
   const { data: h2hData } = await supabase
     .from("view_head_to_head")
@@ -246,6 +254,7 @@ if (p1Id && p2Id && p1Id !== p2Id) {
           </div>
         </div>
 
+        {sharedStats && (
         <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md sm:p-6">
           <div class="flex items-center gap-3">
             <div class="bg-base-200 text-base-content/60 rounded-full p-2" aria-hidden="true">
@@ -295,6 +304,7 @@ if (p1Id && p2Id && p1Id !== p2Id) {
             )
           }
         </div>
+        )}
 
         <div class="bg-base-100 border-base-200 overflow-hidden rounded-xl border shadow-md" role="table" aria-label="Comparativa de estadísticas entre jugadores">
           <div class="bg-base-200 grid grid-cols-3 items-center py-3" role="row">

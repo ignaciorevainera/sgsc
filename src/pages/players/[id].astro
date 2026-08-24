@@ -9,7 +9,7 @@ import { formatDate,
   getYearFromDate,
 } from "@/lib/utils/dateUtils";
 import { computePlayerBadges } from "@/lib/gamification/badges";
-import { computeBestDuoWins, computeNemesisWins, computeComebackStreak, computeBestFieldWins, computeIronMan, computeSocialButterfly } from "@/lib/gamification/metrics";
+import { computeBestDuoWins, computeBestDuoPartner, computeNemesisWins, computeComebackStreak, computeBestFieldWins, computeIronMan, computeSocialButterfly } from "@/lib/gamification/metrics";
 import { computeCumulativePoints } from "@/lib/gamification/progression";
 import BadgeShowcase from "@/components/features/gamification/BadgeShowcase.astro";
 import ProgressionChart from "@/components/features/gamification/ProgressionChart.astro";
@@ -356,19 +356,25 @@ const [{ count: activePlayerCount }, { count: seasonTotalMatches }] = await Prom
   supabase.from("matches").select("id", { count: "exact", head: true }).gte("date", `${seasonYear}-01-01`).lte("date", `${seasonYear}-12-31`),
 ]);
 
+const badgeCoMapped = (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
+const duoPartnerId = computeBestDuoPartner(id, ownBadge, badgeCoMapped);
+const duoPartnerRaw = (teammateRows ?? []).find((t: any) => t.player_id === duoPartnerId)?.player;
+const duoPartnerName = (Array.isArray(duoPartnerRaw) ? duoPartnerRaw[0]?.nickname : duoPartnerRaw?.nickname) ?? null;
+
 const badgeMetrics = {
   matchesPlayed: player.matches_played,
   wins: player.wins,
   points: player.points,
   longestWinStreak: streakInfo.longestWin,
-  bestDuoWins: computeBestDuoWins(id, ownBadge, (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }))),
+  bestDuoWins: computeBestDuoWins(id, ownBadge, badgeCoMapped),
+  bestDuoPartner: duoPartnerName,
   comebackStreak: computeComebackStreak(ownBadge),
   bestFieldWins: computeBestFieldWins(ownBadge),
-  nemesisWins: computeNemesisWins(id, ownBadge, (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }))),
+  nemesisWins: computeNemesisWins(id, ownBadge, badgeCoMapped),
   clutchWinRate: rollingWinRate(outcomesAsc, 5) ?? 0,
   ironMan: computeIronMan(ownBadgeCurrentYear, seasonTotalMatches ?? 0),
   underdog: outcomesAsc.length >= 2 && outcomesAsc[0] === "L" && outcomesAsc[outcomesAsc.length - 1] === "W",
-  socialButterfly: computeSocialButterfly((teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team })), activePlayerCount ?? 0),
+  socialButterfly: computeSocialButterfly(badgeCoMapped, activePlayerCount ?? 0),
   totalClubSeasons: totalClubSeasons,
   playedSeasons: (yearlyStats ?? []).filter((y: any) => y.matches_played >= 3).length,
   lightWins: statsClaro.wins,
@@ -818,7 +824,14 @@ const jsonLd = {
               <p class="text-sm font-black sm:text-base">Puntos por Año</p>
             </div>
           </div>
-          <div id="year-chart" class="h-48 w-full sm:h-64"></div>
+          <div id="year-chart" class="h-48 w-full sm:h-64">
+            <canvas
+              id="year-chart-canvas"
+              data-labels={JSON.stringify(yearsLabels)}
+              data-values={JSON.stringify(pointsByYear)}
+            >
+            </canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -841,7 +854,14 @@ const jsonLd = {
               <p class="text-sm font-black sm:text-base">Rendimiento Mensual</p>
             </div>
           </div>
-          <div id="month-chart" class="h-48 w-full sm:h-64"></div>
+          <div id="month-chart" class="h-48 w-full sm:h-64">
+            <canvas
+              id="month-chart-canvas"
+              data-labels={JSON.stringify(monthsLabels)}
+              data-values={JSON.stringify(pointsByMonth)}
+            >
+            </canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -1024,10 +1044,11 @@ const jsonLd = {
           <span class="text-xs font-bold tracking-wider uppercase opacity-60">Racha</span>
           <StreakBadge info={streakInfo} />
         </div>
-        <div class="text-base-content/60 flex justify-between text-xs">
+        <div class="text-base-content/60 flex flex-col justify-between text-xs">
           <span>Racha de victorias más larga: {streakInfo.longestWin}</span>
           <span>Derrotas: {streakInfo.longestLoss}</span>
         </div>
+        <p class="text-base-content/50 mt-3 text-xs">Cuántos partidos en racha llevás ganados (o perdidos) seguidos.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
@@ -1036,11 +1057,13 @@ const jsonLd = {
           <TrendArrow trend={trend} />
         </div>
         <FormGraph outcomes={outcomesAsc} />
+        <p class="text-base-content/50 mt-3 text-xs">Si jugás mejor o peor que tu promedio de siempre.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
-        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Factor Clutch</div>
+        <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Sangre Fría</div>
         <ClutchMeter clutch={clutch} />
+        <p class="text-base-content/50 mt-3 text-xs">Si subís tu nivel en los partidos más recientes.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
@@ -1050,6 +1073,7 @@ const jsonLd = {
         ) : (
           <span class="text-3xl font-black">{consistency}<span class="text-base opacity-40">/100</span></span>
         )}
+        <p class="text-base-content/50 mt-3 text-xs">Qué tan parejos son tus resultados, de 0 a 100.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
@@ -1059,6 +1083,7 @@ const jsonLd = {
         ) : (
           <span class="text-3xl font-black">{comebackRate}<span class="text-base opacity-40">%</span></span>
         )}
+        <p class="text-base-content/50 mt-3 text-xs">Cuántas veces ganaste el partido justo después de perder uno.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 rounded-xl border p-4 shadow-md">
@@ -1068,11 +1093,13 @@ const jsonLd = {
           <span class="text-base-content/40">vs</span>
           <span class="text-error font-black">{monthName(worstMonth?.month ?? null) ?? "—"}</span>
         </div>
+        <p class="text-base-content/50 mt-3 text-xs">Los meses del año donde jugás mejor y donde peor.</p>
       </div>
 
       <div class="card bg-base-100 border-base-200 col-span-1 rounded-xl border p-4 shadow-md sm:col-span-2 lg:col-span-3">
         <div class="mb-3 text-xs font-bold tracking-wider uppercase opacity-60">Sinergia (top compañeros)</div>
         <SynergyList entries={synergyList} />
+        <p class="text-base-content/50 mt-3 text-xs">Los compañeros con los que más ganás jugando de equipo.</p>
       </div>
 
       <div class="col-span-1 sm:col-span-2 lg:col-span-3">
@@ -1080,6 +1107,7 @@ const jsonLd = {
           <div class="p-4 sm:p-6">
             <div class="mb-4 text-xs font-black tracking-widest uppercase opacity-50">Progresión de Puntos</div>
             <ProgressionChart data={progressionData} id={`progression-${id}`} />
+            <p class="text-base-content/50 mt-3 text-xs">Cómo fue creciendo tu puntaje partido a partido.</p>
           </div>
         </div>
       </div>
@@ -1087,94 +1115,122 @@ const jsonLd = {
   </section>
 </Main>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script
-  is:inline
-  define:vars={{ yearsLabels, pointsByYear, monthsLabels, pointsByMonth }}
->
-  document.addEventListener("DOMContentLoaded", () => {
-    const getColorFromToken = (className, fallback) => {
-      const tokenProbe = document.createElement("span");
-      tokenProbe.className = `${className} hidden`;
-      document.body.appendChild(tokenProbe);
-      const color = getComputedStyle(tokenProbe).color;
-      tokenProbe.remove();
-      return color || fallback;
-    };
+<script>
+  import { Chart } from "chart.js/auto";
+  import type { ChartConfiguration } from "chart.js";
+  import { getChartTheme, onThemeChange, withAlpha, CHART_FONT } from "@/lib/ux/chartTheme";
 
-    const warningColor = getColorFromToken("text-warning", "orange");
-    const secondaryColor = getColorFromToken("text-secondary", "indigo");
+  Chart.defaults.font.family = CHART_FONT;
 
-    // Configuración Común
-    const commonOptions = {
-      chart: {
-        toolbar: { show: false },
-        fontFamily: "inherit",
-        animations: { enabled: true },
+  const buildBar = (canvas: HTMLCanvasElement): Chart => {
+    const theme = getChartTheme();
+    const config: ChartConfiguration<"bar"> = {
+      type: "bar",
+      data: {
+        labels: JSON.parse(canvas.dataset.labels ?? "[]"),
+        datasets: [
+          {
+            label: "Puntos",
+            data: JSON.parse(canvas.dataset.values ?? "[]"),
+            backgroundColor: withAlpha(theme.warning, 0.85),
+            hoverBackgroundColor: theme.warning,
+            borderRadius: 4,
+            barPercentage: 0.5,
+          },
+        ],
       },
-      dataLabels: { enabled: false },
-      grid: {
-        borderColor: "rgba(0,0,0,0.05)",
-        strokeDashArray: 4,
-      },
-      theme: { mode: "light" },
-    };
-
-    // --- GRÁFICO 1: AÑOS (BARRAS) ---
-    const yearOptions = {
-      ...commonOptions,
-      series: [{ name: "Puntos", data: pointsByYear }],
-      chart: {
-        ...commonOptions.chart,
-        type: "bar",
-        height: window.innerWidth < 640 ? 180 : 250,
-        id: "year-chart-el",
-      },
-      colors: [warningColor],
-      plotOptions: {
-        bar: { borderRadius: 4, columnWidth: "50%" },
-      },
-      xaxis: { categories: yearsLabels },
-      yaxis: { stepSize: 10 },
-    };
-
-    // --- GRÁFICO 2: MESES (ÁREA/LÍNEA) ---
-    const monthOptions = {
-      ...commonOptions,
-      series: [{ name: "Puntos", data: pointsByMonth }],
-      chart: {
-        ...commonOptions.chart,
-        type: "area",
-        height: window.innerWidth < 640 ? 180 : 250,
-        id: "month-chart-el",
-      },
-      colors: [secondaryColor],
-      fill: {
-        type: "gradient",
-        gradient: {
-          shadeIntensity: 1,
-          opacityFrom: 0.4,
-          opacityTo: 0.05,
-          stops: [0, 100],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { display: false },
+            border: { color: theme.gridColor },
+            ticks: { color: theme.textColor },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: theme.gridColor, tickBorderDash: [4, 4] },
+            border: { display: false },
+            ticks: { color: theme.textColor, precision: 0 },
+          },
         },
       },
-      stroke: { curve: "smooth", width: 3 },
-      xaxis: { categories: monthsLabels },
-      yaxis: { stepSize: 3 }, // Escala de a 3 puntos (1 victoria)
     };
+    return new Chart(canvas, config);
+  };
 
-    // Renderizar
-    if (document.querySelector("#year-chart")) {
-      new ApexCharts(
-        document.querySelector("#year-chart"),
-        yearOptions,
-      ).render();
-    }
-    if (document.querySelector("#month-chart")) {
-      new ApexCharts(
-        document.querySelector("#month-chart"),
-        monthOptions,
-      ).render();
-    }
+  const buildArea = (canvas: HTMLCanvasElement): Chart => {
+    const theme = getChartTheme();
+    const config: ChartConfiguration<"line"> = {
+      type: "line",
+      data: {
+        labels: JSON.parse(canvas.dataset.labels ?? "[]"),
+        datasets: [
+          {
+            label: "Puntos",
+            data: JSON.parse(canvas.dataset.values ?? "[]"),
+            borderColor: theme.secondary,
+            backgroundColor: (context) => {
+              const { ctx, chartArea } = context.chart;
+              if (!chartArea) return withAlpha(theme.secondary, 0.05);
+              const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+              gradient.addColorStop(0, withAlpha(theme.secondary, 0.05));
+              gradient.addColorStop(1, withAlpha(theme.secondary, 0.4));
+              return gradient;
+            },
+            borderWidth: 3,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { display: false },
+            border: { color: theme.gridColor },
+            ticks: { color: theme.textColor },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: theme.gridColor, tickBorderDash: [4, 4] },
+            border: { display: false },
+            ticks: { color: theme.textColor, precision: 0 },
+          },
+        },
+      },
+    };
+    return new Chart(canvas, config);
+  };
+
+  const charts = new Map<HTMLCanvasElement, Chart>();
+  const builders = new WeakMap<HTMLCanvasElement, (c: HTMLCanvasElement) => Chart>();
+
+  const mount = (canvasId: string, build: (c: HTMLCanvasElement) => Chart) => {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+    if (!canvas || charts.has(canvas)) return;
+    charts.set(canvas, build(canvas));
+    builders.set(canvas, build);
+  };
+
+  mount("year-chart-canvas", buildBar);
+  mount("month-chart-canvas", buildArea);
+
+  onThemeChange(() => {
+    charts.forEach((chart, canvas) => {
+      const build = builders.get(canvas);
+      if (!build) return;
+      chart.destroy();
+      charts.set(canvas, build(canvas));
+    });
   });
 </script>
