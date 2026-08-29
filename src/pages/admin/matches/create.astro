@@ -3,6 +3,7 @@ import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
+import PlayerSearchBar from "@/components/admin/matches/PlayerSearchBar.astro";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -212,8 +213,11 @@ if (Astro.request.method === "POST") {
       Convocatoria
     </div>
 
+    <PlayerSearchBar />
+
     {/* Lista de Jugadores */}
     <div
+      id="playerListContainer"
       class="bg-base-100 border-base-200 max-h-96 overflow-auto rounded-xl border shadow-md"
     >
       {/* Header */}
@@ -237,10 +241,15 @@ if (Astro.request.method === "POST") {
       </div>
 
       {/* Filas de jugadores */}
-      <div class="divide-base-200 divide-y">
+      <div id="playerList" class="divide-base-200 divide-y">
         {
           players?.map((player) => (
-            <div class="hover:bg-base-200/50 grid grid-cols-[1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-3 py-2 transition-colors sm:grid-cols-[1fr_3rem_3rem_3rem] sm:gap-2">
+            <div
+              data-player-row
+              data-player-id={String(player.id)}
+              data-nickname={player.nickname ?? ""}
+              data-is-guest={String(!!player.is_guest)}
+              class="hover:bg-base-200/50 grid grid-cols-[1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-3 py-2 transition-colors sm:grid-cols-[1fr_3rem_3rem_3rem] sm:gap-2">
               {/* Nombre */}
               <div class="flex min-w-0 items-center gap-1">
                 <span
@@ -291,6 +300,10 @@ if (Astro.request.method === "POST") {
             </div>
           ))
         }
+      </div>
+
+      <div id="playerEmptyState" class="hidden py-8 text-center text-sm text-base-content/60">
+        No se encontraron jugadores para "<span id="playerEmptyQuery"></span>"
       </div>
     </div>
 
@@ -599,6 +612,131 @@ if (Astro.request.method === "POST") {
   btnConfirm?.addEventListener("click", () => {
     if (!form) return;
     form.submit(); // Esto envía el POST real al servidor
+  });
+</script>
+
+<script>
+  import { normalizeQuery } from "@/lib/utils/matchPlayerList";
+
+  const searchInput = document.getElementById("playerSearch") as HTMLInputElement | null;
+  const refreshBtn = document.getElementById("btnRefreshPlayers") as HTMLButtonElement | null;
+  const playerList = document.getElementById("playerList") as HTMLElement | null;
+  const emptyState = document.getElementById("playerEmptyState") as HTMLElement | null;
+  const emptyQuery = document.getElementById("playerEmptyQuery") as HTMLElement | null;
+  const countEl = document.getElementById("playerSearchCount") as HTMLElement | null;
+
+  function getRows(): HTMLElement[] {
+    return Array.from(document.querySelectorAll<HTMLElement>("[data-player-row]"));
+  }
+
+  function applyFilter() {
+    const q = normalizeQuery(searchInput?.value ?? "");
+    let visible = 0;
+    for (const row of getRows()) {
+      const nick = normalizeQuery(row.dataset.nickname ?? "");
+      const show = !q || nick.includes(q);
+      row.classList.toggle("hidden", !show);
+      if (show) visible++;
+    }
+    if (emptyState && emptyQuery) {
+      const hasNoResults = visible === 0 && getRows().length > 0;
+      emptyState.classList.toggle("hidden", !hasNoResults);
+      emptyQuery.textContent = searchInput?.value ?? "";
+    }
+    if (countEl) {
+      const total = getRows().length;
+      countEl.textContent = q ? `${visible}/${total}` : `${total}`;
+    }
+  }
+
+  let debounceId: number | undefined;
+  searchInput?.addEventListener("input", () => {
+    window.clearTimeout(debounceId);
+    debounceId = window.setTimeout(applyFilter, 150);
+  });
+
+  applyFilter();
+
+  refreshBtn?.addEventListener("click", async () => {
+    if (!refreshBtn || !playerList) return;
+    refreshBtn.disabled = true;
+    refreshBtn.setAttribute("aria-busy", "true");
+    refreshBtn.classList.add("loading");
+
+    const selectionSnapshot = new Map<string, string>();
+    for (const row of getRows()) {
+      const pid = row.dataset.playerId!;
+      const checked = row.querySelector<HTMLInputElement>(`input[name="player_${pid}"]:checked`);
+      if (checked) selectionSnapshot.set(pid, checked.value);
+    }
+
+    try {
+      const res = await fetch("/api/players", { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const fresh: Array<{ id: string; nickname: string; is_guest: boolean | null }> = await res.json();
+
+      const existingIds = new Set(getRows().map((r) => r.dataset.playerId));
+      const added = fresh.filter((p) => !existingIds.has(String(p.id)));
+
+      if (added.length === 0) {
+        window.dispatchEvent(new CustomEvent("sgsc:toast", { detail: { type: "info", message: "No hay jugadores nuevos" } }));
+        return;
+      }
+
+      added.sort((a, b) => {
+        const ag = a.is_guest ? 1 : 0;
+        const bg = b.is_guest ? 1 : 0;
+        if (ag !== bg) return ag - bg;
+        return (a.nickname ?? "").localeCompare(b.nickname ?? "", "es", { sensitivity: "base" });
+      });
+
+      for (const p of added) {
+        const row = document.createElement("div");
+        row.setAttribute("data-player-row", "");
+        row.dataset.playerId = String(p.id);
+        row.dataset.nickname = p.nickname ?? "";
+        row.dataset.isGuest = String(!!p.is_guest);
+        row.className = "hover:bg-base-200/50 grid grid-cols-[1fr_2.5rem_2.5rem_2.5rem] items-center gap-1 px-3 py-2 transition-colors sm:grid-cols-[1fr_3rem_3rem_3rem] sm:gap-2";
+        row.innerHTML = `
+          <div class="flex min-w-0 items-center gap-1">
+            <span class="tooltip tooltip-right truncate text-xs font-bold sm:text-sm" data-tip=""></span>
+            ${p.is_guest ? '<span class="badge badge-ghost badge-xs border-base-300 shrink-0 opacity-60">INV</span>' : ""}
+          </div>
+          <div class="flex justify-center"><input type="radio" name="player_${p.id}" value="none" class="radio radio-xs sm:radio-sm radio-error" checked /></div>
+          <div class="flex justify-center rounded"><input type="radio" name="player_${p.id}" value="light" class="player-selector radio radio-xs sm:radio-sm radio-warning" /></div>
+          <div class="flex justify-center rounded"><input type="radio" name="player_${p.id}" value="dark" class="player-selector radio radio-xs sm:radio-sm radio-neutral dark:radio-primary" /></div>
+        `;
+        const nickSpan = row.querySelector("span.truncate") as HTMLElement | null;
+        if (nickSpan) {
+          nickSpan.textContent = p.nickname ?? "";
+          nickSpan.setAttribute("data-tip", p.nickname ?? "");
+        }
+        const lightInput = row.querySelector('input[value="light"]') as HTMLInputElement | null;
+        if (lightInput) lightInput.setAttribute("data-nickname", p.nickname ?? "");
+        const darkInput = row.querySelector('input[value="dark"]') as HTMLInputElement | null;
+        if (darkInput) darkInput.setAttribute("data-nickname", p.nickname ?? "");
+        playerList.appendChild(row);
+      }
+
+      const rows = getRows();
+      rows.sort((a, b) => {
+        const ag = a.dataset.isGuest === "true" ? 1 : 0;
+        const bg = b.dataset.isGuest === "true" ? 1 : 0;
+        if (ag !== bg) return ag - bg;
+        return (a.dataset.nickname ?? "").localeCompare(b.dataset.nickname ?? "", "es", { sensitivity: "base" });
+      });
+      for (const r of rows) playerList.appendChild(r);
+
+      applyFilter();
+
+      window.dispatchEvent(new CustomEvent("sgsc:toast", { detail: { type: "success", message: `${added.length} jugador(es) nuevo(s)` } }));
+    } catch (e) {
+      window.dispatchEvent(new CustomEvent("sgsc:toast", { detail: { type: "error", message: "No se pudo actualizar la lista" } }));
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.removeAttribute("aria-busy");
+      refreshBtn.classList.remove("loading");
+    }
   });
 </script>
 
