@@ -1,0 +1,47 @@
+---
+// src/components/admin/matches/PlayerSearchBar.astro
+import { Icon } from "astro-icon/components";
+import SearchInput from "@/components/ui/SearchInput.astro";
+
+interface Props {
+  searchInputId?: string;
+  refreshButtonId?: string;
+  resultsCountId?: string;
+  placeholder?: string;
+}
+const {
+  searchInputId = "playerSearch",
+  refreshButtonId = "btnRefreshPlayers",
+  resultsCountId = "playerSearchCount",
+  placeholder = "Buscar jugador...",
+} = Astro.props;
+---
+
+<div class="flex items-center gap-2" role="search" aria-label="Buscar jugadores">
+  <div class="flex-1">
+    <SearchInput
+      id={searchInputId}
+      type="search"
+      placeholder={placeholder}
+      ariaLabel="Buscar jugador por apodo"
+      class="w-full"
+    />
+  </div>
+
+  <button
+    id={refreshButtonId}
+    type="button"
+    class="btn btn-ghost btn-sm btn-square shrink-0 rounded-xl border-base-300"
+    aria-label="Actualizar lista de jugadores"
+    title="Actualizar lista de jugadores"
+  >
+    <Icon name="material-symbols:refresh" size={18} aria-hidden="true" />
+    <span class="sr-only">Actualizar</span>
+  </button>
+
+  <span id={resultsCountId} class="text-base-content/60 min-w-12 text-right text-xs tabular-nums" aria-live="polite"></span>
+</div>
+
+<div id="playerSearchEmpty" class="text-base-content/60 hidden py-6 text-center text-sm" aria-live="polite">
+  No se encontraron jugadores para "<span id="playerSearchQuery"></span>"
+</div>
