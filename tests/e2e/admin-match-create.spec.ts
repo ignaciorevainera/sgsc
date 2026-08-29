@@ -16,9 +16,10 @@ test.describe("Admin Match Create — buscador + refresh", () => {
     const firstRowNick = await page.locator("[data-player-row]").first().getAttribute("data-nickname");
     expect(firstRowNick).toBeTruthy();
 
-    // Escribir query que matchee 1 jugador
+    // Escribir query que matchee 1 jugador — debounce 150ms so wait
     const partial = firstRowNick!.slice(0, 3);
     await page.fill("#playerSearch", partial);
+    await page.waitForTimeout(250);
 
     const visibleRows = page.locator("[data-player-row]:not(.hidden)");
     await expect(visibleRows.first()).toBeVisible();
@@ -27,12 +28,14 @@ test.describe("Admin Match Create — buscador + refresh", () => {
 
     // Query sin resultados
     await page.fill("#playerSearch", "zzz_no_existe_123");
+    await page.waitForTimeout(250);
     await expect(page.locator("[data-player-row]:not(.hidden)")).toHaveCount(0);
     await expect(page.locator("#playerEmptyState")).toBeVisible();
     await expect(page.locator("#playerEmptyQuery")).toContainText("zzz_no_existe_123");
 
     // Limpiar vuelve a mostrar todos
     await page.fill("#playerSearch", "");
+    await page.waitForTimeout(250);
     await expect(page.locator("[data-player-row]:not(.hidden)")).not.toHaveCount(0);
   });
 
@@ -50,12 +53,10 @@ test.describe("Admin Match Create — buscador + refresh", () => {
     await light.check({ force: true });
     const lightName = await light.getAttribute("data-nickname");
 
-    // Interceptar /api/players para simular jugador nuevo sin necesitar mutación real
+    // Static mock — no route.fetch to avoid recursion/brittleness
+    const newPlayer = { id: "00000000-0000-0000-0000-000000000999", nickname: "ZZZ_Nuevo_E2E", is_guest: false };
     await page.route("**/api/players", async route => {
-      const res = await route.fetch();
-      const json = await res.json();
-      const fresh = [...json, { id: "00000000-0000-0000-0000-000000000999", nickname: "ZZZ_Nuevo_E2E", is_guest: false }];
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(fresh) });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([newPlayer]) });
     });
 
     const countBefore = await page.locator("[data-player-row]").count();
@@ -75,9 +76,14 @@ test.describe("Admin Match Create — buscador + refresh", () => {
     const page = authenticatedPage;
     await page.goto("/admin/matches/create");
     const countBefore = await page.locator("[data-player-row]").count();
+    // Fulfill with empty array — deterministic, no fetch
+    await page.route("**/api/players", async route => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
+    });
     await page.click("#btnRefreshPlayers");
     // esperar que botón se re-habilite
     await expect(page.locator("#btnRefreshPlayers")).toBeEnabled({ timeout: 5000 });
     await expect(page.locator("[data-player-row]")).toHaveCount(countBefore);
+    await page.unroute("**/api/players");
   });
 });

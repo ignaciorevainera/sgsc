@@ -15,13 +15,18 @@ export function filterPlayerIds(players: MatchPlayer[], query: string): Set<stri
   return out;
 }
 
+export function comparePlayers(
+  a: { is_guest: boolean | null; nickname: string | null },
+  b: { is_guest: boolean | null; nickname: string | null },
+): number {
+  const ag = a.is_guest ? 1 : 0;
+  const bg = b.is_guest ? 1 : 0;
+  if (ag !== bg) return ag - bg;
+  return (a.nickname ?? "").localeCompare(b.nickname ?? "", "es", { sensitivity: "base" });
+}
+
 export function sortPlayers(players: MatchPlayer[]): MatchPlayer[] {
-  return [...players].sort((a,b) => {
-    const ag = a.is_guest ? 1 : 0;
-    const bg = b.is_guest ? 1 : 0;
-    if (ag !== bg) return ag - bg;
-    return (a.nickname ?? "").localeCompare(b.nickname ?? "", "es", { sensitivity: "base" });
-  });
+  return [...players].sort(comparePlayers);
 }
 
 export function mergePlayers(existing: MatchPlayer[], fresh: MatchPlayer[]): { merged: MatchPlayer[]; added: MatchPlayer[] } {

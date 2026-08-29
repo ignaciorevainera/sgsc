@@ -616,7 +616,7 @@ if (Astro.request.method === "POST") {
 </script>
 
 <script>
-  import { normalizeQuery } from "@/lib/utils/matchPlayerList";
+  import { normalizeQuery, comparePlayers } from "@/lib/utils/matchPlayerList";
 
   const searchInput = document.getElementById("playerSearch") as HTMLInputElement | null;
   const refreshBtn = document.getElementById("btnRefreshPlayers") as HTMLButtonElement | null;
@@ -663,13 +663,6 @@ if (Astro.request.method === "POST") {
     refreshBtn.setAttribute("aria-busy", "true");
     refreshBtn.classList.add("loading");
 
-    const selectionSnapshot = new Map<string, string>();
-    for (const row of getRows()) {
-      const pid = row.dataset.playerId!;
-      const checked = row.querySelector<HTMLInputElement>(`input[name="player_${pid}"]:checked`);
-      if (checked) selectionSnapshot.set(pid, checked.value);
-    }
-
     try {
       const res = await fetch("/api/players", { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -683,12 +676,7 @@ if (Astro.request.method === "POST") {
         return;
       }
 
-      added.sort((a, b) => {
-        const ag = a.is_guest ? 1 : 0;
-        const bg = b.is_guest ? 1 : 0;
-        if (ag !== bg) return ag - bg;
-        return (a.nickname ?? "").localeCompare(b.nickname ?? "", "es", { sensitivity: "base" });
-      });
+      added.sort(comparePlayers);
 
       for (const p of added) {
         const row = document.createElement("div");
@@ -719,12 +707,12 @@ if (Astro.request.method === "POST") {
       }
 
       const rows = getRows();
-      rows.sort((a, b) => {
-        const ag = a.dataset.isGuest === "true" ? 1 : 0;
-        const bg = b.dataset.isGuest === "true" ? 1 : 0;
-        if (ag !== bg) return ag - bg;
-        return (a.dataset.nickname ?? "").localeCompare(b.dataset.nickname ?? "", "es", { sensitivity: "base" });
-      });
+      rows.sort((a, b) =>
+        comparePlayers(
+          { is_guest: a.dataset.isGuest === "true", nickname: a.dataset.nickname ?? null },
+          { is_guest: b.dataset.isGuest === "true", nickname: b.dataset.nickname ?? null },
+        ),
+      );
       for (const r of rows) playerList.appendChild(r);
 
       applyFilter();
