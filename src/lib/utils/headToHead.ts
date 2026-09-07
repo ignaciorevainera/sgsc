@@ -6,43 +6,31 @@ export interface PartnerResult {
   losses: number;
 }
 
-export async function computeHeadToHead(
-  supabase: any,
+export type TeammateRivalEntry = {
+  player_id: string;
+  team: string;
+  match_id: string;
+  player: { nickname: string } | { nickname: string }[] | null;
+};
+
+export function calculateHeadToHead(
   playerId: string,
   allMatchEntries: { match_id: string; team: string; match: unknown; player?: unknown }[],
-): Promise<{
+  teammatesAndRivals: TeammateRivalEntry[],
+): {
   bestPartner: PartnerResult | undefined;
   nemesis: PartnerResult | undefined;
-}> {
-  const myMatchIds = allMatchEntries.map((m) => m.match_id);
+} {
   const myMatchEntriesByMatchId = new Map(
     allMatchEntries.map((entry) => [entry.match_id, entry]),
   );
-
-  if (myMatchIds.length === 0) {
-    return { bestPartner: undefined, nemesis: undefined };
-  }
-
-  const res = await supabase
-    .from("match_players")
-    .select(
-      `player_id, team, match_id, player:players!inner (nickname, is_guest)`,
-    )
-    .in("match_id", myMatchIds)
-    .neq("player_id", playerId)
-    .eq("player.is_guest", false);
-
-  const teammatesAndRivals = (res.data ?? []) as {
-    player_id: string;
-    team: string;
-    match_id: string;
-    player: { nickname: string } | { nickname: string }[] | null;
-  }[];
 
   const partnerStats = new Map<string, PartnerResult>();
   const rivalStats = new Map<string, PartnerResult>();
 
   teammatesAndRivals.forEach((entry) => {
+    if (entry.player_id === playerId) return;
+
     const myEntry = myMatchEntriesByMatchId.get(entry.match_id);
     if (!myEntry) return;
 
@@ -101,4 +89,37 @@ export async function computeHeadToHead(
     )[0];
 
   return { bestPartner, nemesis };
+}
+
+export async function computeHeadToHead(
+  supabase: any,
+  playerId: string,
+  allMatchEntries: { match_id: string; team: string; match: unknown; player?: unknown }[],
+  preloadedTeammates?: TeammateRivalEntry[],
+): Promise<{
+  bestPartner: PartnerResult | undefined;
+  nemesis: PartnerResult | undefined;
+}> {
+  if (allMatchEntries.length === 0) {
+    return { bestPartner: undefined, nemesis: undefined };
+  }
+
+  if (preloadedTeammates) {
+    return calculateHeadToHead(playerId, allMatchEntries, preloadedTeammates);
+  }
+
+  const myMatchIds = allMatchEntries.map((m) => m.match_id);
+
+  const res = await supabase
+    .from("match_players")
+    .select(
+      `player_id, team, match_id, player:players!inner (nickname, is_guest)`,
+    )
+    .in("match_id", myMatchIds)
+    .neq("player_id", playerId)
+    .eq("player.is_guest", false);
+
+  const teammatesAndRivals = (res.data ?? []) as TeammateRivalEntry[];
+
+  return calculateHeadToHead(playerId, allMatchEntries, teammatesAndRivals);
 }

@@ -14,7 +14,7 @@ import { computeCumulativePoints } from "@/lib/gamification/progression";
 import BadgeShowcase from "@/components/features/gamification/BadgeShowcase.astro";
 import ProgressionChart from "@/components/features/gamification/ProgressionChart.astro";
 import { computeColorStats } from "@/lib/utils/colorStats";
-import { computeHeadToHead } from "@/lib/utils/headToHead";
+import { calculateHeadToHead } from "@/lib/utils/headToHead";
 import { computeStreaks } from "@/lib/stats/streaks";
 import { rollingWinRate, computeTrend } from "@/lib/stats/form";
 import { computeClutch } from "@/lib/stats/clutch";
@@ -34,7 +34,6 @@ import Main from "@/layouts/Main.astro";
 import StatCard from "@/components/players/StatCard.astro";
 import InfoCard from "@/components/players/InfoCard.astro";
 import PlayerFutCard from "@/components/players/PlayerFutCard.astro";
-import BadgeItem from "@/components/players/BadgeItem.astro";
 import Breadcrumb from "@/components/features/ux/Breadcrumb.astro";
 import ShareButtons from "@/components/features/ux/ShareButtons.astro";
 
@@ -43,16 +42,16 @@ const { id } = Astro.params;
 
 if (!id) return Astro.redirect("/players");
 
-// 2. Consultas principales en paralelo
+const currentYear = getCurrentYear();
+
 const [
   { data: playerInfo },
   { data: playerStats },
   { data: yearlyStats },
   { data: allStats },
-  { data: allHistory },
-  { data: allMatchEntries },
-  { data: allSeasonsData },
-  { data: ownBadgeRows },
+  { data: allPlayerMatches },
+  { count: activePlayerCount },
+  { count: seasonTotalMatches },
 ] = await Promise.all([
   supabase
     .from("players")
@@ -76,10 +75,13 @@ const [
     .from("match_players")
     .select(
       `
+      match_id,
       team,
       matches!inner (
+        id,
         date,
         result,
+        field_id,
         fields (name)
       )
     `,
@@ -87,23 +89,45 @@ const [
     .eq("player_id", id)
     .order("matches(date)", { ascending: false }),
   supabase
-    .from("match_players")
-    .select(
-      `
-      match_id,
-      team,
-      match:matches!inner (result)
-    `,
-    )
-    .eq("player_id", id),
-  supabase.from("view_player_stats_yearly").select("year"),
+    .from("players")
+    .select("id", { count: "exact", head: true })
+    .eq("is_guest", false),
   supabase
-    .from("match_players")
-    .select("match_id, team, match:matches!inner (date, result, field_id)")
-    .eq("player_id", id),
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .gte("date", `${currentYear}-01-01`)
+    .lte("date", `${currentYear}-12-31`),
 ]);
 
 if (!playerStats) return Astro.redirect("/players");
+
+const allHistory = allPlayerMatches ?? [];
+const allMatchEntries = allHistory.map((m) => ({
+  match_id: m.match_id,
+  team: m.team,
+  match: m.matches,
+}));
+const myMatchIds = allHistory.map((m) => m.match_id);
+
+const ownBadge = allHistory.map((r: any) => {
+  const m = Array.isArray(r.matches) ? r.matches[0] : r.matches;
+  return {
+    match_id: r.match_id,
+    date: m?.date ?? "",
+    team: r.team,
+    result: m?.result ?? "",
+    field_id: m?.field_id ?? null,
+  };
+});
+
+const { data: teammateRows } = myMatchIds.length > 0
+  ? await supabase
+      .from("match_players")
+      .select("player_id, team, match_id, player:players!inner (nickname, is_guest)")
+      .in("match_id", myMatchIds)
+      .neq("player_id", id)
+      .eq("player.is_guest", false)
+  : { data: [] };
 
 const player = {
   birth_date: playerInfo?.birth_date ?? null,
@@ -224,7 +248,11 @@ const outcomeConfigs: Record<MatchOutcome, OutcomeConfig> = {
 const getOutcomeConfig = (outcome: MatchOutcome): OutcomeConfig =>
   outcomeConfigs[outcome] || outcomeConfigs.L;
 
-const { bestPartner, nemesis } = await computeHeadToHead(supabase, id, allMatchEntries ?? []);
+const { bestPartner, nemesis } = calculateHeadToHead(
+  id,
+  allMatchEntries,
+  (teammateRows ?? []) as any,
+);
 
 // --- LÓGICA DE COLOR (CLARO vs OSCURO) ---
 const { light: statsClaro, dark: statsOscuro } = computeColorStats(allMatchEntries ?? []);
@@ -273,9 +301,8 @@ allHistory?.forEach((m) => {
   }
 });
 
-// Extraemos los años únicos que ha tenido el club (Ej: 2024, 2025, 2026)
-const uniqueClubYears = [...new Set(allSeasonsData?.map((s) => s.year) ?? [])];
-const totalClubSeasons = uniqueClubYears.length;
+const seasonYears = [...new Set((yearlyStats ?? []).map((y) => y.year))];
+const totalClubSeasons = seasonYears.length || 1;
 
 const outcomesAsc: Outcome[] = [...(allHistory ?? [])]
   .reverse()
@@ -293,7 +320,7 @@ const consistency = computeConsistency(outcomesAsc);
 const comebackRate = computeComebackRate(outcomesAsc);
 
 const matchInputs: MatchOutcomeInput[] = (allHistory ?? [])
-  .map((entry) => {
+  .map((entry): MatchOutcomeInput | null => {
     const m = getMatchData(entry.matches);
     if (!m) return null;
     return {
@@ -307,13 +334,6 @@ const matchInputs: MatchOutcomeInput[] = (allHistory ?? [])
 
 const { bestMonth, worstMonth } = computeBestWorstMonth(matchInputs);
 const monthName = (m: number | null) => (m ? monthsLabels[m - 1] : null);
-
-const { data: teammateRows } = await supabase
-  .from("match_players")
-  .select("player_id, team, match_id, player:players!inner (nickname)")
-  .in("match_id", (allMatchEntries ?? []).map((m) => m.match_id))
-  .neq("player_id", id)
-  .eq("player.is_guest", false);
 
 const myEntryByMatch = new Map(
   (allMatchEntries ?? []).map((e) => [e.match_id, e]),
@@ -344,17 +364,7 @@ const synergyMatches = (teammateRows ?? [])
 
 const synergyList = computeSynergy(synergyMatches);
 
-const ownBadge = (ownBadgeRows ?? []).map((r: any) => {
-  const m = Array.isArray(r.match) ? r.match[0] : r.match;
-  return { match_id: r.match_id, date: m?.date ?? "", team: r.team, result: m?.result ?? "", field_id: m?.field_id ?? null };
-});
-
-const seasonYear = totalClubSeasons > 0 ? Math.max(...uniqueClubYears) : getCurrentYear();
-const ownBadgeCurrentYear = ownBadge.filter((r) => getYearFromDate(r.date) === seasonYear);
-const [{ count: activePlayerCount }, { count: seasonTotalMatches }] = await Promise.all([
-  supabase.from("players").select("id", { count: "exact", head: true }).eq("is_guest", false),
-  supabase.from("matches").select("id", { count: "exact", head: true }).gte("date", `${seasonYear}-01-01`).lte("date", `${seasonYear}-12-31`),
-]);
+const ownBadgeCurrentYear = ownBadge.filter((r) => getYearFromDate(r.date) === currentYear);
 
 const badgeCoMapped = (teammateRows ?? []).map((c: any) => ({ match_id: c.match_id, player_id: c.player_id, team: c.team }));
 const duoPartnerId = computeBestDuoPartner(id, ownBadge, badgeCoMapped);
