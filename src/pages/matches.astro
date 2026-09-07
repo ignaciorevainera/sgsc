@@ -17,7 +17,7 @@ import Title from "@/components/shared/Title.astro";
 const MATCHES_PER_PAGE = 20;
 
 const filters = getFilters<MatchFilters>(Astro.url, {
-  defaults: { year: "", from: "", to: "", field_id: "", page: 1 },
+  defaults: { year: "", from: "", to: "", field_id: "", video: "", result: "", page: 1 },
 });
 
 const { data: matches, error } = await supabase
@@ -67,6 +67,14 @@ if (filters.to) {
 if (filters.field_id) {
   filtered = filtered.filter((m) => m.field_id === filters.field_id);
 }
+if (filters.video === "with") {
+  filtered = filtered.filter((m) => Boolean(m.video_url && m.video_url.trim() !== ""));
+} else if (filters.video === "without") {
+  filtered = filtered.filter((m) => !m.video_url || m.video_url.trim() === "");
+}
+if (filters.result) {
+  filtered = filtered.filter((m) => m.result === filters.result);
+}
 
 const totalPages = Math.max(1, Math.ceil(filtered.length / MATCHES_PER_PAGE));
 const currentPage = Math.min(filters.page, totalPages);
@@ -77,7 +85,7 @@ const hasError = !!error;
 const hasMatches = !hasError && paginatedMatches.length > 0;
 
 const hasActiveFilters =
-  filters.year !== "" || filters.from !== "" || filters.to !== "" || filters.field_id !== "";
+  filters.year !== "" || filters.from !== "" || filters.to !== "" || filters.field_id !== "" || filters.video !== "" || filters.result !== "";
 
 let matchesByYear: Record<string, typeof filtered> = {};
 let years: string[] = [];
@@ -93,7 +101,7 @@ if (!hasActiveFilters) {
   years = Object.keys(matchesByYear).sort((a, b) => Number(b) - Number(a));
 }
 
-const clearFilterUrl = clearFilters(Astro.url, ["year", "from", "to", "field_id", "page"]);
+const clearFilterUrl = clearFilters(Astro.url, ["year", "from", "to", "field_id", "video", "result", "page"]);
 const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
 ---
 
@@ -104,7 +112,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   />
 
   <FilterBar hasActiveFilters={hasActiveFilters} clearUrl={clearUrl}>
-    <div class="form-control">
+    <div class="form-control w-full sm:w-auto sm:flex-1">
       <label for="year" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Año</span>
       </label>
@@ -120,7 +128,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         ))}
       </select>
     </div>
-    <div class="form-control">
+    <div class="form-control w-full sm:w-auto sm:flex-1">
       <label for="from" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Desde</span>
       </label>
@@ -133,7 +141,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         aria-label="Fecha desde"
       />
     </div>
-    <div class="form-control">
+    <div class="form-control w-full sm:w-auto sm:flex-1">
       <label for="to" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Hasta</span>
       </label>
@@ -146,7 +154,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         aria-label="Fecha hasta"
       />
     </div>
-    <div class="form-control">
+    <div class="form-control w-full sm:w-auto sm:flex-1">
       <label for="field_id" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Cancha</span>
       </label>
@@ -160,6 +168,37 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         {fieldsList?.map((f) => (
           <option value={f.id} selected={filters.field_id === f.id}>{f.name}</option>
         ))}
+      </select>
+    </div>
+    <div class="form-control w-full sm:w-auto sm:flex-1">
+      <label for="video" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Grabación</span>
+      </label>
+      <select
+        id="video"
+        name="video"
+        class="select select-sm md:select-md w-full rounded-xl"
+        aria-label="Filtrar por grabación"
+      >
+        <option value="" selected={!filters.video}>Todas</option>
+        <option value="with" selected={filters.video === "with"}>Con grabación</option>
+        <option value="without" selected={filters.video === "without"}>Sin grabación</option>
+      </select>
+    </div>
+    <div class="form-control w-full sm:w-auto sm:flex-1">
+      <label for="result" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Resultado</span>
+      </label>
+      <select
+        id="result"
+        name="result"
+        class="select select-sm md:select-md w-full rounded-xl"
+        aria-label="Filtrar por resultado"
+      >
+        <option value="" selected={!filters.result}>Todos</option>
+        <option value="light" selected={filters.result === "light"}>Equipo Claro</option>
+        <option value="dark" selected={filters.result === "dark"}>Equipo Oscuro</option>
+        <option value="draw" selected={filters.result === "draw"}>Empate</option>
       </select>
     </div>
   </FilterBar>
@@ -187,11 +226,16 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   }
 
   {
+    hasMatches && (
+      <p class="text-base-content/60 mb-4 text-sm font-bold uppercase" role="status">
+        {`${filtered.length} ${filtered.length === 1 ? "partido" : "partidos"} en total${hasActiveFilters ? " encontrados" : ""}`}
+      </p>
+    )
+  }
+
+  {
     hasActiveFilters && hasMatches && (
       <>
-        <p class="text-base-content/60 mb-4 text-sm font-bold uppercase" role="status">
-          {`${filtered.length} ${filtered.length === 1 ? "partido encontrado" : "partidos encontrados"}${filters.year ? ` en ${filters.year}` : ""}`}
-        </p>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {paginatedMatches.map((match: any) => (
             <MatchCard match={match} />
@@ -237,6 +281,8 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   const from = document.getElementById("from") as HTMLInputElement | null;
   const to = document.getElementById("to") as HTMLInputElement | null;
   const fieldId = document.getElementById("field_id") as HTMLSelectElement | null;
+  const video = document.getElementById("video") as HTMLSelectElement | null;
+  const result = document.getElementById("result") as HTMLSelectElement | null;
 
   const update = () => {
     const url = new URL(window.location.href);
@@ -248,6 +294,10 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
     else url.searchParams.delete("to");
     if (fieldId && fieldId.value) url.searchParams.set("field_id", fieldId.value);
     else url.searchParams.delete("field_id");
+    if (video && video.value) url.searchParams.set("video", video.value);
+    else url.searchParams.delete("video");
+    if (result && result.value) url.searchParams.set("result", result.value);
+    else url.searchParams.delete("result");
     url.searchParams.delete("page");
     window.location.href = url.toString();
   };
@@ -256,6 +306,8 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   from?.addEventListener("change", update);
   to?.addEventListener("change", update);
   fieldId?.addEventListener("change", update);
+  video?.addEventListener("change", update);
+  result?.addEventListener("change", update);
 </script>
 
 

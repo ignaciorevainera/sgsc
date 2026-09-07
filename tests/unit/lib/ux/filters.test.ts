@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getFilters, setFilter, clearFilters } from "../../../../src/lib/ux/filters";
+import type { MatchFilters } from "../../../../src/lib/ux/types";
 
 describe("getFilters", () => {
   it("reads all URL params into typed object", () => {
@@ -8,6 +9,22 @@ describe("getFilters", () => {
       defaults: { search: "", sort: "name", active: false },
     });
     expect(filters).toEqual({ search: "juan", sort: "points", active: true });
+  });
+
+  it("reads match filters including video and result", () => {
+    const url = new URL("https://sgsc.vercel.app/matches?year=2024&video=with&result=light&page=2");
+    const filters = getFilters<MatchFilters>(url, {
+      defaults: { year: "", from: "", to: "", field_id: "", video: "", result: "", page: 1 },
+    });
+    expect(filters).toEqual({
+      year: "2024",
+      from: "",
+      to: "",
+      field_id: "",
+      video: "with",
+      result: "light",
+      page: 2,
+    });
   });
 
   it("uses defaults when params are missing", () => {

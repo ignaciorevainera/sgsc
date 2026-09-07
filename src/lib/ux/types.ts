@@ -14,6 +14,8 @@ export interface MatchFilters {
   from: string;
   to: string;
   field_id: string;
+  video: string;
+  result: string;
   page: number;
 }
 
