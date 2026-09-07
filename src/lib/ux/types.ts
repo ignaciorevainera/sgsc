@@ -3,6 +3,7 @@ export interface FilterOptions<T> {
 }
 
 export interface PlayerFilters {
+  [key: string]: unknown;
   search: string;
   sort: "name" | "points" | "wins" | "matches";
   active: boolean;
@@ -20,10 +21,12 @@ export interface MatchFilters {
 }
 
 export interface RankingFilters {
+  [key: string]: unknown;
   min_matches: number;
 }
 
 export interface FieldFilters {
+  [key: string]: unknown;
   city: string;
   sort: "matches" | "name";
 }
