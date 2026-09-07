@@ -65,13 +65,13 @@ if (season === "Histórico") {
     .eq("year", Number(season));
 }
 
-// Filtramos solo socios (no invitados)
-// AHORA ESTO FUNCIONARÁ PORQUE LA VISTA YA TIENE 'is_guest'
-const { data: rawPlayers, error } = await query.eq("is_guest", false);
+const [{ data: rawPlayers, error }, { data: streaksData }] = await Promise.all([
+  query.eq("is_guest", false),
+  supabase
+    .from("view_player_streaks")
+    .select("player_id, current_streak_type, current_streak_length"),
+]);
 
-const { data: streaksData } = await supabase
-  .from("view_player_streaks")
-  .select("player_id, current_streak_type, current_streak_length");
 const streakByPlayer = new Map(
   (streaksData ?? []).map((s) => [s.player_id, s]),
 );

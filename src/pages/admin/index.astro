@@ -8,24 +8,23 @@ import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
 
-// Obtener conteos rápidos para mostrar en el dashboard
-const { count: matchCount } = await supabase
-  .from("matches")
-  .select("id", { count: "exact", head: true });
-
-// Jugadores habituales (socios) activos
-const { count: regularPlayerCount } = await supabase
-  .from("players")
-  .select("id", { count: "exact", head: true })
-  .eq("is_active", true)
-  .eq("is_guest", false);
-
-// Jugadores invitados activos
-const { count: guestPlayerCount } = await supabase
-  .from("players")
-  .select("id", { count: "exact", head: true })
-  .eq("is_active", true)
-  .eq("is_guest", true);
+const [
+  { count: matchCount },
+  { count: regularPlayerCount },
+  { count: guestPlayerCount },
+] = await Promise.all([
+  supabase.from("matches").select("id", { count: "exact", head: true }),
+  supabase
+    .from("players")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true)
+    .eq("is_guest", false),
+  supabase
+    .from("players")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true)
+    .eq("is_guest", true),
+]);
 ---
 
 <Main title="Panel de Administración" contentWidth="admin">

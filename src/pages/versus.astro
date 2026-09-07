@@ -34,18 +34,21 @@ let sharedStats: {
 } | null = null;
 
 if (p1Id && p2Id && p1Id !== p2Id) {
-  const { data: basicInfo } = await supabase
-    .from("players")
-    .select("id, nickname")
-    .in("id", [p1Id, p2Id]);
+  const p1Basic = players?.find((p) => String(p.id) === p1Id);
+  const p2Basic = players?.find((p) => String(p.id) === p2Id);
 
-  const p1Basic = basicInfo?.find((p) => String(p.id) === p1Id);
-  const p2Basic = basicInfo?.find((p) => String(p.id) === p2Id);
-
-  const { data: history } = await supabase
-    .from("match_players")
-    .select("player_id, team, match:matches!inner (id, result, date)")
-    .in("player_id", [p1Id, p2Id]);
+  const [{ data: history }, { data: h2hData }] = await Promise.all([
+    supabase
+      .from("match_players")
+      .select("player_id, team, match:matches!inner (id, result, date)")
+      .in("player_id", [p1Id, p2Id]),
+    supabase
+      .from("view_head_to_head")
+      .select("matches_against, a_wins, b_wins, draws, shared_teams, a_win_rate, last_5_outcomes")
+      .eq("player_a_id", p1Id)
+      .eq("player_b_id", p2Id)
+      .maybeSingle(),
+  ]);
 
   type MatchEntry = {
     player_id: string;
@@ -115,13 +118,6 @@ if (p1Id && p2Id && p1Id !== p2Id) {
   shared.winRate =
     shared.played > 0 ? Math.round((shared.won / shared.played) * 100) : 0;
   sharedStats = shared;
-
-  const { data: h2hData } = await supabase
-    .from("view_head_to_head")
-    .select("matches_against, a_wins, b_wins, draws, shared_teams, a_win_rate, last_5_outcomes")
-    .eq("player_a_id", p1Id)
-    .eq("player_b_id", p2Id)
-    .maybeSingle();
 
   if (h2hData) {
     h2h = {

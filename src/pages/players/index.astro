@@ -2,7 +2,7 @@
 // src/pages/players/index.astro
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
-import { supabase } from "@/lib/supabase";
+import { createAstroSupabase } from "@/lib/supabase";
 import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { PlayerFilters } from "@/lib/ux/types";
 import Alert from "@/components/shared/Alert.astro";
@@ -13,6 +13,8 @@ import Main from "@/layouts/Main.astro";
 import PlayerFutCard from "@/components/players/PlayerFutCard.astro";
 import SearchInput from "@/components/ui/SearchInput.astro";
 import Title from "@/components/shared/Title.astro";
+
+const supabase = createAstroSupabase(Astro);
 
 const filters = getFilters(Astro.url, {
   defaults: { search: "", sort: "name" } as const,

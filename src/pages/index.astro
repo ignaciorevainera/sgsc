@@ -2,24 +2,18 @@
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
 import { Icon } from "astro-icon/components";
-import { supabase } from "@/lib/supabase";
+import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
 import LiveMatchCounter from "@/components/index/LiveMatchCounter.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@/components/MatchCard.astro";
 
-// --- CONSULTAS A SUPABASE ---
+const supabase = createAstroSupabase(Astro);
 
-// 1. Contadores + último partido (en paralelo)
-const [{ error: matchesCountError }, {}, {}, { data: lastMatchData }] =
+const [{ error: matchesCountError }, { data: lastMatchData }] =
   await Promise.all([
     supabase.from("matches").select("id", { count: "exact", head: true }),
-    supabase
-      .from("players")
-      .select("id", { count: "exact", head: true })
-      .eq("is_guest", false),
-    supabase.from("fields").select("id", { count: "exact", head: true }),
     supabase
       .from("matches")
       .select(

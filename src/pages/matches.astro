@@ -1,7 +1,7 @@
 ---
 Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
 
-import { supabase } from "@lib/supabase";
+import { createAstroSupabase } from "@/lib/supabase";
 import { getYearFromDate } from "@/lib/utils/dateUtils";
 import { getFilters, clearFilters } from "@/lib/ux/filters";
 import type { MatchFilters } from "@/lib/ux/types";
@@ -14,34 +14,37 @@ import Main from "@/layouts/Main.astro";
 import MatchCard from "@components/MatchCard.astro";
 import Title from "@/components/shared/Title.astro";
 
+const supabase = createAstroSupabase(Astro);
+
 const MATCHES_PER_PAGE = 20;
 
 const filters = getFilters<MatchFilters>(Astro.url, {
   defaults: { year: "", from: "", to: "", field_id: "", video: "", result: "", page: 1 },
 });
 
-const { data: matches, error } = await supabase
-  .from("matches")
-  .select(
+const [{ data: matches, error }, { data: fieldsList }] = await Promise.all([
+  supabase
+    .from("matches")
+    .select(
+      `
+      id,
+      date,
+      result,
+      video_url,
+      field_id,
+      fields (name),
+      match_players (
+        team,
+        players (nickname)
+      )
     `
-    id,
-    date,
-    result,
-    video_url,
-    field_id,
-    fields (name),
-    match_players (
-      team,
-      players (nickname)
     )
-  `
-  )
-  .order("date", { ascending: false });
-
-const { data: fieldsList } = await supabase
-  .from("fields")
-  .select("id, name, city")
-  .order("name");
+    .order("date", { ascending: false }),
+  supabase
+    .from("fields")
+    .select("id, name, city")
+    .order("name"),
+]);
 
 let filtered = matches || [];
 
