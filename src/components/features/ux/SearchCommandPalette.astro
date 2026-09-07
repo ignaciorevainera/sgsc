@@ -4,11 +4,10 @@ import SearchInput from "@/components/ui/SearchInput.astro";
 import { Icon } from "astro-icon/components";
 
 interface Props {
-  items: SearchItem[];
+  items?: SearchItem[];
 }
 
-const { items } = Astro.props;
-const serializedItems = JSON.stringify(items);
+const { items = [] } = Astro.props;
 ---
 
 <dialog id="search-modal" class="modal" data-items={JSON.stringify(items)}>
@@ -72,7 +71,38 @@ const serializedItems = JSON.stringify(items);
   const resultsDiv = document.getElementById("search-results") as HTMLElement | null;
   const empty = document.getElementById("search-empty") as HTMLElement | null;
 
-  const items: SearchItem[] = JSON.parse(modal?.dataset.items || "[]");
+  let items: SearchItem[] = JSON.parse(modal?.dataset.items || "[]");
+  let isLoaded = items.length > 0;
+  let loadPromise: Promise<SearchItem[]> | null = null;
+
+  async function loadItems(): Promise<SearchItem[]> {
+    if (isLoaded) return items;
+    if (loadPromise) return loadPromise;
+
+    loadPromise = (async () => {
+      try {
+        const cached = sessionStorage.getItem("sgsc:search-index");
+        if (cached) {
+          items = JSON.parse(cached);
+          isLoaded = true;
+          return items;
+        }
+
+        const res = await fetch("/api/search");
+        if (res.ok) {
+          const data = await res.json();
+          items = data;
+          sessionStorage.setItem("sgsc:search-index", JSON.stringify(data));
+        }
+      } catch {
+      } finally {
+        isLoaded = true;
+      }
+      return items;
+    })();
+
+    return loadPromise;
+  }
 
   const typeLabels: Record<string, string> = {
     page: "Sugerencias",
@@ -133,6 +163,13 @@ const serializedItems = JSON.stringify(items);
       return;
     }
 
+    if (!isLoaded) {
+      loadItems().then(() => {
+        if (input?.value) renderResults(input.value);
+      });
+      return;
+    }
+
     const grouped = new Map<string, import("@/lib/ux/search").SearchItem[]>();
 
     for (const item of filterItems(items, query)) {
@@ -184,15 +221,28 @@ const serializedItems = JSON.stringify(items);
 
   function openModal() {
     if (!modal || modal.open) return;
+    loadItems();
     modal.showModal();
     renderResults("");
     setTimeout(() => input?.focus(), 50);
   }
 
-  document.getElementById("header-search-btn")?.addEventListener("click", openModal);
+  input?.addEventListener("focus", () => loadItems(), { once: true });
+
+  const headerSearchBtn = document.getElementById("header-search-btn");
+  headerSearchBtn?.addEventListener("click", () => loadItems(), { once: true });
+  headerSearchBtn?.addEventListener("click", openModal);
+
+  function onKeydownPreload(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      loadItems();
+      document.removeEventListener("keydown", onKeydownPreload);
+    }
+  }
+  document.addEventListener("keydown", onKeydownPreload);
 
   document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
       e.preventDefault();
       openModal();
     }
