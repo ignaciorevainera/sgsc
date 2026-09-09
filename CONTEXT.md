@@ -16,7 +16,7 @@ Aplicacion web de gestion y analitica para futbol amateur. Centraliza resultados
 ## STACK
 
 ### Frontend
-- Framework: Astro 6 (output server, SSR via @astrojs/vercel)
+- Framework: Astro 7 (output server, SSR via @astrojs/vercel)
 - Estilos: Tailwind CSS 4 + DaisyUI 5
 - Layout principal: src/layouts/Main.astro
 - Integraciones: sitemap, astro-icon
@@ -61,8 +61,8 @@ Aplicacion web de gestion y analitica para futbol amateur. Centraliza resultados
 - Comandos: npm test (vitest watch), npm run test:run (single run), npm run test:coverage, npm run test:e2e
 
 ### Dependencias principales
-- astro ^6.0.4, @astrojs/check, @astrojs/sitemap, @astrojs/vercel
-- tailwindcss ^4.1.18, @tailwindcss/vite, daisyui ^5.5.14
+- astro ^7.3.2, @astrojs/check, @astrojs/sitemap, @astrojs/vercel
+- tailwindcss ^4.3.3, @tailwindcss/vite, daisyui ^5.5.14
 - @supabase/supabase-js, @supabase/ssr
 - astro-icon, @iconify-json/material-symbols
 - theme-change
