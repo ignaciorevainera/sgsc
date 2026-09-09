@@ -2,42 +2,61 @@
 import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
-import { parsePlayerFormData } from "@/lib/utils/playerForm";
+import {
+  formDataToPlayerInput,
+  playerSchema,
+  toFieldErrors,
+} from "@/lib/schemas/adminSchemas";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
 const supabase = createAstroSupabase(Astro);
 let errorMessage = "";
-let formValues = {
+let fieldErrors: Record<string, string> = {};
+let formValues: {
+  nickname: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  preferred_foot: "right" | "left" | "both" | null;
+  is_guest: boolean;
+} = {
   nickname: "",
   first_name: "",
   last_name: "",
   birth_date: "",
-  preferred_foot: "right" as const,
+  preferred_foot: null,
   is_guest: false,
 };
 
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
-  const playerInput = parsePlayerFormData(formData);
+  const parsed = playerSchema.safeParse(formDataToPlayerInput(formData));
 
+  const rawFoot = formData.get("preferred_foot")?.toString().trim() ?? "";
   formValues = {
-    nickname: playerInput.nickname,
-    first_name: playerInput.first_name ?? "",
-    last_name: playerInput.last_name ?? "",
-    birth_date: playerInput.birth_date ?? "",
-    preferred_foot: playerInput.preferred_foot ?? "right",
-    is_guest: playerInput.is_guest,
+    nickname: (formData.get("nickname")?.toString().trim() ?? ""),
+    first_name: (formData.get("first_name")?.toString() ?? ""),
+    last_name: (formData.get("last_name")?.toString() ?? ""),
+    birth_date: (formData.get("birth_date")?.toString() ?? ""),
+    preferred_foot: (rawFoot === "right" || rawFoot === "left" || rawFoot === "both" ? rawFoot : null),
+    is_guest: formData.get("is_guest") === "on" || formData.get("is_guest") === "true",
   };
 
-  const { error } = await supabase.from("players").insert({
-    ...playerInput,
-  });
-
-  if (error) {
-    errorMessage = error.message;
+  if (!parsed.success) {
+    fieldErrors = toFieldErrors(parsed.error);
+    errorMessage = fieldErrors._form || "Revisa los campos marcados en rojo.";
   } else {
-    return Astro.redirect("/admin/players?toast=success&msg=Jugador+creado+correctamente");
+    const { name: _ignored, ...playerInput } = parsed.data;
+    const { error } = await supabase.from("players").insert({
+      ...playerInput,
+    });
+
+    if (error) {
+      errorMessage = error.message;
+    } else {
+      return Astro.redirect("/admin/players?toast=success&msg=Jugador+creado+correctamente");
+    }
   }
 }
 ---
@@ -50,20 +69,20 @@ if (Astro.request.method === "POST") {
 >
   <Title title="Nuevo Jugador" subtitle="Panel de Administración" />
 
-  <div class="flex flex-col gap-6">
+  <div class="flex max-w-full flex-col gap-4 overflow-hidden sm:gap-6">
     <form
       id="playerForm"
       method="POST"
-      class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+      class="card bg-base-100 border-base-200 max-w-full space-y-4 overflow-hidden rounded-xl border p-3.5 shadow-md sm:space-y-6 sm:p-6"
     >
-      <PlayerFormFields idPrefix="create-player" values={formValues} />
+      <PlayerFormFields idPrefix="create-player" values={formValues} errors={fieldErrors} />
     </form>
 
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
       <button
         type="submit"
         form="playerForm"
-        class="btn btn-primary rounded-xl sm:flex-1"
+        class="btn btn-primary btn-sm sm:btn-md min-h-[44px] w-full rounded-xl sm:flex-1"
       >
         <Icon name="material-symbols:save" size={20} aria-hidden="true" />
         Guardar Jugador
@@ -71,7 +90,7 @@ if (Astro.request.method === "POST") {
 
       <a
         href="/admin/players"
-        class="btn btn-outline btn-error rounded-xl sm:flex-1"
+        class="btn btn-outline btn-error btn-sm sm:btn-md min-h-[44px] w-full rounded-xl sm:flex-1"
       >
         <Icon name="material-symbols:arrow-back" size={18} aria-hidden="true" />
         Cancelar

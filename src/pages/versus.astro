@@ -136,14 +136,14 @@ if (p1Id && p2Id && p1Id !== p2Id) {
 <Main title="Versus | SGSC">
   <Title title="Versus" subtitle="Comparativa Histórica" />
 
-  <div class="card bg-base-100 border-base-200 mb-8 overflow-hidden rounded-xl border shadow-md">
-    <div class="p-4 sm:p-6">
-      <div class="flex flex-col items-center gap-4 sm:gap-6">
-        <div class="flex w-full flex-col items-center gap-2 sm:flex-row">
-          <div class="form-control w-full flex-1 sm:pr-4 sm:text-right">
-            <fieldset class="fieldset w-full">
-              <legend class="fieldset-legend text-primary">Jugador 1</legend>
-              <select id="p1-select" name="p1" class="select w-full rounded-xl" aria-label="Seleccionar jugador 1">
+  <div class="card bg-base-100 border-base-200 mb-6 sm:mb-8 w-full max-w-full overflow-hidden overflow-x-hidden rounded-xl border shadow-md">
+    <div class="p-3.5 sm:p-6">
+      <div class="flex max-w-full flex-col items-center gap-2.5 sm:gap-6">
+        <div class="flex w-full max-w-full flex-col items-center gap-2.5 overflow-hidden sm:flex-row sm:gap-4">
+          <div class="form-control w-full max-w-full min-w-0 flex-1 sm:pr-4 sm:text-right">
+            <fieldset class="fieldset w-full max-w-full">
+              <legend class="fieldset-legend text-primary text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Jugador 1</legend>
+              <select id="p1-select" name="p1" class="select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3" aria-label="Seleccionar jugador 1">
                 <option disabled selected value="">Elegir jugador...</option>
                 {
                   players?.map((p) => (
@@ -162,10 +162,10 @@ if (p1Id && p2Id && p1Id !== p2Id) {
             </div>
           </div>
 
-          <div class="form-control w-full flex-1 sm:pl-4 sm:text-left">
-            <fieldset class="fieldset w-full">
-              <legend class="fieldset-legend text-secondary">Jugador 2</legend>
-              <select id="p2-select" name="p2" class="select w-full rounded-xl" aria-label="Seleccionar jugador 2">
+          <div class="form-control w-full max-w-full min-w-0 flex-1 sm:pl-4 sm:text-left">
+            <fieldset class="fieldset w-full max-w-full">
+              <legend class="fieldset-legend text-secondary text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Jugador 2</legend>
+              <select id="p2-select" name="p2" class="select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3" aria-label="Seleccionar jugador 2">
                 <option disabled selected value="">Elegir jugador...</option>
                 {
                   players?.map((p) => (
@@ -182,7 +182,7 @@ if (p1Id && p2Id && p1Id !== p2Id) {
         <button
           id="btn-compare"
           type="button"
-          class="btn btn-primary md:btn-md btn-sm w-full rounded-xl shadow-md"
+          class="btn btn-primary btn-sm sm:btn-md min-h-[44px] w-full rounded-xl shadow-md"
           disabled={!p1Id || !p2Id || p1Id === p2Id}
         >
           <Icon name="material-symbols:compare-arrows" size={24} aria-hidden="true" />

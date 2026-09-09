@@ -3,7 +3,11 @@ import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import PlayerFormFields from "@/components/admin/PlayerFormFields.astro";
 
-import { parsePlayerFormData } from "@/lib/utils/playerForm";
+import {
+  formDataToPlayerInput,
+  playerSchema,
+  toFieldErrors,
+} from "@/lib/schemas/adminSchemas";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 
@@ -23,13 +27,27 @@ const { data: player } = await supabase
 if (!player) return Astro.redirect("/admin/players");
 
 let errorMessage = "";
+let fieldErrors: Record<string, string> = {};
+let formValues: {
+  nickname: string;
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  preferred_foot: "right" | "left" | "both" | null;
+  is_guest: boolean;
+} = {
+  nickname: player.nickname ?? "",
+  first_name: player.first_name ?? "",
+  last_name: player.last_name ?? "",
+  birth_date: player.birth_date ?? "",
+  preferred_foot: (player.preferred_foot === "right" || player.preferred_foot === "left" || player.preferred_foot === "both" ? player.preferred_foot : null),
+  is_guest: player.is_guest ?? false,
+};
 
 // --- UPDATE ---
 if (Astro.request.method === "POST") {
   const formData = await Astro.request.formData();
   const action = formData.get("action");
-
-  let error = null;
 
   if (action === "toggle_status") {
     const newStatus = !player.is_active;
@@ -37,23 +55,40 @@ if (Astro.request.method === "POST") {
       .from("players")
       .update({ is_active: newStatus })
       .eq("id", id);
-    error = updateError;
-  } else {
-    const playerInput = parsePlayerFormData(formData);
-    const { error: updateError } = await supabase
-      .from("players")
-      .update({ ...playerInput })
-      .eq("id", id);
-    error = updateError;
-  }
 
-  if (error) {
-    errorMessage = error.message;
+    if (updateError) {
+      errorMessage = updateError.message;
+    } else {
+      return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=Estado+actualizado+correctamente`);
+    }
   } else {
-    const msg = action === "toggle_status"
-      ? "Estado+actualizado+correctamente"
-      : "Jugador+actualizado+correctamente";
-    return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=${msg}`);
+    const rawFoot = formData.get("preferred_foot")?.toString().trim() ?? "";
+    formValues = {
+      nickname: (formData.get("nickname")?.toString() ?? ""),
+      first_name: (formData.get("first_name")?.toString() ?? ""),
+      last_name: (formData.get("last_name")?.toString() ?? ""),
+      birth_date: (formData.get("birth_date")?.toString() ?? ""),
+      preferred_foot: (rawFoot === "right" || rawFoot === "left" || rawFoot === "both" ? rawFoot : null),
+      is_guest: formData.get("is_guest") === "on" || formData.get("is_guest") === "true",
+    };
+
+    const parsed = playerSchema.safeParse(formDataToPlayerInput(formData));
+    if (!parsed.success) {
+      fieldErrors = toFieldErrors(parsed.error);
+      errorMessage = "Revisa los campos marcados en rojo.";
+    } else {
+      const { name: _ignored, ...playerInput } = parsed.data;
+      const { error: updateError } = await supabase
+        .from("players")
+        .update({ ...playerInput })
+        .eq("id", id);
+
+      if (updateError) {
+        errorMessage = updateError.message;
+      } else {
+        return Astro.redirect(`/admin/players/edit/${id}?toast=success&msg=Jugador+actualizado+correctamente`);
+      }
+    }
   }
 }
 ---
@@ -66,30 +101,24 @@ if (Astro.request.method === "POST") {
 >
   <Title title="Editar Jugador" subtitle="Panel de Administración" />
 
-  <div class="flex flex-col gap-6">
+  <div class="flex max-w-full flex-col gap-4 overflow-hidden sm:gap-6">
     <form
       method="POST"
-      class="card bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+      class="card bg-base-100 border-base-200 max-w-full space-y-4 overflow-hidden rounded-xl border p-3.5 shadow-md sm:space-y-6 sm:p-6"
     >
       <input type="hidden" name="action" value="update" />
       <PlayerFormFields
         idPrefix={`edit-player-${id}`}
-        values={{
-          nickname: player.nickname ?? "",
-          first_name: player.first_name ?? "",
-          last_name: player.last_name ?? "",
-          birth_date: player.birth_date ?? "",
-          preferred_foot: (player.preferred_foot as any) ?? "right",
-          is_guest: player.is_guest ?? false,
-        }}
+        values={formValues}
+        errors={fieldErrors}
       />
 
-      <button type="submit" class="btn btn-primary rounded-xl shadow-md"
+      <button type="submit" class="btn btn-primary btn-sm sm:btn-md min-h-[44px] w-full rounded-xl shadow-md"
         >Actualizar Datos</button
       >
     </form>
 
-    <div class="card bg-base-200 border-base-200 rounded-xl border p-4 sm:p-6">
+    <div class="card bg-base-200 border-base-200 max-w-full rounded-xl border p-3.5 overflow-hidden sm:p-6">
       <h3 class="text-base-content/60 mb-2 text-xs font-bold uppercase">
         Zona de Estado
       </h3>

@@ -1,23 +1,30 @@
 ---
-Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
 
 import { Icon } from "astro-icon/components";
 import { createAstroSupabase } from "@/lib/supabase";
-import { getCurrentYear, getYearFromDate } from "@/lib/utils/dateUtils";
+import { getCurrentYear } from "@/lib/utils/dateUtils";
 import Alert from "@/components/shared/Alert.astro";
 import LiveMatchCounter from "@/components/index/LiveMatchCounter.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@/components/MatchCard.astro";
 
 const supabase = createAstroSupabase(Astro);
+const currentYear = getCurrentYear();
 
-const [{ error: matchesCountError }, { data: lastMatchData }] =
-  await Promise.all([
-    supabase.from("matches").select("id", { count: "exact", head: true }),
-    supabase
-      .from("matches")
-      .select(
-        `
+const [
+  { error: matchesCountError },
+  { data: lastMatchData },
+  { data: topPlayersData },
+] = await Promise.all([
+  supabase.from("matches").select("id", { count: "exact", head: true }),
+  supabase
+    .from("matches")
+    .select(
+      `
       id,
       date,
       result,
@@ -28,26 +35,20 @@ const [{ error: matchesCountError }, { data: lastMatchData }] =
         players (nickname)
       )
     `,
-      )
-      .order("date", { ascending: false })
-      .limit(1),
-  ]);
+    )
+    .order("date", { ascending: false })
+    .limit(1),
+  supabase
+    .from("view_player_stats_yearly")
+    .select("player_id, nickname, matches_played, wins, points")
+    .eq("year", currentYear)
+    .eq("is_guest", false)
+    .order("points", { ascending: false })
+    .limit(3),
+]);
 
 const lastMatch = lastMatchData?.[0];
-
-// 3. TOP 3 Ranking Actual (Para el Podio)
-// Obtenemos el año del último partido registrado para mostrar los líderes de esa temporada
-const lastMatchYear = getYearFromDate(lastMatch?.date) ?? getCurrentYear();
-
-const { data: topPlayers } = await supabase
-  .from("view_player_stats_yearly")
-  .select("player_id, nickname, matches_played, wins, points")
-  .eq("year", lastMatchYear)
-  .eq("is_guest", false) // Excluir jugadores invitados
-  .order("points", { ascending: false })
-  .limit(3);
-
-// Variable de error general para la página
+const topPlayers = topPlayersData ?? [];
 const hasConnectionError = !!matchesCountError;
 
 // --- CONFIGURACIÓN UI ---

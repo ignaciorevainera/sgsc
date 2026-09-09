@@ -1,5 +1,8 @@
 ---
-Astro.response.headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+);
 
 import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
@@ -13,33 +16,62 @@ import ShareButtons from "@/components/features/ux/ShareButtons.astro";
 import { Icon } from "astro-icon/components";
 
 const supabase = createAstroSupabase(Astro);
-
-// 1. Obtener Años Disponibles Dinámicamente
-const { data: yearsData } = await supabase
-  .from("view_player_stats_yearly")
-  .select("year");
-// Filtramos años únicos y ordenamos descendente (2025, 2024...)
-const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
-  (a, b) => (b || 0) - (a || 0),
-);
 const currentYear = String(getCurrentYear());
-// Si no hay datos, usamos el año actual como fallback
-const defaultYear =
-  availableYears.length > 0 ? String(availableYears[0]) : currentYear;
 
-// 2. URL Params
+const seasonParam = Astro.url.searchParams.get("season");
 const sort = Astro.url.searchParams.get("sort") || "points";
-const season = Astro.url.searchParams.get("season") || defaultYear;
 const mode = Astro.url.searchParams.get("mode") || "simple";
-// Mínimo de partidos: solo enteros positivos mayores a 1; cualquier otro valor se ignora
 const minMatchesParam = Number(Astro.url.searchParams.get("min_matches"));
 const minMatches =
   Number.isInteger(minMatchesParam) && minMatchesParam > 1 ? minMatchesParam : 0;
 
-// Construimos las opciones del selector incluyendo "Histórico"
+const targetSeason = seasonParam || currentYear;
+
+let playersQuery;
+if (targetSeason === "Histórico") {
+  playersQuery = supabase
+    .from("view_player_stats_all_time")
+    .select("player_id, nickname, matches_played, wins, draws, losses, points, win_pct, attendance_pct, form_array, is_guest")
+    .eq("is_guest", false);
+} else {
+  playersQuery = supabase
+    .from("view_player_stats_yearly")
+    .select("player_id, nickname, matches_played, wins, draws, losses, points, win_rate, draw_rate, loss_rate, attendance_pct, form_array, effectiveness, is_guest")
+    .eq("year", Number(targetSeason))
+    .eq("is_guest", false);
+}
+
+const [
+  { data: yearsData },
+  { data: rawPlayers, error },
+  { data: streaksData }
+] = await Promise.all([
+  supabase.from("view_player_stats_yearly").select("year"),
+  playersQuery,
+  supabase
+    .from("view_player_streaks")
+    .select("player_id, current_streak_type, current_streak_length"),
+]);
+
+const availableYears = [...new Set(yearsData?.map((y) => y.year))].sort(
+  (a, b) => (b || 0) - (a || 0)
+);
+const defaultYear = availableYears.length > 0 ? String(availableYears[0]) : currentYear;
+const season = seasonParam || defaultYear;
 const seasons = [...availableYears.map(String), "Histórico"];
-// Si por alguna razón la lista está vacía (BD nueva), ponemos el año actual
 if (seasons.length === 1) seasons.unshift(currentYear);
+
+let finalPlayers = rawPlayers;
+if (!seasonParam && defaultYear !== targetSeason && (!rawPlayers || rawPlayers.length === 0)) {
+  const { data: fallbackPlayers } = await supabase
+    .from("view_player_stats_yearly")
+    .select("player_id, nickname, matches_played, wins, draws, losses, points, win_rate, draw_rate, loss_rate, attendance_pct, form_array, effectiveness, is_guest")
+    .eq("year", Number(defaultYear))
+    .eq("is_guest", false);
+  if (fallbackPlayers) {
+    finalPlayers = fallbackPlayers;
+  }
+}
 
 const sortOptions = [
   { value: "points", label: "Puntos" },
@@ -54,34 +86,16 @@ const sortOptions = [
   { value: "lossRate", label: "% Derrotas" },
 ];
 
-// 3. Consulta SQL
-let query;
-if (season === "Histórico") {
-  query = supabase.from("view_player_stats_all_time").select("player_id, nickname, matches_played, wins, draws, losses, points, win_pct, attendance_pct, form_array, is_guest");
-} else {
-  query = supabase
-    .from("view_player_stats_yearly")
-    .select("player_id, nickname, matches_played, wins, draws, losses, points, win_rate, draw_rate, loss_rate, attendance_pct, form_array, effectiveness, is_guest")
-    .eq("year", Number(season));
-}
-
-const [{ data: rawPlayers, error }, { data: streaksData }] = await Promise.all([
-  query.eq("is_guest", false),
-  supabase
-    .from("view_player_streaks")
-    .select("player_id, current_streak_type, current_streak_length"),
-]);
-
 const streakByPlayer = new Map(
   (streaksData ?? []).map((s) => [s.player_id, s]),
 );
 
 const hasError = !!error;
-const hasPlayersStats = !hasError && rawPlayers && rawPlayers.length > 0;
+const hasPlayersStats = !hasError && finalPlayers && finalPlayers.length > 0;
 
 // 4. Mapeo de datos
 const players =
-  rawPlayers?.map((p: any) => ({
+  finalPlayers?.map((p: any) => ({
     ...p,
     matches: p.matches_played,
     // Mapeamos los campos nuevos de la vista SQL

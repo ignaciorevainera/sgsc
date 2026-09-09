@@ -14,10 +14,11 @@ import { Icon } from "astro-icon/components";
 </button>
 
 <script>
-  const btn = document.getElementById("back-to-top") as HTMLButtonElement | null;
-
-  const setVisible = (visible: boolean) => {
+  function toggleVisibility() {
+    const btn = document.getElementById("back-to-top") as HTMLButtonElement | null;
     if (!btn) return;
+
+    const visible = window.scrollY > 400;
     btn.classList.toggle("invisible", !visible);
     btn.classList.toggle("opacity-0", !visible);
     btn.classList.toggle("translate-y-4", !visible);
@@ -30,16 +31,20 @@ import { Icon } from "astro-icon/components";
       btn.classList.remove("translate-y-0", "scale-100", "opacity-100", "visible");
       btn.setAttribute("tabindex", "-1");
     }
-  };
-
-  const toggleVisibility = () => {
-    setVisible(window.scrollY > 400);
-  };
-
-  btn?.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  });
+  }
 
   window.addEventListener("scroll", toggleVisibility, { passive: true });
-  toggleVisibility();
+
+  function setupBackToTop() {
+    const btn = document.getElementById("back-to-top") as HTMLButtonElement | null;
+    if (!btn) return;
+
+    btn.onclick = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    toggleVisibility();
+  }
+
+  document.addEventListener("astro:page-load", setupBackToTop);
 </script>

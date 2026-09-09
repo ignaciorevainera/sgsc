@@ -3,12 +3,18 @@ import { createAstroSupabase } from "@/lib/supabase";
 import { Icon } from "astro-icon/components";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
+import {
+  formDataToMatchInput,
+  matchSchema,
+  toFieldErrors,
+} from "@/lib/schemas/adminSchemas";
 
 const supabase = createAstroSupabase(Astro);
 
 const id = Astro.params.id as string;
 if (!id) return Astro.redirect("/admin/matches");
 let errorMessage = "";
+let fieldErrors: Record<string, string> = {};
 
 // 1. Obtener datos para llenar el formulario
 // A. El partido actual
@@ -48,51 +54,30 @@ if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
 
-    // 1. Datos básicos y validaciones de entrada
-    const date = formData.get("date")?.toString().trim() ?? "";
-    const field_id = formData.get("field_id")?.toString().trim() ?? "";
-    const result = formData.get("result")?.toString().trim() ?? "";
-    const video_url = formData.get("video_url")?.toString().trim() ?? "";
+    const parsed = matchSchema.safeParse(formDataToMatchInput(formData));
+    if (!parsed.success) {
+      fieldErrors = toFieldErrors(parsed.error);
+      throw new Error("Revisa los campos marcados en rojo.");
+    }
+    const { date, field_id, result, video_url, light_players, dark_players } = parsed.data;
 
-    if (!date || !field_id || !result) {
+    if (!field_id) {
+      fieldErrors = { ...fieldErrors, field_id: "Sede obligatoria." };
       throw new Error("Faltan datos obligatorios para actualizar el partido.");
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      throw new Error("Formato de fecha inválido.");
-    }
-    if (!["light", "dark", "draw"].includes(result)) {
-      throw new Error("El resultado seleccionado no es válido.");
     }
     const selectedField = fields?.find(
       (field) => String(field.id) === field_id,
     );
     if (!selectedField) {
+      fieldErrors = { ...fieldErrors, field_id: "La sede seleccionada no es válida." };
       throw new Error("La sede seleccionada no es válida.");
     }
 
-    // 2. Recolectar jugadores por equipo
+    // 2. Resolver IDs jugadores contra lista conocida (evita IDs forjados)
     const playerIdByKey = new Map<string, string | number>();
     players?.forEach((player) => {
       playerIdByKey.set(String(player.id), player.id);
     });
-
-    const newLightKeys: string[] = [];
-    const newDarkKeys: string[] = [];
-    players?.forEach((player) => {
-      const key = String(player.id);
-      const selection = formData.get(`player_${key}`);
-      if (selection === "light") newLightKeys.push(key);
-      if (selection === "dark") newDarkKeys.push(key);
-    });
-
-    if (newLightKeys.length === 0 || newDarkKeys.length === 0) {
-      throw new Error("Debes seleccionar al menos un jugador por equipo.");
-    }
-
-    const overlap = newLightKeys.some((key) => newDarkKeys.includes(key));
-    if (overlap) {
-      throw new Error("Un jugador no puede estar en ambos equipos.");
-    }
 
     const resolvePlayerId = (key: string) => {
       const value = playerIdByKey.get(key);
@@ -103,12 +88,12 @@ if (Astro.request.method === "POST") {
     };
 
     const newPlayers = [
-      ...newLightKeys.map((key) => ({
+      ...light_players.map((key) => ({
         match_id: id,
         player_id: resolvePlayerId(key) as string,
         team: "light",
       })),
-      ...newDarkKeys.map((key) => ({
+      ...dark_players.map((key) => ({
         match_id: id,
         player_id: resolvePlayerId(key) as string,
         team: "dark",
@@ -198,34 +183,36 @@ if (Astro.request.method === "POST") {
 >
   <Title title="Editar Partido" subtitle="Panel de Administración" />
 
-  <form method="POST" class="space-y-6">
+  <form method="POST" class="max-w-full space-y-4 overflow-hidden sm:space-y-6">
     {/* Sección: Información General */}
     <div
-      class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+      class="bg-base-100 border-base-200 max-w-full space-y-4 overflow-hidden rounded-xl border p-3.5 shadow-md sm:space-y-6 sm:p-6"
     >
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+      <div class="grid max-w-full grid-cols-1 gap-2.5 overflow-hidden sm:grid-cols-2 sm:gap-4 lg:gap-6">
         {/* Fecha */}
-        <div class="form-control">
+        <div class="form-control min-w-0">
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Fecha del Partido</legend>
+            <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Fecha del Partido</legend>
             <input
               type="date"
               name="date"
-              class="input w-full rounded-xl"
+              class={fieldErrors.date ? "input input-sm sm:input-md min-h-[44px] w-full max-w-full rounded-xl px-3 input-error" : "input input-sm sm:input-md min-h-[44px] w-full max-w-full rounded-xl px-3"}
               required
               value={match.date}
+              aria-invalid={fieldErrors.date ? "true" : undefined}
             />
+            {fieldErrors.date && <p class="text-error mt-1 text-xs">{fieldErrors.date}</p>}
           </fieldset>
         </div>
 
         {/* Sede */}
-        <div class="form-control">
+        <div class="form-control min-w-0">
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Sede</legend>
+            <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Sede</legend>
             <select
               name="field_id"
               required
-              class="select w-full rounded-xl"
+              class={fieldErrors.field_id ? "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3 select-error" : "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3"}
             >
               {
                 fields?.map((f) => (
@@ -235,17 +222,18 @@ if (Astro.request.method === "POST") {
                 ))
               }
             </select>
+            {fieldErrors.field_id && <p class="text-error mt-1 text-xs">{fieldErrors.field_id}</p>}
           </fieldset>
         </div>
 
         {/* Resultado */}
-        <div class="form-control">
+        <div class="form-control min-w-0">
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Resultado Final </legend>
+            <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Resultado Final </legend>
             <select
               name="result"
               required
-              class="select w-full rounded-xl font-bold"
+              class={fieldErrors.result ? "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3 font-bold select-error" : "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3 font-bold"}
             >
               <option value="light" selected={match.result === "light"}>
                 Claro
@@ -257,20 +245,36 @@ if (Astro.request.method === "POST") {
                 Empate
               </option>
             </select>
+            {fieldErrors.result && <p class="text-error mt-1 text-xs">{fieldErrors.result}</p>}
           </fieldset>
         </div>
 
         {/* Video URL */}
-        <div class="form-control">
+        <div class="form-control min-w-0">
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Enlace de Video</legend>
-            <input
-              type="url"
-              name="video_url"
-              class="input w-full rounded-xl"
-              placeholder="https://..."
-              value={match.video_url}
-            />
+            <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">
+              Enlace de Video
+              <span class="badge badge-ghost badge-xs ml-1 opacity-60">Opcional</span>
+            </legend>
+            <div class="flex w-full max-w-full gap-2">
+              <input
+                type="url"
+                name="video_url"
+                class={fieldErrors.video_url ? "input input-sm sm:input-md min-h-[44px] w-full min-w-0 flex-1 rounded-xl px-3 input-error" : "input input-sm sm:input-md min-h-[44px] w-full min-w-0 flex-1 rounded-xl px-3"}
+                placeholder="https://..."
+                value={match.video_url ?? undefined}
+              />
+              <button
+                type="button"
+                class="btn btn-sm sm:btn-md min-h-[44px] min-w-[44px] shrink-0 rounded-xl px-3"
+                data-clear-field="video_url"
+                title="Limpiar (guardar como null)"
+                aria-label="Limpiar enlace video"
+              >
+                ✕
+              </button>
+            </div>
+            {fieldErrors.video_url && <p class="text-error mt-1 text-xs">{fieldErrors.video_url}</p>}
           </fieldset>
         </div>
       </div>
@@ -282,10 +286,15 @@ if (Astro.request.method === "POST") {
     >
       Convocatoria
     </div>
+    {(fieldErrors.light_players || fieldErrors.dark_players) && (
+      <p class="text-error text-xs" role="alert">
+        {fieldErrors.light_players || fieldErrors.dark_players}
+      </p>
+    )}
 
     {/* Sección: Equipos */}
     <div
-      class="bg-base-100 border-base-200 max-h-96 overflow-auto rounded-xl border shadow-md"
+      class="bg-base-100 border-base-200 max-h-96 w-full max-w-full overflow-auto overflow-x-hidden rounded-xl border shadow-md"
     >
       {/* Header */}
       <div
@@ -374,20 +383,36 @@ if (Astro.request.method === "POST") {
 
     {/* Botones de acción */}
     <div
-      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      class="flex max-w-full flex-col-reverse gap-2 overflow-hidden sm:flex-row sm:items-center sm:justify-between"
     >
       <a
         href="/admin/matches"
-        class="btn btn-outline btn-error order-2 w-full rounded-xl sm:order-1 sm:w-auto"
+        class="btn btn-outline btn-error btn-sm sm:btn-md order-2 min-h-[44px] w-full rounded-xl sm:order-1 sm:w-auto"
       >
         <Icon name="material-symbols:arrow-back" size={18} />
         Cancelar
       </a>
-      <button type="submit" class="btn btn-primary order-1 grow rounded-xl">
+      <button type="submit" class="btn btn-primary btn-sm sm:btn-md order-1 min-h-[44px] w-full grow rounded-xl sm:w-auto">
         <Icon name="material-symbols:save" size={20} />
         Guardar Cambios
       </button>
     </div>
   </form>
 </Main>
+
+<script>
+  document.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest("[data-clear-field]");
+    if (!btn) return;
+    const field = btn.getAttribute("data-clear-field");
+    if (!field) return;
+    const form = btn.closest("form");
+    const input = form?.querySelector(`[name="${field}"]`) as HTMLInputElement | null;
+    if (input) {
+      input.value = "";
+      input.focus();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+</script>
 

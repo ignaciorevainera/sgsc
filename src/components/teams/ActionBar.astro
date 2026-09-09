@@ -12,13 +12,13 @@ const { class: className = "", minPlayers = 10 } = Astro.props;
 <div
   id="action-bar"
   class:list={[
-    "sticky bottom-12 z-40 mx-auto max-w-md",
+    "sticky bottom-12 z-40 mx-auto w-full max-w-md overflow-hidden",
     "card bg-base-100/95 border-base-200 rounded-xl border shadow-lg backdrop-blur-md",
     className,
   ]}
   data-min-players={minPlayers}
 >
-  <div class="card-body flex-row items-center justify-between gap-4 p-3 sm:p-4">
+  <div class="card-body flex-row items-center justify-between gap-2.5 p-3.5 sm:gap-4 sm:p-4">
     {/* Contador Total */}
     <div class="flex items-center gap-3">
       <div
@@ -45,7 +45,7 @@ const { class: className = "", minPlayers = 10 } = Astro.props;
     {/* Botón Generar */}
     <button
       id="generate-btn"
-      class="btn btn-primary gap-2 rounded-xl px-4 font-bold tracking-wider uppercase shadow-md transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:px-6"
+      class="btn btn-primary btn-sm sm:btn-md min-h-[44px] gap-2 rounded-xl px-4 font-bold tracking-wider uppercase shadow-md transition-all duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:px-6"
       disabled
     >
       <Icon name="material-symbols:shuffle" size={20} />

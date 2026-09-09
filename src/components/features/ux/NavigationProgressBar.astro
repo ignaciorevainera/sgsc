@@ -1,0 +1,34 @@
+---
+---
+<div
+  id="nav-progress-bar"
+  class="fixed top-0 left-0 right-0 z-50 h-[3px] w-0 bg-primary opacity-0 transition-all duration-200 pointer-events-none"
+  aria-hidden="true"
+></div>
+
+<script>
+  let progressTimeout: ReturnType<typeof setTimeout> | null = null;
+  const bar = () => document.getElementById("nav-progress-bar");
+
+  document.addEventListener("astro:before-preparation", () => {
+    progressTimeout = setTimeout(() => {
+      const el = bar();
+      if (!el) return;
+      el.style.width = "70%";
+      el.style.opacity = "1";
+    }, 100);
+  });
+
+  document.addEventListener("astro:page-load", () => {
+    if (progressTimeout) clearTimeout(progressTimeout);
+    const el = bar();
+    if (!el) return;
+    el.style.width = "100%";
+    setTimeout(() => {
+      el.style.opacity = "0";
+      setTimeout(() => {
+        el.style.width = "0%";
+      }, 200);
+    }, 150);
+  });
+</script>

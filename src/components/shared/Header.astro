@@ -160,7 +160,7 @@ const isGroupActive = (group: { href: string }[]) =>
             </li>
 
             <li>
-              <a href="/admin">
+              <a href="/admin" data-astro-reload>
                 <Icon
                   name="material-symbols:space-dashboard-rounded"
                   size={18}
@@ -176,7 +176,7 @@ const isGroupActive = (group: { href: string }[]) =>
             </li>
 
             <li>
-              <a href="/admin/matches/create">
+              <a href="/admin/matches/create" data-astro-reload>
                 <Icon
                   name="material-symbols:add-circle"
                   size={16}
@@ -186,7 +186,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
             <li>
-              <a href="/admin/matches">
+              <a href="/admin/matches" data-astro-reload>
                 <Icon
                   name="material-symbols:edit-document-rounded"
                   size={16}
@@ -196,7 +196,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
             <li>
-              <a href="/admin/players/create">
+              <a href="/admin/players/create" data-astro-reload>
                 <Icon
                   name="material-symbols:person-add"
                   size={16}
@@ -206,7 +206,7 @@ const isGroupActive = (group: { href: string }[]) =>
               </a>
             </li>
             <li>
-              <a href="/admin/players">
+              <a href="/admin/players" data-astro-reload>
                 <Icon
                   name="material-symbols:list-alt"
                   size={16}
@@ -222,6 +222,7 @@ const isGroupActive = (group: { href: string }[]) =>
               <form
                 action="/api/auth/signout"
                 method="POST"
+                data-astro-reload
                 class="btn btn-ghost text-error w-full"
               >
                 <button
@@ -238,6 +239,7 @@ const isGroupActive = (group: { href: string }[]) =>
       ) : (
         <a
           href="/login"
+          data-astro-reload
           class="btn btn-ghost btn-circle"
           aria-label="Acceso a panel de administración"
           data-tip="Acceso Admin"
@@ -291,43 +293,52 @@ const isGroupActive = (group: { href: string }[]) =>
 </header>
 
 <script>
-  const header = document.getElementById("site-header");
-  const toggleShadow = () => {
+  function toggleShadow() {
+    const header = document.getElementById("site-header");
     if (!header) return;
     const scrolled = window.scrollY > 4;
     header.classList.toggle("shadow-md", scrolled);
     header.classList.toggle("shadow-none", !scrolled);
-  };
+  }
 
-  toggleShadow();
   window.addEventListener("scroll", toggleShadow, { passive: true });
 
-  const themeToggle = document.getElementById(
-    "theme-toggle"
-  ) as HTMLInputElement | null;
-  if (themeToggle) {
-    themeToggle.addEventListener("change", () => {
-      const theme = themeToggle.checked ? "dark" : "light";
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
+  function setupHeader() {
+    toggleShadow();
+
+    const themeToggle = document.getElementById(
+      "theme-toggle"
+    ) as HTMLInputElement | null;
+    if (themeToggle) {
+      themeToggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
+      themeToggle.addEventListener("change", () => {
+        const theme = themeToggle.checked ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
+      });
+    }
+
+    const navDetails = document.querySelectorAll<HTMLDetailsElement>(
+      "nav[aria-label='Navegación principal'] details"
+    );
+
+    navDetails.forEach((details) => {
+      details.addEventListener("toggle", () => {
+        if (!details.open) return;
+        navDetails.forEach((other) => {
+          if (other !== details) other.open = false;
+        });
+      });
     });
   }
 
-  const navDetails = document.querySelectorAll<HTMLDetailsElement>(
-    "nav[aria-label='Navegación principal'] details"
-  );
-
-  navDetails.forEach((details) => {
-    details.addEventListener("toggle", () => {
-      if (!details.open) return;
-      navDetails.forEach((other) => {
-        if (other !== details) other.open = false;
-      });
-    });
-  });
+  document.addEventListener("astro:page-load", setupHeader);
 
   document.addEventListener("click", (e) => {
     const target = e.target as Node;
+    const navDetails = document.querySelectorAll<HTMLDetailsElement>(
+      "nav[aria-label='Navegación principal'] details"
+    );
     navDetails.forEach((details) => {
       if (details.open && !details.contains(target)) details.open = false;
     });

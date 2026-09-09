@@ -4,6 +4,11 @@ import { Icon } from "astro-icon/components";
 import Main from "@/layouts/Main.astro";
 import Title from "@/components/shared/Title.astro";
 import PlayerSearchBar from "@/components/admin/matches/PlayerSearchBar.astro";
+import {
+  formDataToMatchInput,
+  matchSchema,
+  toFieldErrors,
+} from "@/lib/schemas/adminSchemas";
 
 const supabase = createAstroSupabase(Astro);
 
@@ -24,50 +29,56 @@ const { data: fields } = await supabase
 
 // --- POST LOGIC ---
 let errorMessage = "";
+let fieldErrors: Record<string, string> = {};
+let formValues = { date: "", field_id: "", result: "" };
 
 if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
-    const date = formData.get("date")?.toString() || "";
-    const field_id = formData.get("field_id")?.toString() || "";
-    const result = formData.get("result")?.toString() || "";
+    formValues = {
+      date: formData.get("date")?.toString() ?? "",
+      field_id: formData.get("field_id")?.toString() ?? "",
+      result: formData.get("result")?.toString() ?? "",
+    };
 
-    const lightPlayers: string[] = [];
-    const darkPlayers: string[] = [];
+    const parsed = matchSchema.safeParse(formDataToMatchInput(formData));
+    if (!parsed.success) {
+      fieldErrors = toFieldErrors(parsed.error);
+      throw new Error("Revisa los campos marcados en rojo.");
+    }
 
-    players?.forEach((p) => {
-      const selection = formData.get(`player_${p.id}`);
-      if (selection === "light") lightPlayers.push(p.id);
-      if (selection === "dark") darkPlayers.push(p.id);
-    });
-
-    if (!date || !field_id || !result)
+    const data = parsed.data;
+    if (!data.field_id) {
+      fieldErrors = { ...fieldErrors, field_id: "Sede obligatoria." };
       throw new Error("Faltan datos obligatorios");
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
-      throw new Error("Formato de fecha inválido.");
-
-    const selectedField = fields?.find((f) => String(f.id) === field_id);
-    if (!selectedField) throw new Error("Sede inválida.");
-
-    if (!["light", "dark", "draw"].includes(result))
-      throw new Error("Resultado inválido.");
-
-    if (lightPlayers.length === 0 || darkPlayers.length === 0)
-      throw new Error("Equipos incompletos");
+    }
+    const selectedField = fields?.find((f) => String(f.id) === data.field_id);
+    if (!selectedField) {
+      fieldErrors = { ...fieldErrors, field_id: "Sede inválida." };
+      throw new Error("Sede inválida.");
+    }
 
     const { error } = await supabase.rpc("create_complete_match", {
-      p_date: date,
-      p_field_id: field_id,
-      p_result: result,
-      p_light_players: lightPlayers,
-      p_dark_players: darkPlayers,
+      p_date: data.date,
+      p_field_id: data.field_id,
+      p_result: data.result,
+      p_light_players: data.light_players,
+      p_dark_players: data.dark_players,
     });
 
     if (error) throw error;
     return Astro.redirect("/admin/matches?toast=success&msg=Partido+registrado+con+exito");
   } catch (err: any) {
-    errorMessage = err.message;
+    if (!errorMessage) errorMessage = err.message;
+    // Mapea errores genéricos de equipos a campo visible si no hay detalle
+    if (
+      !fieldErrors.light_players &&
+      !fieldErrors.dark_players &&
+      /equipo|incompleto/i.test(errorMessage)
+    ) {
+      fieldErrors.dark_players = errorMessage;
+    }
+    if (!errorMessage) errorMessage = "No se pudo guardar el partido.";
   }
 }
 ---
@@ -83,60 +94,64 @@ if (Astro.request.method === "POST") {
   <form
     method="POST"
     id="matchForm"
-    class="bg-base-100 border-base-200 space-y-6 rounded-xl border p-4 shadow-md sm:p-6"
+    class="bg-base-100 border-base-200 max-w-full space-y-4 overflow-hidden rounded-xl border p-3.5 shadow-md sm:space-y-6 sm:p-6"
   >
     {/* Sección: Fecha y Sede */}
-    <div class="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-4">
-      <div class="form-control">
+    <div class="grid max-w-full grid-cols-1 gap-2.5 overflow-hidden sm:grid-cols-2 sm:gap-x-4">
+      <div class="form-control min-w-0">
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Fecha del Partido</legend>
+          <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Fecha del Partido</legend>
           <input
             type="date"
             name="date"
             id="inputDate"
-            class="input w-full rounded-xl"
+            class={fieldErrors.date ? "input input-sm sm:input-md min-h-[44px] w-full max-w-full rounded-xl px-3 input-error" : "input input-sm sm:input-md min-h-[44px] w-full max-w-full rounded-xl px-3"}
             required
+            value={formValues.date || undefined}
+            aria-invalid={fieldErrors.date ? "true" : undefined}
           />
+          {fieldErrors.date && <p class="text-error mt-1 text-xs">{fieldErrors.date}</p>}
         </fieldset>
       </div>
-      <div class="form-control">
+      <div class="form-control min-w-0">
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Sede</legend>
+          <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Sede</legend>
           <select
             name="field_id"
             id="inputField"
-            class="select w-full rounded-xl"
+            class={fieldErrors.field_id ? "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3 select-error" : "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3"}
             required
           >
-            <option disabled selected value="">Selecciona una cancha</option>
+            <option disabled selected={!formValues.field_id} value="">Selecciona una cancha</option>
             {
               fields?.map((f) => (
-                <option value={f.id} data-name={f.name}>
+                <option value={f.id} data-name={f.name} selected={String(f.id) === formValues.field_id}>
                   {f.name}
                 </option>
               ))
             }
           </select>
+          {fieldErrors.field_id && <p class="text-error mt-1 text-xs">{fieldErrors.field_id}</p>}
         </fieldset>
       </div>
-      <div class="form-control sm:col-span-2">
+      <div class="form-control min-w-0 sm:col-span-2">
         <fieldset class="fieldset h-full">
-          <legend class="fieldset-legend">Resultado del Partido</legend>
+          <legend class="fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1">Resultado del Partido</legend>
 
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid max-w-full grid-cols-3 gap-2">
             {/* Opción: Ganó Claro */}
             <label
-              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-slate-200 bg-slate-50 p-3 text-center transition-all hover:border-slate-400 hover:shadow-md has-[:checked]:bg-slate-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-slate-200 bg-slate-50 p-2 text-center transition-all hover:border-slate-400 hover:shadow-md has-[:checked]:bg-slate-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
             >
-              <div class="flex flex-col items-center gap-1 sm:gap-2">
+              <div class="flex min-h-[44px] flex-col items-center justify-center gap-1 sm:gap-2">
                 <Icon
                   name="material-symbols:wb-sunny"
-                  size={28}
+                  size={24}
                   class="text-slate-600"
                   aria-hidden="true"
                 />
                 <span
-                  class="text-xs font-bold text-slate-700 sm:text-sm lg:text-base"
+                  class="text-[10px] font-bold text-slate-700 sm:text-sm lg:text-base"
                   >Ganó Claro</span
                 >
               </div>
@@ -146,23 +161,24 @@ if (Astro.request.method === "POST") {
                 value="light"
                 class="sr-only"
                 required
+                checked={formValues.result === "light"}
                 aria-label="Ganó equipo Claro"
               />
             </label>
 
             {/* Opción: Empate */}
             <label
-              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-yellow-200 bg-yellow-50 p-3 text-center transition-all hover:border-yellow-400 hover:shadow-md has-[:checked]:bg-yellow-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-yellow-200 bg-yellow-50 p-2 text-center transition-all hover:border-yellow-400 hover:shadow-md has-[:checked]:bg-yellow-100 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
             >
-              <div class="flex flex-col items-center gap-1 sm:gap-2">
+              <div class="flex min-h-[44px] flex-col items-center justify-center gap-1 sm:gap-2">
                 <Icon
                   name="material-symbols:balance"
-                  size={28}
+                  size={24}
                   class="text-yellow-600"
                   aria-hidden="true"
                 />
                 <span
-                  class="text-xs font-bold text-yellow-700 sm:text-sm lg:text-base"
+                  class="text-[10px] font-bold text-yellow-700 sm:text-sm lg:text-base"
                   >Empate</span
                 >
               </div>
@@ -171,23 +187,24 @@ if (Astro.request.method === "POST") {
                 name="result"
                 value="draw"
                 class="sr-only"
+                checked={formValues.result === "draw"}
                 aria-label="Resultado Empate"
               />
             </label>
 
             {/* Opción: Ganó Oscuro */}
             <label
-              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-slate-300 bg-slate-800 p-3 text-center transition-all hover:border-slate-500 hover:shadow-md has-[:checked]:bg-slate-900 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
+              class="group has-[:checked]:border-success cursor-pointer rounded-xl border-2 border-slate-300 bg-slate-800 p-2 text-center transition-all hover:border-slate-500 hover:shadow-md has-[:checked]:bg-slate-900 has-[:checked]:shadow-lg sm:p-4 lg:p-5"
             >
-              <div class="flex flex-col items-center gap-1 sm:gap-2">
+              <div class="flex min-h-[44px] flex-col items-center justify-center gap-1 sm:gap-2">
                 <Icon
                   name="material-symbols:dark-mode"
-                  size={28}
+                  size={24}
                   class="text-slate-300"
                   aria-hidden="true"
                 />
                 <span
-                  class="text-xs font-bold text-slate-200 sm:text-sm lg:text-base"
+                  class="text-[10px] font-bold text-slate-200 sm:text-sm lg:text-base"
                   >Ganó Oscuro</span
                 >
               </div>
@@ -196,10 +213,12 @@ if (Astro.request.method === "POST") {
                 name="result"
                 value="dark"
                 class="sr-only"
+                checked={formValues.result === "dark"}
                 aria-label="Ganó equipo Oscuro"
               />
             </label>
           </div>
+          {fieldErrors.result && <p class="text-error mt-1 text-xs">{fieldErrors.result}</p>}
         </fieldset>
       </div>
     </div>
@@ -212,13 +231,18 @@ if (Astro.request.method === "POST") {
     >
       Convocatoria
     </div>
+    {(fieldErrors.light_players || fieldErrors.dark_players) && (
+      <p class="text-error text-xs" role="alert">
+        {fieldErrors.light_players || fieldErrors.dark_players}
+      </p>
+    )}
 
     <PlayerSearchBar />
 
     {/* Lista de Jugadores */}
     <div
       id="playerListContainer"
-      class="bg-base-100 border-base-200 max-h-96 overflow-auto rounded-xl border shadow-md"
+      class="bg-base-100 border-base-200 max-h-96 w-full max-w-full overflow-auto overflow-x-hidden rounded-xl border shadow-md"
     >
       {/* Header */}
       <div
@@ -310,7 +334,7 @@ if (Astro.request.method === "POST") {
     <button
       type="button"
       id="btnPreview"
-      class="btn btn-primary btn-lg w-full rounded-xl"
+      class="btn btn-primary btn-sm sm:btn-lg min-h-[44px] w-full rounded-xl"
     >
       <Icon name="material-symbols:visibility" size={24} />
       <span class="text-sm font-bold sm:text-base">Previsualizar Partido</span>

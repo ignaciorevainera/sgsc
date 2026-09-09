@@ -10,23 +10,30 @@ interface PlayerFormValues {
 
 interface Props {
   values?: PlayerFormValues;
+  errors?: Record<string, string>;
   requiredNickname?: boolean;
   idPrefix?: string;
 }
 
 const {
   values = {},
+  errors = {},
   requiredNickname = true,
   idPrefix = "player",
 } = Astro.props;
 
 const guestCheckboxId = `${idPrefix}-is-guest`;
+const err = (f: string) => errors[f] ?? "";
+const inputClass = (f: string, base: string) =>
+  err(f) ? `${base} input-error` : base;
+const legendClass =
+  "fieldset-legend text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1";
 ---
 
-<div class="grid grid-cols-4 gap-2">
-  <div class="form-control col-span-4">
+<div class="grid max-w-full grid-cols-2 gap-2.5 overflow-hidden sm:gap-4">
+  <div class="form-control col-span-2 min-w-0">
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">
+      <legend class={legendClass}>
         Apodo
         {
           requiredNickname && <span class="text-error font-bold"> *</span>
@@ -36,57 +43,111 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         type="text"
         name="nickname"
         required={requiredNickname}
+        minlength="2"
+        maxlength="50"
         value={values.nickname || ""}
-        class="input w-full rounded-xl"
+        class={inputClass("nickname", "input input-sm sm:input-md min-h-[44px] w-full max-w-full rounded-xl px-3")}
         placeholder="Ej: Messi"
+        aria-invalid={err("nickname") ? "true" : undefined}
       />
+      {err("nickname") && <p class="text-error mt-1 text-xs">{err("nickname")}</p>}
     </fieldset>
   </div>
 
-  <div class="form-control col-span-2">
+  <div class="form-control col-span-1 min-w-0">
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">Nombre</legend>
-      <input
-        type="text"
-        name="first_name"
-        value={values.first_name || ""}
-        class="input w-full rounded-xl"
-        placeholder="Lionel"
-      />
+      <legend class={legendClass}>
+        Nombre
+        <span class="badge badge-ghost badge-xs ml-1 opacity-60">Opcional</span>
+      </legend>
+      <div class="flex w-full max-w-full gap-2">
+        <input
+          type="text"
+          name="first_name"
+          maxlength="100"
+          value={values.first_name || ""}
+          class={inputClass("first_name", "input input-sm sm:input-md min-h-[44px] w-full min-w-0 flex-1 rounded-xl px-3")}
+          placeholder="Lionel"
+          aria-invalid={err("first_name") ? "true" : undefined}
+        />
+        <button
+          type="button"
+          class="btn btn-sm sm:btn-md min-h-[44px] min-w-[44px] shrink-0 rounded-xl px-3"
+          data-clear-field="first_name"
+          title="Limpiar (guardar como null)"
+          aria-label="Limpiar nombre"
+        >
+          ✕
+        </button>
+      </div>
+      {err("first_name") && <p class="text-error mt-1 text-xs">{err("first_name")}</p>}
     </fieldset>
   </div>
 
-  <div class="form-control col-span-2">
+  <div class="form-control col-span-1 min-w-0">
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">Apellido</legend>
-      <input
-        type="text"
-        name="last_name"
-        value={values.last_name || ""}
-        class="input w-full rounded-xl"
-        placeholder="Messi"
-      />
+      <legend class={legendClass}>
+        Apellido
+        <span class="badge badge-ghost badge-xs ml-1 opacity-60">Opcional</span>
+      </legend>
+      <div class="flex w-full max-w-full gap-2">
+        <input
+          type="text"
+          name="last_name"
+          maxlength="100"
+          value={values.last_name || ""}
+          class={inputClass("last_name", "input input-sm sm:input-md min-h-[44px] w-full min-w-0 flex-1 rounded-xl px-3")}
+          placeholder="Messi"
+          aria-invalid={err("last_name") ? "true" : undefined}
+        />
+        <button
+          type="button"
+          class="btn btn-sm sm:btn-md min-h-[44px] min-w-[44px] shrink-0 rounded-xl px-3"
+          data-clear-field="last_name"
+          title="Limpiar (guardar como null)"
+          aria-label="Limpiar apellido"
+        >
+          ✕
+        </button>
+      </div>
+      {err("last_name") && <p class="text-error mt-1 text-xs">{err("last_name")}</p>}
     </fieldset>
   </div>
 
-  <div class="form-control col-span-4 sm:col-span-2">
+  <div class="form-control col-span-2 min-w-0 sm:col-span-1">
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">Fecha Nacimiento</legend>
-      <input
-        type="date"
-        name="birth_date"
-        value={values.birth_date || ""}
-        class="input w-full rounded-xl"
-      />
+      <legend class={legendClass}>
+        Fecha Nacimiento
+        <span class="badge badge-ghost badge-xs ml-1 opacity-60">Opcional</span>
+      </legend>
+      <div class="flex w-full max-w-full gap-2">
+        <input
+          type="date"
+          name="birth_date"
+          value={values.birth_date || ""}
+          class={inputClass("birth_date", "input input-sm sm:input-md min-h-[44px] w-full min-w-0 flex-1 rounded-xl px-3")}
+          aria-invalid={err("birth_date") ? "true" : undefined}
+        />
+        <button
+          type="button"
+          class="btn btn-sm sm:btn-md min-h-[44px] min-w-[44px] shrink-0 rounded-xl px-3"
+          data-clear-field="birth_date"
+          title="Limpiar (guardar como null)"
+          aria-label="Limpiar fecha nacimiento"
+        >
+          ✕
+        </button>
+      </div>
+      {err("birth_date") && <p class="text-error mt-1 text-xs">{err("birth_date")}</p>}
     </fieldset>
   </div>
 
-  <div class="form-control col-span-4 sm:col-span-2">
+  <div class="form-control col-span-2 min-w-0 sm:col-span-1">
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">Pie Habil</legend>
+      <legend class={legendClass}>Pie Habil</legend>
       <select
         name="preferred_foot"
-        class="select w-full rounded-xl"
+        class={inputClass("preferred_foot", "select select-sm sm:select-md min-h-[44px] w-full max-w-full rounded-xl px-3")}
       >
         <option value="" selected={!values.preferred_foot}>
           No especificado
@@ -101,13 +162,14 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
           Ambidiestro
         </option>
       </select>
+      {err("preferred_foot") && <p class="text-error mt-1 text-xs">{err("preferred_foot")}</p>}
     </fieldset>
   </div>
 
-  <div class="form-control col-span-4">
+  <div class="form-control col-span-2 min-w-0">
     <label
       for={guestCheckboxId}
-      class="mt-2 flex cursor-pointer flex-row items-center justify-start gap-3"
+      class="mt-1 flex min-h-[44px] cursor-pointer flex-row items-center justify-start gap-3"
     >
       <input
         type="checkbox"
@@ -116,14 +178,29 @@ const guestCheckboxId = `${idPrefix}-is-guest`;
         class="checkbox checkbox-sm"
         checked={values.is_guest || false}
       />
-      <div class="flex flex-col items-start">
-        <span class="font-bold">Marcar como Invitado</span>
+      <div class="flex min-w-0 flex-col items-start">
+        <span class="text-sm font-bold sm:text-base">Marcar como Invitado</span>
         <span class="text-base-content/60 text-xs">
           Los invitados aparecen al final de las listas de convocatoria.
         </span>
       </div>
     </label>
+    {err("is_guest") && <p class="text-error mt-1 text-xs">{err("is_guest")}</p>}
   </div>
 </div>
 
-
+<script>
+  document.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement).closest("[data-clear-field]");
+    if (!btn) return;
+    const field = btn.getAttribute("data-clear-field");
+    if (!field) return;
+    const form = btn.closest("form");
+    const input = form?.querySelector(`[name="${field}"]`) as HTMLInputElement | null;
+    if (input) {
+      input.value = "";
+      input.focus();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  });
+</script>

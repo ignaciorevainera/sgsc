@@ -54,18 +54,18 @@ const colorClasses = {
 <Card>
   <a
     href={href}
-    class="group flex flex-row items-center gap-4 p-4 lg:gap-5 lg:p-6"
+    class="group flex max-w-full flex-row items-center gap-3 overflow-hidden p-3.5 sm:p-4 lg:gap-5 lg:p-6"
   >
     <div
-      class={`shrink-0 rounded-full p-3 transition-all group-hover:scale-110 group-hover:text-white lg:p-4 ${colorClasses[color].base} ${colorClasses[color].hover}`}
+      class={`flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full p-2.5 transition-all group-hover:scale-110 group-hover:text-white sm:p-3 lg:p-4 ${colorClasses[color].base} ${colorClasses[color].hover}`}
       aria-hidden="true"
     >
-      <Icon name={icon} size={28} class="lg:hidden" />
+      <Icon name={icon} size={24} class="lg:hidden" />
       <Icon name={icon} size={36} class="hidden lg:block" />
     </div>
-    <div class="min-w-0">
-      <h3 class="text-base font-black lg:text-lg">{title}</h3>
-      <p class="text-base-content/60 text-xs font-bold uppercase lg:text-sm">
+    <div class="min-w-0 flex-1">
+      <h3 class="text-sm font-black sm:text-base lg:text-lg">{title}</h3>
+      <p class="text-base-content/60 text-[10px] font-bold uppercase sm:text-xs lg:text-sm">
         {description}
       </p>
     </div>

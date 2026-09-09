@@ -74,17 +74,17 @@ const hasMatches = !hasError && matches.length > 0;
   <Title title="Historial de Equipos" subtitle="Desempeño y lealtad de los equipos Claro y Oscuro a lo largo de la historia." />
 
   {hasMatches && (
-  <div class="bg-base-200 relative mb-6 overflow-hidden rounded-xl">
+  <div class="bg-base-200 relative mb-6 w-full max-w-full overflow-hidden overflow-x-hidden rounded-xl">
     <div
       class="bg-base-100/30 absolute inset-0"
     >
     </div>
 
-    <div class="relative z-10 container mx-auto px-4 py-12 text-center">
+    <div class="relative z-10 container mx-auto max-w-full overflow-hidden px-3 py-8 text-center sm:px-4 sm:py-12">
 
 
       <div
-        class="flex flex-col items-center justify-center gap-8 sm:flex-row sm:gap-20"
+        class="flex flex-col items-center justify-center gap-6 sm:flex-row sm:gap-20"
       >
         <div class="group flex flex-col items-center">
           <div
@@ -96,7 +96,7 @@ const hasMatches = !hasError && matches.length > 0;
             />
           </div>
           <div
-            class="text-6xl leading-none font-black text-slate-700 md:text-8xl dark:text-slate-300"
+            class="text-5xl leading-none font-black text-slate-700 sm:text-6xl md:text-8xl dark:text-slate-300"
           >
             {stats.light}
           </div>
@@ -125,7 +125,7 @@ const hasMatches = !hasError && matches.length > 0;
             />
           </div>
           <div
-            class="text-6xl leading-none font-black text-slate-700 md:text-8xl dark:text-slate-300"
+            class="text-5xl leading-none font-black text-slate-700 sm:text-6xl md:text-8xl dark:text-slate-300"
           >
             {stats.dark}
           </div>
@@ -165,8 +165,8 @@ const hasMatches = !hasError && matches.length > 0;
     </div>
   </div>
 
-  <div class="container mx-auto">
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+  <div class="container mx-auto w-full max-w-full overflow-hidden">
+    <div class="grid max-w-full grid-cols-1 gap-2.5 overflow-hidden sm:gap-4 md:grid-cols-2">
       <div
         class="card group overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md"
       >

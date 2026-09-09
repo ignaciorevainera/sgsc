@@ -1,3 +1,8 @@
+import {
+  formDataToPlayerInput,
+  playerSchema,
+} from "../schemas/adminSchemas";
+
 export type PreferredFoot = "right" | "left" | "both" | null;
 
 export interface PlayerFormData {
@@ -9,34 +14,18 @@ export interface PlayerFormData {
   is_guest: boolean;
 }
 
-const normalizeText = (value: FormDataEntryValue | null): string => {
-  return value?.toString().trim() || "";
-};
-
 export const parsePlayerFormData = (formData: FormData): PlayerFormData => {
-  const nickname = normalizeText(formData.get("nickname"));
-  const first_name = normalizeText(formData.get("first_name"));
-  const last_name = normalizeText(formData.get("last_name"));
-  const birth_date = normalizeText(formData.get("birth_date"));
-  const preferredFootRaw = normalizeText(formData.get("preferred_foot"));
-
-  if (!nickname || nickname.length > 50) {
-    throw new Error("El apodo es obligatorio y no puede superar los 50 caracteres.");
+  const result = playerSchema.safeParse(formDataToPlayerInput(formData));
+  if (!result.success) {
+    const first = result.error.issues[0];
+    throw new Error(first?.message || "Datos de jugador inválidos.");
   }
-
-  const preferred_foot: PreferredFoot =
-    preferredFootRaw === "right" ||
-    preferredFootRaw === "left" ||
-    preferredFootRaw === "both"
-      ? preferredFootRaw
-      : null;
-
   return {
-    nickname,
-    first_name: first_name || null,
-    last_name: last_name || null,
-    birth_date: birth_date || null,
-    preferred_foot,
-    is_guest: formData.has("is_guest"),
+    nickname: result.data.nickname,
+    first_name: result.data.first_name ?? null,
+    last_name: result.data.last_name ?? null,
+    birth_date: result.data.birth_date ?? null,
+    preferred_foot: result.data.preferred_foot ?? null,
+    is_guest: result.data.is_guest,
   };
 };

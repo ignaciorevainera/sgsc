@@ -10,7 +10,7 @@ interface Props {
 const { items = [] } = Astro.props;
 ---
 
-<dialog id="search-modal" class="modal" data-items={JSON.stringify(items)}>
+<dialog id="search-modal" class="modal" transition:persist="search-modal" data-items={JSON.stringify(items)}>
   <div class="modal-box w-full max-w-lg p-0">
     <SearchInput
       id="search-input"
@@ -66,16 +66,31 @@ const { items = [] } = Astro.props;
     return `<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${w.cls}" title="${item.meta?.winner === "draw" ? "Empate" : `Ganó equipo ${item.meta?.winner === "light" ? "luz" : "sombra"}`}">${w.svg.replace("<svg", '<svg class="h-4 w-4"')}</div>`;
   }
 
-  const modal = document.getElementById("search-modal") as HTMLDialogElement | null;
-  const input = document.getElementById("search-input") as HTMLInputElement | null;
-  const resultsDiv = document.getElementById("search-results") as HTMLElement | null;
-  const empty = document.getElementById("search-empty") as HTMLElement | null;
+  const getModal = () => document.getElementById("search-modal") as HTMLDialogElement | null;
+  const getInput = () => document.getElementById("search-input") as HTMLInputElement | null;
+  const getResultsDiv = () => document.getElementById("search-results") as HTMLElement | null;
+  const getEmpty = () => document.getElementById("search-empty") as HTMLElement | null;
 
-  let items: SearchItem[] = JSON.parse(modal?.dataset.items || "[]");
-  let isLoaded = items.length > 0;
+  let items: SearchItem[] = [];
+  let isLoaded = false;
   let loadPromise: Promise<SearchItem[]> | null = null;
 
+  function initItems() {
+    if (items.length > 0) return;
+    const modal = getModal();
+    if (modal?.dataset.items) {
+      try {
+        const parsed = JSON.parse(modal.dataset.items);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          items = parsed;
+          isLoaded = true;
+        }
+      } catch {}
+    }
+  }
+
   async function loadItems(): Promise<SearchItem[]> {
+    initItems();
     if (isLoaded) return items;
     if (loadPromise) return loadPromise;
 
@@ -140,6 +155,8 @@ const { items = [] } = Astro.props;
   }
 
   function renderEmpty() {
+    const resultsDiv = getResultsDiv();
+    const empty = getEmpty();
     if (!resultsDiv || !empty) return;
     empty.classList.add("hidden");
 
@@ -156,6 +173,8 @@ const { items = [] } = Astro.props;
   }
 
   function renderResults(query: string) {
+    const resultsDiv = getResultsDiv();
+    const empty = getEmpty();
     if (!resultsDiv || !empty) return;
 
     if (!query) {
@@ -165,7 +184,8 @@ const { items = [] } = Astro.props;
 
     if (!isLoaded) {
       loadItems().then(() => {
-        if (input?.value) renderResults(input.value);
+        const currentInput = getInput();
+        if (currentInput?.value) renderResults(currentInput.value);
       });
       return;
     }
@@ -201,25 +221,48 @@ const { items = [] } = Astro.props;
     resultsDiv.innerHTML = html;
   }
 
-  resultsDiv?.addEventListener("click", (e) => {
-    const anchor = (e.target as HTMLElement).closest("a[data-id]") as HTMLAnchorElement | null;
-    if (!anchor || !anchor.dataset.id) return;
-    saveRecent({
-      id: anchor.dataset.id,
-      label: anchor.dataset.label || "",
-      subtitle: anchor.dataset.subtitle || "",
-      href: anchor.dataset.href || anchor.getAttribute("href") || "#",
-      type: (anchor.dataset.type as SearchItem["type"]) || "page",
-    });
-  });
+  function setupSearchModal() {
+    const modal = getModal();
+    const input = getInput();
+    const resultsDiv = getResultsDiv();
 
-  let debounceTimer: ReturnType<typeof setTimeout>;
-  input?.addEventListener("input", () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => renderResults(input?.value || ""), 300);
-  });
+    if (!modal || modal.dataset.paletteBound === "true") return;
+    modal.dataset.paletteBound = "true";
+
+    resultsDiv?.addEventListener("click", (e) => {
+      const anchor = (e.target as HTMLElement).closest("a[data-id]") as HTMLAnchorElement | null;
+      if (!anchor || !anchor.dataset.id) return;
+      saveRecent({
+        id: anchor.dataset.id,
+        label: anchor.dataset.label || "",
+        subtitle: anchor.dataset.subtitle || "",
+        href: anchor.dataset.href || anchor.getAttribute("href") || "#",
+        type: (anchor.dataset.type as SearchItem["type"]) || "page",
+      });
+      modal.close();
+    });
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    input?.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const currentInput = getInput();
+        renderResults(currentInput?.value || "");
+      }, 300);
+    });
+
+    input?.addEventListener("focus", () => loadItems(), { once: true });
+
+    modal.addEventListener("close", () => {
+      const currentInput = getInput();
+      if (currentInput) currentInput.value = "";
+      renderResults("");
+    });
+  }
 
   function openModal() {
+    const modal = getModal();
+    const input = getInput();
     if (!modal || modal.open) return;
     loadItems();
     modal.showModal();
@@ -227,11 +270,12 @@ const { items = [] } = Astro.props;
     setTimeout(() => input?.focus(), 50);
   }
 
-  input?.addEventListener("focus", () => loadItems(), { once: true });
-
-  const headerSearchBtn = document.getElementById("header-search-btn");
-  headerSearchBtn?.addEventListener("click", () => loadItems(), { once: true });
-  headerSearchBtn?.addEventListener("click", openModal);
+  function initHeaderSearchBtn() {
+    const headerSearchBtn = document.getElementById("header-search-btn");
+    if (!headerSearchBtn) return;
+    headerSearchBtn.addEventListener("click", () => loadItems(), { once: true });
+    headerSearchBtn.addEventListener("click", openModal);
+  }
 
   function onKeydownPreload(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
@@ -246,13 +290,21 @@ const { items = [] } = Astro.props;
       e.preventDefault();
       openModal();
     }
+    const modal = getModal();
     if (e.key === "Escape" && modal?.open) {
       modal.close();
     }
   });
 
-  modal?.addEventListener("close", () => {
-    if (input) input.value = "";
-    renderResults("");
+  setupSearchModal();
+  initHeaderSearchBtn();
+
+  document.addEventListener("astro:page-load", () => {
+    const modal = getModal();
+    if (modal?.open) {
+      modal.close();
+    }
+    setupSearchModal();
+    initHeaderSearchBtn();
   });
 </script>
