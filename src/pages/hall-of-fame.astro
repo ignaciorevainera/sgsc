@@ -319,36 +319,61 @@ const categories = [
 
   {
     champions.length > 0 && (
-      <div class="card border-warning/30 from-warning/10 via-base-100 to-base-100 mb-8 border-2 bg-linear-to-br shadow-lg">
-        <div class="card-body flex flex-col items-center py-10 text-center">
-          <div class="bg-warning shadow-warning/20 mb-6 flex h-20 w-20 items-center justify-center rounded-full shadow-lg">
-            <Icon
-              name="material-symbols:trophy"
-              size={48}
-              class="text-base-100"
+      <section
+        aria-label={`Campeón de la temporada ${lastSeason}`}
+        class="border-warning/30 bg-base-100 relative mb-8 overflow-hidden rounded-xl border-2 shadow-lg"
+      >
+        {/* Glow + marca de agua */}
+        <div
+          class="from-warning/15 via-warning/5 pointer-events-none absolute inset-0 bg-linear-to-br to-transparent"
+          aria-hidden="true"
+        />
+        <Icon
+          name="material-symbols:trophy"
+          aria-hidden="true"
+          class="text-warning/10 absolute -right-8 -bottom-10 size-52 rotate-12"
+        />
+
+        <div class="relative flex flex-col items-center px-6 py-10 text-center sm:px-10">
+          <span class="badge badge-warning badge-lg rounded-xl font-black tracking-widest uppercase">
+            Temporada {lastSeason}
+          </span>
+
+          <div class="relative mt-6">
+            <div
+              class="bg-warning/20 absolute inset-0 scale-125 rounded-full blur-xl"
+              aria-hidden="true"
             />
+            <div class="bg-warning text-warning-content relative flex h-20 w-20 items-center justify-center rounded-full shadow-lg">
+              <Icon name="material-symbols:trophy" size={44} />
+            </div>
           </div>
 
-          <h2 class="text-warning text-sm font-black tracking-widest text-balance uppercase">
-            Campeón Temporada {lastSeason}
-          </h2>
+          <p class="text-warning mt-6 text-xs font-black tracking-widest text-balance uppercase">
+            {champions.length === 1 ? "Último campeón" : "Últimos campeones"}
+          </p>
 
-          <div class="mt-6 flex flex-col items-center gap-8 sm:flex-row sm:flex-wrap sm:justify-center">
+          <div class="mt-4 flex flex-col items-center gap-8 sm:flex-row sm:flex-wrap sm:justify-center">
             {champions.map((champ) => (
               <div class="flex flex-col items-center">
-                <span class="text-4xl font-black italic sm:text-5xl">
+                <a
+                  href={`/players/${champ.player_id}`}
+                  class="hover:text-primary text-4xl font-black tracking-tight italic transition-colors sm:text-5xl"
+                >
                   {champ.nickname?.toUpperCase() || "N/A"}
-                </span>
+                </a>
                 <div class="text-base-content/60 mt-3 flex items-center gap-2 text-xs font-bold uppercase sm:text-sm">
                   <span>{champ.points} pts</span>
                   <span class="h-1 w-1 rounded-full bg-current" />
-                  <span>{Math.round(champ.win_rate || 0)}% w-rate</span>
+                  <span>
+                    {Math.round(champ.win_rate || 0)}% efectividad
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
     )
   }
 

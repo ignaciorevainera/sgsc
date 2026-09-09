@@ -25,7 +25,7 @@ const filters = getFilters(Astro.url, {
 
 const { data: players, error } = await supabase
   .from("view_player_stats_all_time")
-  .select("player_id, nickname, matches_played, wins, points")
+  .select("player_id, nickname, matches_played, wins, losses, points, attendance_pct")
   .eq("is_guest", false)
   .order("nickname", { ascending: true });
 
@@ -128,10 +128,12 @@ const clearUrl = clearedUrl.pathname + clearedUrl.search;
           <PlayerFutCard
             variant="list"
             href={`/players/${player.player_id}`}
-            nickname={player.nickname}
-            points={player.points}
-            matchesPlayed={player.matches_played}
-            wins={player.wins}
+            nickname={player.nickname ?? "Jugador"}
+            points={player.points ?? 0}
+            matchesPlayed={player.matches_played ?? 0}
+            wins={player.wins ?? 0}
+            losses={player.losses}
+            attendancePct={player.attendance_pct}
           />
         ))}
       </div>

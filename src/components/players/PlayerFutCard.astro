@@ -8,18 +8,30 @@ interface Props {
   points: number;
   matchesPlayed: number;
   wins: number;
+  losses?: number | null;
+  attendancePct?: number | null;
   href?: string;
   variant?: "profile" | "list";
 }
 
-const { nickname, points, matchesPlayed, wins, href, variant = "profile" } = Astro.props;
+const {
+  nickname,
+  points,
+  matchesPlayed,
+  wins,
+  losses = null,
+  attendancePct = null,
+  href,
+  variant = "profile",
+} = Astro.props;
 
 const initials = getInitials(nickname);
 const winRate = getWinRate(wins, matchesPlayed);
 const Tag = href ? "a" : "div";
 const isList = variant === "list";
-const widthClass = isList ? "w-72" : "w-60";
+const widthClass = isList ? "w-full" : "w-60";
 const hintLabel = isList ? "Ver perfil" : "Ver ficha";
+const attendance = attendancePct === null ? null : Math.round(attendancePct);
 ---
 
 <Tag
@@ -32,10 +44,13 @@ const hintLabel = isList ? "Ver perfil" : "Ver ficha";
     class="bg-base-100 border-base-200 group relative flex h-full flex-col items-center rounded-xl border p-4 pb-5 shadow-md"
   >
     <span
-      class="badge badge-primary font-countdown absolute start-3 top-3 border-none text-sm font-black shadow-sm"
-      title="Puntos"
+      class="badge badge-primary font-countdown absolute start-3 top-3 flex h-auto flex-col gap-0 border-none py-1 shadow-sm"
+      title="Puntos totales"
     >
-      {points}
+      <span class="text-[9px] leading-tight font-bold tracking-widest uppercase opacity-80">
+        Pts
+      </span>
+      <span class="text-sm leading-tight font-black">{points}</span>
     </span>
 
     <Icon
@@ -60,23 +75,38 @@ const hintLabel = isList ? "Ver perfil" : "Ver ficha";
 
     <div class="divider my-2"></div>
 
-    <dl class="font-countdown grid w-full grid-cols-3 gap-1 text-center">
+    <dl
+      class={`font-countdown grid w-full gap-x-1 text-center ${isList ? "grid-cols-2 gap-y-3 min-[420px]:grid-cols-4 min-[420px]:gap-1" : "grid-cols-3 gap-1"}`}
+    >
       <div>
-        <dt class="text-base-content/60 text-xs font-bold uppercase">PJ</dt>
-        <dd class="text-base-content text-xl font-black">{matchesPlayed}</dd>
+        <dt class="text-base-content/60 text-[11px] font-bold uppercase sm:text-xs">PJ</dt>
+        <dd class="text-base-content text-lg font-black sm:text-xl">{matchesPlayed}</dd>
       </div>
       <div>
-        <dt class="text-success text-xs font-bold uppercase">{isList ? "Gan" : "G"}</dt>
-        <dd class="text-success text-xl font-black">{wins}</dd>
+        <dt class="text-success text-[11px] font-bold uppercase sm:text-xs">{isList ? "Gan" : "G"}</dt>
+        <dd class="text-success text-lg font-black sm:text-xl">{wins}</dd>
       </div>
-      <div>
-        <dt class={`text-xs font-bold uppercase ${isList ? "text-warning" : "text-primary"}`}>
-          {isList ? "Pts" : "%"}
-        </dt>
-        <dd class={`text-xl font-black ${isList ? "text-warning" : "text-primary"}`}>
-          {isList ? points : winRate}
-        </dd>
-      </div>
+      {isList ? (
+        <>
+          <div>
+            <dt class="text-error text-[11px] font-bold uppercase sm:text-xs">D</dt>
+            <dd class="text-error text-lg font-black sm:text-xl">{losses ?? "—"}</dd>
+          </div>
+          <div>
+            <dt class="text-info text-[11px] font-bold uppercase sm:text-xs" title="Presentismo global">
+              Pres
+            </dt>
+            <dd class="text-info text-lg font-black sm:text-xl">
+              {attendance === null ? "—" : `${attendance}%`}
+            </dd>
+          </div>
+        </>
+      ) : (
+        <div>
+          <dt class="text-primary text-[11px] font-bold uppercase sm:text-xs">%</dt>
+          <dd class="text-primary text-lg font-black sm:text-xl">{winRate}</dd>
+        </div>
+      )}
     </dl>
 
     {
