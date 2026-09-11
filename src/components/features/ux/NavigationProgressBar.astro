@@ -2,7 +2,7 @@
 ---
 <div
   id="nav-progress-bar"
-  class="fixed top-0 left-0 right-0 z-50 h-[3px] w-0 bg-primary opacity-0 transition-all duration-200 pointer-events-none"
+  class="fixed top-0 left-0 right-0 z-50 h-[3px] w-full origin-left scale-x-0 bg-primary opacity-0 transition-[transform,opacity] duration-200 ease-out pointer-events-none"
   aria-hidden="true"
 ></div>
 
@@ -14,7 +14,7 @@
     progressTimeout = setTimeout(() => {
       const el = bar();
       if (!el) return;
-      el.style.width = "70%";
+      el.style.transform = "scaleX(0.7)";
       el.style.opacity = "1";
     }, 100);
   });
@@ -23,11 +23,11 @@
     if (progressTimeout) clearTimeout(progressTimeout);
     const el = bar();
     if (!el) return;
-    el.style.width = "100%";
+    el.style.transform = "scaleX(1)";
     setTimeout(() => {
       el.style.opacity = "0";
       setTimeout(() => {
-        el.style.width = "0%";
+        el.style.transform = "scaleX(0)";
       }, 200);
     }, 150);
   });
