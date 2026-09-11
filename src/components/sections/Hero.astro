@@ -1,0 +1,69 @@
+---
+import { Icon } from "astro-icon/components";
+import type { HeroImage } from "@/lib/hero";
+
+interface Props {
+  heroImage: HeroImage;
+}
+
+const { heroImage } = Astro.props;
+---
+
+<section
+  class="relative mb-10 flex min-h-[50vh] items-center overflow-hidden rounded-xl text-white"
+>
+  <picture>
+    <source srcset={heroImage.avif} type="image/avif" />
+    <source srcset={heroImage.webp} type="image/webp" />
+    <img
+      src={heroImage.webp}
+      alt={heroImage.alt}
+      aria-hidden="true"
+      fetchpriority="high"
+      loading="eager"
+      decoding="async"
+      width={heroImage.width}
+      height={heroImage.height}
+      class="absolute inset-0 h-full w-full object-cover object-[center_30%]"
+    />
+  </picture>
+  <div class="absolute inset-0 z-0 bg-black/60"></div>
+  <div
+    class="relative z-10 container mx-auto flex flex-col items-center justify-center gap-8 px-4 py-10 md:flex-row"
+  >
+    <div class="flex max-w-xl flex-col items-center gap-4 text-center">
+      <h1 class="text-7xl font-black tracking-tighter md:text-8xl">SGSC</h1>
+      <p
+        class="mx-auto max-w-md text-sm font-medium text-balance opacity-90 sm:text-lg md:mx-0 md:text-xl"
+      >
+        Plataforma oficial del Solo Gente Súper Comprometida Fútbol Club.
+      </p>
+
+      <div class="flex flex-wrap justify-center gap-4 md:justify-start">
+        <a
+          href="/ranking"
+          class="btn btn-primary rounded-xl border-none shadow-md"
+        >
+          <Icon
+            name="material-symbols:leaderboard"
+            size={20}
+            aria-hidden="true"
+          />
+          Ver Tabla
+        </a>
+        <a
+          href="/matches"
+          class="btn btn-outline rounded-xl text-white hover:border-white hover:bg-white/20"
+        >
+          <Icon
+            name="material-symbols:sports-soccer"
+            size={20}
+            aria-hidden="true"
+          />
+          Historial
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+

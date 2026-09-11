@@ -7,13 +7,16 @@ Astro.response.headers.set(
 import { Icon } from "astro-icon/components";
 import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
+import { getRandomHero } from "@/lib/hero";
 import Alert from "@/components/shared/Alert.astro";
+import Hero from "@/components/sections/Hero.astro";
 import LiveMatchCounter from "@/components/index/LiveMatchCounter.astro";
 import Main from "@/layouts/Main.astro";
 import MatchCard from "@/components/MatchCard.astro";
 
 const supabase = createAstroSupabase(Astro);
 const currentYear = getCurrentYear();
+const heroImage = getRandomHero();
 
 const [
   { error: matchesCountError },
@@ -56,66 +59,36 @@ const hasConnectionError = !!matchesCountError;
 const features = [
   {
     title: "Tabla de Posiciones",
+    kicker: "Competencia",
     description: "Mira quién lidera el torneo y la lucha por el campeonato.",
     icon: "material-symbols:trophy",
     href: "/ranking",
-    color: "bg-amber-500/10 text-amber-600",
+    color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    ring: "group-hover:ring-amber-500/30",
   },
   {
     title: "Salón de la Fama",
+    kicker: "Historia",
     description: "Los récords históricos y leyendas del club.",
     icon: "material-symbols:workspace-premium",
     href: "/hall-of-fame",
-    color: "bg-purple-500/10 text-purple-600",
+    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    ring: "group-hover:ring-purple-500/30",
   },
   {
     title: "Plantel de Jugadores",
+    kicker: "Equipo",
     description: "Perfiles detallados y estadísticas individuales.",
     icon: "material-symbols:groups",
     href: "/players",
-    color: "bg-blue-500/10 text-blue-600",
+    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    ring: "group-hover:ring-blue-500/30",
   },
 ];
 ---
 
-<Main title="Inicio | SGSC">
-  <section
-    class="hero relative mb-10 flex min-h-[50vh] items-center overflow-hidden rounded-xl text-white"
-  >
-    <div class="absolute inset-0 z-0 bg-black/60"></div>
-    <div
-      class="relative z-10 container mx-auto flex flex-col items-center justify-center gap-8 px-4 py-10 md:flex-row"
-    >
-      <div class="flex max-w-xl flex-col items-center gap-4 text-center">
-        <h1 class="text-7xl font-black tracking-tighter md:text-8xl">SGSC</h1>
-        <p
-          class="mx-auto max-w-md text-sm font-medium text-balance opacity-90 sm:text-lg md:mx-0 md:text-xl"
-        >
-          Plataforma oficial del Solo Gente Súper Comprometida Fútbol Club.
-        </p>
-
-        <div class="flex flex-wrap justify-center gap-4 md:justify-start">
-          <a
-            href="/ranking"
-            class="btn btn-primary rounded-xl border-none shadow-md"
-          >
-            <Icon
-              name="material-symbols:leaderboard"
-              size={20}
-              aria-hidden="true"
-            />
-            Ver Tabla
-          </a>
-          <a
-            href="/matches"
-            class="btn btn-outline rounded-xl text-white hover:border-white hover:bg-white/20"
-          >
-            Historial
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
+<Main title="Inicio | SGSC" heroImage={heroImage}>
+  <Hero heroImage={heroImage} />
 
   <section class="container mx-auto space-y-12 pb-12">
     {/* Alerta de error de conexión */}
@@ -132,22 +105,32 @@ const features = [
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-9">
       <!-- Líderes: 5 columnas en desktop -->
       <div class="lg:col-span-3">
-        <div class="mb-4 flex items-center gap-2">
-          <Icon
-            name="material-symbols:trophy"
-            class="text-warning"
-            size={24}
-            aria-hidden="true"
-          />
-          <h2 class="text-primary text-xl font-black uppercase italic">
-            Líderes {currentYear}
-          </h2>
+        <div class="mb-4 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <span
+              class="bg-warning/10 border-warning/20 text-warning flex h-10 w-10 items-center justify-center rounded-xl border"
+              aria-hidden="true"
+            >
+              <Icon name="material-symbols:trophy" size={22} />
+            </span>
+            <h2 class="text-xl font-black uppercase italic">
+              Líderes {currentYear}
+            </h2>
+          </div>
+          <a href="/ranking" class="btn btn-ghost btn-xs">
+            Tabla
+            <Icon
+              name="material-symbols:arrow-forward"
+              size={16}
+              aria-hidden="true"
+            />
+          </a>
         </div>
 
         <div
           class="card bg-base-100 border-base-200 rounded-xl border shadow-md"
         >
-          <div class="card-body p-0">
+            <div class="card-body p-0 first:[&_a]:rounded-t-xl last:[&_a]:rounded-b-xl">
             {
               topPlayers && topPlayers.length > 0 ? (
                 <div class="divide-base-200 divide-y">
@@ -191,30 +174,32 @@ const features = [
                 </div>
               )
             }
-            <div class="border-base-200 mt-auto border-t p-2 text-center">
-              <a
-                href="/ranking"
-                class="btn btn-ghost btn-xs btn-wide w-full rounded-xl"
-              >
-                Ver tabla completa
-              </a>
-            </div>
           </div>
         </div>
       </div>
 
       <!-- Último Resultado: 6 columnas en desktop -->
       <div class="flex flex-col lg:col-span-6">
-        <div class="mb-4 flex items-center gap-2">
-          <Icon
-            name="material-symbols:history"
-            class="text-primary"
-            size={24}
-            aria-hidden="true"
-          />
-          <h2 class="text-primary text-xl font-black uppercase italic">
-            Último Resultado
-          </h2>
+        <div class="mb-4 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3">
+            <span
+              class="bg-primary/10 border-primary/20 text-primary flex h-10 w-10 items-center justify-center rounded-xl border"
+              aria-hidden="true"
+            >
+              <Icon name="material-symbols:history" size={22} />
+            </span>
+            <h2 class="text-xl font-black uppercase italic">
+              Último resultado
+            </h2>
+          </div>
+          <a href="/matches" class="btn btn-ghost btn-xs">
+            Historial
+            <Icon
+              name="material-symbols:arrow-forward"
+              size={16}
+              aria-hidden="true"
+            />
+          </a>
         </div>
 
         <div class="flex-1 [&>div]:h-full [&>div>.card-body]:h-full">
@@ -242,19 +227,32 @@ const features = [
         features.map((feature) => (
           <a
             href={feature.href}
-            class="card bg-base-100 border-base-200 group rounded-xl border shadow-md transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3"
+            class={`card bg-base-100 border-base-200 group rounded-xl border shadow-md ring-1 ring-transparent transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3 ${feature.ring}`}
             aria-label={`${feature.title}: ${feature.description}`}
           >
-            <div class="card-body">
-              <div
-                class={`mb-2 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
-                aria-hidden="true"
-              >
-                <Icon name={feature.icon} size={30} />
+            <div class="card-body gap-3">
+              <div class="flex items-start justify-between">
+                <div
+                  class={`flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
+                  aria-hidden="true"
+                >
+                  <Icon name={feature.icon} size={28} />
+                </div>
+                <Icon
+                  name="material-symbols:arrow-outward"
+                  size={20}
+                  aria-hidden="true"
+                  class="text-base-content/30 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary"
+                />
               </div>
-              <h3 class="card-title group-hover:text-primary transition-colors">
-                {feature.title}
-              </h3>
+              <div>
+                <p class="text-base-content/60 text-[11px] font-bold tracking-[0.18em] uppercase">
+                  {feature.kicker}
+                </p>
+                <h3 class="text-lg leading-snug font-extrabold tracking-tight group-hover:text-primary transition-colors">
+                  {feature.title}
+                </h3>
+              </div>
               <p class="text-base-content/60 text-sm">{feature.description}</p>
             </div>
           </a>
@@ -282,12 +280,3 @@ const features = [
     </div>
   </section>
 </Main>
-
-<style>
-  .hero {
-    background-image: url("/hero.webp"); /* Asegúrate que la imagen esté en /public */
-    background-size: cover;
-    background-position: center 30%; /* Ajuste para centrar mejor la acción */
-    background-attachment: fixed;
-  }
-</style>

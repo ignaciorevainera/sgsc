@@ -12,6 +12,7 @@ import SkipLink from "@/components/features/ux/SkipLink.astro";
 import KeyboardShortcutsModal from "@/components/features/ux/KeyboardShortcutsModal.astro";
 import "@styles/accessibility.css";
 import "@styles/print.css";
+import soraWoff2 from "@fontsource-variable/sora/files/sora-latin-wght-normal.woff2?url";
 
 interface Props {
   title: string;
@@ -21,6 +22,7 @@ interface Props {
   contentWidth?: "public" | "admin";
   toastType?: "success" | "error" | "warning" | "info";
   toastMessage?: string;
+  heroImage?: { avif: string; webp: string };
 }
 
 const {
@@ -31,6 +33,7 @@ const {
   contentWidth = "public",
   toastType,
   toastMessage,
+  heroImage,
 } = Astro.props;
 
 // Generamos URLs absolutas (necesarias para WhatsApp/FB)
@@ -58,6 +61,22 @@ const mainWidthClass =
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
+    <link
+      rel="preload"
+      href={soraWoff2}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    {heroImage && (
+      <link
+        rel="preload"
+        as="image"
+        href={heroImage.avif}
+        type="image/avif"
+        fetchpriority="high"
+      />
+    )}
 
     <!-- Theme color para móviles -->
     <meta
