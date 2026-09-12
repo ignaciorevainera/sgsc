@@ -25,7 +25,8 @@ const {
 } = Astro.props;
 ---
 
-<label class={`input w-full rounded-xl ${className}`}>
+<label for={id} class={`input w-full rounded-xl ${className}`}>
+  <span class="sr-only">{ariaLabel}</span>
   <Icon
     name="material-symbols:search"
     class={`${iconClass} shrink-0 opacity-50`}

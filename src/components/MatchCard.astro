@@ -85,7 +85,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
       <div
         class={`relative overflow-hidden rounded-xl border-2 p-3 bg-slate-100 text-slate-800 ${isDraw ? "border-yellow-400" : "border-slate-300"} ${isLightWinner ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-base-100" : ""}`}
       >
-        <h3 class="sr-only">Equipo Claro</h3>
+        <h3 class="sr-only" aria-label="Equipo Claro">Equipo Claro</h3>
         <div class="relative z-10 flex flex-wrap gap-1.5">
           {
             sortedLightTeam.map((mp: any) => (
@@ -107,7 +107,7 @@ const sortedDarkTeam = [...darkTeam].sort((a: any, b: any) =>
       <div
         class={`relative overflow-hidden rounded-xl border-2 bg-slate-800 text-slate-100 p-3 ${isDraw ? "border-yellow-400" : "border-slate-700"} ${isDarkWinner ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-800" : ""}`}
       >
-        <h3 class="sr-only">Equipo Oscuro</h3>
+        <h3 class="sr-only" aria-label="Equipo Oscuro">Equipo Oscuro</h3>
         <div class="relative z-10 flex flex-wrap gap-1.5">
           {
             sortedDarkTeam.map((mp: any) => (

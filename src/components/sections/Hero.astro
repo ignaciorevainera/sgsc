@@ -16,6 +16,7 @@ const { heroImage } = Astro.props;
     <source srcset={heroImage.avif} type="image/avif" />
     <source srcset={heroImage.webp} type="image/webp" />
     <img
+      data-image-component=""
       src={heroImage.webp}
       alt={heroImage.alt}
       aria-hidden="true"
