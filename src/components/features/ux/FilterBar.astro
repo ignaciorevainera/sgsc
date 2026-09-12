@@ -4,21 +4,62 @@ import { Icon } from "astro-icon/components";
 interface Props {
   hasActiveFilters: boolean;
   clearUrl?: string;
+  clearIcon?: string;
 }
 
-const { hasActiveFilters, clearUrl } = Astro.props;
+const { hasActiveFilters, clearUrl, clearIcon = "material-symbols:filter-list-off" } = Astro.props;
+const hasButton = hasActiveFilters && !!clearUrl;
+const hasSecondary = Astro.slots.has("secondary");
+const hasActions = Astro.slots.has("actions");
 ---
 
-<div class="bg-base-100 border-base-200 mb-6 flex flex-col gap-3 rounded-xl border p-4 shadow-md">
-  <div class="flex flex-wrap lg:flex-nowrap items-end gap-4 w-full">
+<div class="bg-base-100 border-base-200 mb-6 rounded-xl border p-4 shadow-md">
+  <div class="filter-bar-items">
     <slot />
     {
-      hasActiveFilters && clearUrl && (
-        <a href={clearUrl} class="btn btn-soft btn-error btn-sm md:btn-md gap-2 rounded-xl shrink-0">
-          <Icon name="material-symbols:filter-list-off" size={18} aria-hidden="true" />
-          Limpiar filtros
-        </a>
+      !hasSecondary && (
+        <>
+          {hasActions && <slot name="actions" />}
+          {hasButton && (
+            <a href={clearUrl} data-filter-clear class="btn btn-soft btn-error btn-sm md:btn-md gap-2 rounded-xl" aria-label="Limpiar filtros">
+              <Icon name={clearIcon} size={18} aria-hidden="true" />
+              <span class="hidden sm:inline">Limpiar filtros</span>
+            </a>
+          )}
+        </>
       )
     }
   </div>
+  {
+    hasSecondary && (
+      <div class="filter-bar-items mt-4">
+        <slot name="secondary" />
+        {hasActions && <slot name="actions" />}
+        {hasButton && (
+          <a href={clearUrl} data-filter-clear class="btn btn-soft btn-error btn-sm md:btn-md gap-2 rounded-xl" aria-label="Limpiar filtros">
+            <Icon name={clearIcon} size={18} aria-hidden="true" />
+            <span class="hidden sm:inline">Limpiar filtros</span>
+          </a>
+        )}
+      </div>
+    )
+  }
 </div>
+
+<style>
+  .filter-bar-items {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+  }
+
+  .filter-bar-items > :global(*) {
+    flex: 1 0 8rem;
+  }
+
+  .filter-bar-items > [data-filter-clear],
+  .filter-bar-items > :global([data-filter-action]) {
+    flex: 0 0 auto;
+  }
+</style>

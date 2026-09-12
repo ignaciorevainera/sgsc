@@ -118,7 +118,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
   />
 
   <FilterBar hasActiveFilters={hasActiveFilters} clearUrl={clearUrl}>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full">
       <label for="year" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Año</span>
       </label>
@@ -134,7 +134,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         ))}
       </select>
     </div>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full">
       <label for="from" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Desde</span>
       </label>
@@ -147,7 +147,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         aria-label="Fecha desde"
       />
     </div>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full">
       <label for="to" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Hasta</span>
       </label>
@@ -160,7 +160,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         aria-label="Fecha hasta"
       />
     </div>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full" slot="secondary">
       <label for="field_id" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Cancha</span>
       </label>
@@ -176,7 +176,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         ))}
       </select>
     </div>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full" slot="secondary">
       <label for="video" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Grabación</span>
       </label>
@@ -191,7 +191,7 @@ const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
         <option value="without" selected={filters.video === "without"}>Sin grabación</option>
       </select>
     </div>
-    <div class="form-control w-full sm:w-auto sm:flex-1">
+    <div class="form-control w-full" slot="secondary">
       <label for="result" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Resultado</span>
       </label>

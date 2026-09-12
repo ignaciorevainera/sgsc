@@ -6,8 +6,10 @@ Astro.response.headers.set(
 
 import { createAstroSupabase } from "@/lib/supabase";
 import { getCurrentYear } from "@/lib/utils/dateUtils";
+import { clearFilters } from "@/lib/ux/filters";
 import EmptyState from "@/components/features/ux/EmptyState.astro";
 import ErrorRetry from "@/components/features/ux/ErrorRetry.astro";
+import FilterBar from "@/components/features/ux/FilterBar.astro";
 import Main from "@/layouts/Main.astro";
 import StandingsLegend from "@/components/ranking/StandingsLegend.astro";
 import StandingsTable from "@/components/ranking/StandingsTable.astro";
@@ -162,6 +164,11 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
       return b.matches - a.matches;
   }
 });
+
+const hasActiveFilters =
+  seasonParam !== null || sort !== "points" || mode !== "simple" || minMatches > 0;
+const clearFilterUrl = clearFilters(Astro.url, ["season", "sort", "mode", "min_matches"]);
+const clearUrl = clearFilterUrl.pathname + clearFilterUrl.search;
 ---
 
 <Main title="Clasificación | SGSC">
@@ -179,72 +186,53 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
     />
   </div>
 
-  <div
-    class="bg-base-100 border-base-200 mb-6 flex flex-col gap-2 rounded-xl border p-4 shadow-md sm:flex-row sm:items-center sm:gap-4"
-  >
-    <div
-      class="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-    >
-      {/* Selector de Temporada */}
-      <div class="form-control w-full">
-        <label for="season" class="label py-1">
-          <span
-            class="label-text text-base-content/60 text-xs font-bold uppercase"
-            >Temporada</span
-          >
-        </label>
-        <select
-          id="season"
-          name="season"
-          class="select select-sm md:select-md w-full rounded-xl"
-          aria-label="Seleccionar temporada"
-        >
-          {
-            seasons.map((s) => (
-              <option value={s} selected={String(season) === String(s)}>
-                {s}
-              </option>
-            ))
-          }
-        </select>
-      </div>
-
-      {/* Selector de Orden */}
-      <div class="form-control w-full">
-        <label for="sort" class="label py-1">
-          <span
-            class="label-text text-base-content/60 text-xs font-bold uppercase"
-            >Ordenar por</span
-          >
-        </label>
-        <select
-          id="sort"
-          name="sort"
-          class="select select-sm md:select-md w-full rounded-xl"
-          aria-label="Seleccionar criterio de ordenamiento"
-        >
-          {
-            sortOptions.map((o) => (
-              <option value={o.value} selected={sort === o.value}>
-                {o.label}
-              </option>
-            ))
-          }
-        </select>
-      </div>
+  <FilterBar hasActiveFilters={hasActiveFilters} clearUrl={clearUrl} clearIcon="material-symbols:restart-alt">
+    <div class="form-control w-full">
+      <label for="season" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Temporada</span>
+      </label>
+      <select
+        id="season"
+        name="season"
+        class="select select-sm md:select-md w-full rounded-xl"
+        aria-label="Seleccionar temporada"
+      >
+        {
+          seasons.map((s) => (
+            <option value={s} selected={String(season) === String(s)}>
+              {s}
+            </option>
+          ))
+        }
+      </select>
     </div>
 
-    <div class="divider m-0 sm:hidden"></div>
+    <div class="form-control w-full">
+      <label for="sort" class="label py-1">
+        <span class="label-text text-base-content/60 text-xs font-bold uppercase">Ordenar por</span>
+      </label>
+      <select
+        id="sort"
+        name="sort"
+        class="select select-sm md:select-md w-full rounded-xl"
+        aria-label="Seleccionar criterio de ordenamiento"
+      >
+        {
+          sortOptions.map((o) => (
+            <option value={o.value} selected={sort === o.value}>
+              {o.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
 
-    {/* Toggle Vista Detallada (Móvil) */}
-    <div class="form-control w-full sm:hidden">
+    <div class="form-control w-full sm:hidden" slot="secondary">
       <label
         for="mode-toggle"
         class="label cursor-pointer justify-start gap-3 p-0"
       >
-        <span class="text-base-content/60 text-xs font-bold uppercase"
-          >Vista Detallada</span
-        >
+        <span class="text-base-content/60 text-xs font-bold uppercase">Vista Detallada</span>
         <input
           id="mode-toggle"
           type="checkbox"
@@ -256,9 +244,7 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
       </label>
     </div>
 
-    <div class="divider m-0 sm:hidden"></div>
-
-    <div class="form-control w-full">
+    <div class="form-control w-full" slot="secondary">
       <label for="min_matches" class="label py-1">
         <span class="label-text text-base-content/60 text-xs font-bold uppercase">Mín. Partidos</span>
       </label>
@@ -276,16 +262,18 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
       />
     </div>
 
-    {/* Reset de filtros */}
-    <a
-      href="/ranking"
-      class="btn btn-soft btn-error btn-sm md:btn-md w-full shrink-0 gap-2 self-end rounded-xl sm:w-auto"
-      aria-label="Limpiar todos los filtros"
+    <button
+      id="apply-filters"
+      type="button"
+      data-filter-action
+      slot="actions"
+      class="btn btn-primary btn-sm md:btn-md gap-2 rounded-xl"
+      aria-label="Aplicar filtros"
     >
-      <Icon name="material-symbols:restart-alt" size={18} aria-hidden="true" />
-      Limpiar
-    </a>
-  </div>
+      <Icon name="material-symbols:check" size={18} aria-hidden="true" />
+      <span class="hidden sm:inline">Aplicar</span>
+    </button>
+  </FilterBar>
 
   {/* Error de conexión */}
   {
@@ -326,8 +314,7 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   const o = document.getElementById("sort") as HTMLSelectElement;
   const m = document.getElementById("mode-toggle") as HTMLInputElement;
   const mm = document.getElementById("min_matches") as HTMLInputElement;
-
-  let debounceTimer: ReturnType<typeof setTimeout>;
+  const apply = document.getElementById("apply-filters") as HTMLButtonElement;
 
   const update = () => {
     const url = new URL(window.location.href);
@@ -343,11 +330,15 @@ const sortedPlayers = [...minFilteredPlayers].sort((a, b) => {
   s?.addEventListener("change", update);
   o?.addEventListener("change", update);
   m?.addEventListener("change", update);
+
   mm?.addEventListener("input", () => {
-    // Solo dígitos, sin ceros a la izquierda, máximo 3 caracteres
     const clean = mm.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 3);
     if (clean !== mm.value) mm.value = clean;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(update, 500);
   });
+
+  mm?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") update();
+  });
+
+  apply?.addEventListener("click", update);
 </script>
