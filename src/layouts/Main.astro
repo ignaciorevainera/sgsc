@@ -22,7 +22,7 @@ interface Props {
   contentWidth?: "public" | "admin";
   toastType?: "success" | "error" | "warning" | "info";
   toastMessage?: string;
-  heroImage?: { avif: string; webp: string };
+  heroImage?: { avif: string; webp: string; srcsetAvif?: string };
 }
 
 const {
@@ -73,6 +73,8 @@ const mainWidthClass =
         rel="preload"
         as="image"
         href={heroImage.avif}
+        imagesrcset={heroImage.srcsetAvif}
+        imagesizes="(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1000px"
         type="image/avif"
         fetchpriority="high"
       />

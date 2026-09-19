@@ -2,6 +2,8 @@ export interface HeroImage {
   id: number;
   avif: string;
   webp: string;
+  srcsetAvif: string;
+  srcsetWebp: string;
   width: number;
   height: number;
   alt: string;
@@ -17,6 +19,8 @@ const HERO_IMAGES: HeroImage[] = Array.from(
       id,
       avif: `/hero/hero-${id}.avif`,
       webp: `/hero/hero-${id}.webp`,
+      srcsetAvif: `/hero/hero-${id}-640.avif 640w, /hero/hero-${id}-1024.avif 1024w, /hero/hero-${id}-1400.avif 1400w, /hero/hero-${id}.avif 1920w`,
+      srcsetWebp: `/hero/hero-${id}-640.webp 640w, /hero/hero-${id}-1024.webp 1024w, /hero/hero-${id}-1400.webp 1400w, /hero/hero-${id}.webp 1920w`,
       width: 1920,
       height: 1280,
       alt: "Solo Gente Súper Comprometida Fútbol Club",

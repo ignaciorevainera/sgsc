@@ -7,17 +7,20 @@ interface Props {
 }
 
 const { heroImage } = Astro.props;
+const sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 95vw, 1000px";
 ---
 
 <section
   class="relative mb-10 flex min-h-[50vh] items-center overflow-hidden rounded-xl text-white"
 >
   <picture>
-    <source srcset={heroImage.avif} type="image/avif" />
-    <source srcset={heroImage.webp} type="image/webp" />
+    <source srcset={heroImage.srcsetAvif} sizes={sizes} type="image/avif" />
+    <source srcset={heroImage.srcsetWebp} sizes={sizes} type="image/webp" />
     <img
       data-image-component=""
       src={heroImage.webp}
+      srcset={heroImage.srcsetWebp}
+      sizes={sizes}
       alt={heroImage.alt}
       aria-hidden="true"
       fetchpriority="high"
