@@ -43,6 +43,19 @@ const displayDate =
         ...(isDateOnly ? { timeZone: "UTC" } : {}),
       }).format(matchTimestamp)
     : null;
+
+let initialDays = 0;
+let initialHours = 0;
+let initialMinutes = 0;
+let initialSeconds = 0;
+
+if (typeof matchTimestamp === "number") {
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - matchTimestamp) / 1000));
+  initialDays = Math.min(999, Math.floor(elapsedSeconds / 86400));
+  initialHours = Math.floor((elapsedSeconds % 86400) / 3600);
+  initialMinutes = Math.floor((elapsedSeconds % 3600) / 60);
+  initialSeconds = elapsedSeconds % 60;
+}
 ---
 
 <div class="card bg-base-100 border-base-200 mt-4 rounded-xl border shadow-md">
@@ -74,7 +87,7 @@ const displayDate =
           >
             <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
               <span class="countdown text-primary font-countdown text-3xl font-black">
-                <span data-unit="days" />
+                <span data-unit="days" style={`--value: ${initialDays}`} />
               </span>
               <span class="text-base-content/60 text-xs font-bold uppercase">
                 Días
@@ -83,7 +96,7 @@ const displayDate =
 
             <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
               <span class="countdown text-primary font-countdown text-3xl font-black">
-                <span data-unit="hours" />
+                <span data-unit="hours" style={`--value: ${initialHours}`} />
               </span>
               <span class="text-base-content/60 text-xs font-bold uppercase">
                 Horas
@@ -92,7 +105,7 @@ const displayDate =
 
             <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
               <span class="countdown text-primary font-countdown text-3xl font-black">
-                <span data-unit="minutes" />
+                <span data-unit="minutes" style={`--value: ${initialMinutes}`} />
               </span>
               <span class="text-base-content/60 text-xs font-bold uppercase">
                 Minutos
@@ -101,7 +114,7 @@ const displayDate =
 
             <div class="bg-base-200 rounded-box flex flex-col items-center justify-center p-3">
               <span class="countdown text-primary font-countdown text-3xl font-black">
-                <span data-unit="seconds" />
+                <span data-unit="seconds" style={`--value: ${initialSeconds}`} />
               </span>
               <span class="text-base-content/60 text-xs font-bold uppercase">
                 Segundos
@@ -138,57 +151,71 @@ const displayDate =
 </div>
 
 <script is:inline>
-  const liveCounterRoot = document.getElementById("live-match-counter");
-  const liveCounterLabel = document.getElementById("live-match-counter-label");
+  (() => {
+    const liveCounterRoot = document.getElementById("live-match-counter");
+    const liveCounterLabel = document.getElementById("live-match-counter-label");
 
-  if (liveCounterRoot) {
-    const baseTimestampRaw = liveCounterRoot.getAttribute(
-      "data-base-timestamp",
-    );
-    const baseTimestamp = baseTimestampRaw ? Number(baseTimestampRaw) : NaN;
-    const unitElements = {
-      days: liveCounterRoot.querySelector('[data-unit="days"]'),
-      hours: liveCounterRoot.querySelector('[data-unit="hours"]'),
-      minutes: liveCounterRoot.querySelector('[data-unit="minutes"]'),
-      seconds: liveCounterRoot.querySelector('[data-unit="seconds"]'),
-    };
-
-    if (!Number.isNaN(baseTimestamp)) {
-      let lastAnnouncedMinute = -1;
-
-      const setUnitValue = (unit, value) => {
-        const unitElement = unitElements[unit];
-        if (!(unitElement instanceof HTMLElement)) return;
-
-        const boundedValue = Math.max(0, Math.min(999, value));
-        unitElement.style.setProperty("--value", String(boundedValue));
+    if (liveCounterRoot) {
+      const baseTimestampRaw = liveCounterRoot.getAttribute(
+        "data-base-timestamp",
+      );
+      const baseTimestamp = baseTimestampRaw ? Number(baseTimestampRaw) : NaN;
+      const unitElements = {
+        days: liveCounterRoot.querySelector('[data-unit="days"]'),
+        hours: liveCounterRoot.querySelector('[data-unit="hours"]'),
+        minutes: liveCounterRoot.querySelector('[data-unit="minutes"]'),
+        seconds: liveCounterRoot.querySelector('[data-unit="seconds"]'),
       };
 
-      const updateLiveCounter = () => {
-        const now = Date.now();
-        const elapsedSeconds = Math.max(
-          0,
-          Math.floor((now - baseTimestamp) / 1000),
-        );
+      if (!Number.isNaN(baseTimestamp)) {
+        let lastAnnouncedMinute = -1;
 
-        const days = Math.floor(elapsedSeconds / 86400);
-        const hours = Math.floor((elapsedSeconds % 86400) / 3600);
-        const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-        const seconds = elapsedSeconds % 60;
+        const setUnitValue = (unit, value) => {
+          const unitElement = unitElements[unit];
+          if (!(unitElement instanceof HTMLElement)) return;
 
-        setUnitValue("days", days);
-        setUnitValue("hours", hours);
-        setUnitValue("minutes", minutes);
-        setUnitValue("seconds", seconds);
+          const boundedValue = Math.max(0, Math.min(999, value));
+          unitElement.style.setProperty("--value", String(boundedValue));
+        };
 
-        if (liveCounterLabel && minutes !== lastAnnouncedMinute) {
-          lastAnnouncedMinute = minutes;
-          liveCounterLabel.textContent = `Han pasado ${days} días, ${hours} horas y ${minutes} minutos desde el último partido.`;
+        const updateLiveCounter = () => {
+          if (document.hidden) return;
+
+          const now = Date.now();
+          const elapsedSeconds = Math.max(
+            0,
+            Math.floor((now - baseTimestamp) / 1000),
+          );
+
+          const days = Math.floor(elapsedSeconds / 86400);
+          const hours = Math.floor((elapsedSeconds % 86400) / 3600);
+          const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+          const seconds = elapsedSeconds % 60;
+
+          setUnitValue("days", days);
+          setUnitValue("hours", hours);
+          setUnitValue("minutes", minutes);
+          setUnitValue("seconds", seconds);
+
+          if (liveCounterLabel && minutes !== lastAnnouncedMinute) {
+            lastAnnouncedMinute = minutes;
+            liveCounterLabel.textContent = `Han pasado ${days} días, ${hours} horas y ${minutes} minutos desde el último partido.`;
+          }
+        };
+
+        const startTimer = () => {
+          updateLiveCounter();
+          window.setInterval(updateLiveCounter, 1000);
+        };
+
+        if ("requestIdleCallback" in window) {
+          window.requestIdleCallback(startTimer, { timeout: 2000 });
+        } else if (document.readyState === "complete") {
+          startTimer();
+        } else {
+          window.addEventListener("load", startTimer, { once: true });
         }
-      };
-
-      updateLiveCounter();
-      window.setInterval(updateLiveCounter, 1000);
+      }
     }
-  }
+  })();
 </script>
