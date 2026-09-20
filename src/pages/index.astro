@@ -138,7 +138,7 @@ const features = [
                     <a
                       href={`/players/${player.player_id}`}
                       class="hover:bg-base-200 group flex items-center justify-between p-4 transition-colors"
-                      aria-label={`Ver perfil de ${player.nickname}, ${player.points} puntos`}
+                      aria-label={`${index + 1} ${player.nickname}: ${player.matches_played} PJ, ${player.wins} Victorias, ${player.points} PTS`}
                     >
                       <div class="flex items-center gap-4">
                         <div
@@ -228,7 +228,7 @@ const features = [
           <a
             href={feature.href}
             class={`card bg-base-100 border-base-200 group rounded-xl border shadow-md ring-1 ring-transparent transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-3 ${feature.ring}`}
-            aria-label={`${feature.title}: ${feature.description}`}
+            aria-label={`${feature.kicker}: ${feature.title}. ${feature.description}`}
           >
             <div class="card-body gap-3">
               <div class="flex items-start justify-between">
