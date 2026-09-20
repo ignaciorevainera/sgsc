@@ -1,5 +1,4 @@
-@import '@fontsource-variable/sora';
-@import '@fontsource-variable/roboto-mono';
+@import '@fontsource-variable/sora/latin.css';
 
 @import "tailwindcss";
 
@@ -27,7 +26,8 @@ html::-webkit-scrollbar {
 }
 
 .font-countdown {
-  font-family: "Roboto Mono Variable", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Aplana sombras solo durante la captura de imagen para compartir */
